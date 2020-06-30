@@ -1,5 +1,5 @@
-package swarm-manager
+package swarmmanager
 
 func Config() {
-	
+
 }
