@@ -10,6 +10,12 @@ package main
 
 // "github.com/montanaflynn/stats"
 
+import (
+	"fmt"
+
+	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
+)
+
 func main() {
 	// c := collector.GetNewCollector("SingleCollector")
 	// err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": "bookstore"})
@@ -39,7 +45,44 @@ func main() {
 
 	// F2(j)
 	// F1(j)
+	// script := "import{check,sleep}from'k6';import{execute_random_login,execute_get_book,execute_edit_book}from'./bookstore_content/bookstore_units.js';export let options={vus:3,duration:'5s',userAgent:'MyK6UserAgentString/1.0',};const SLEEP_DURATION=0.1;export function setup(){}\nexport default function(data){const auth_token=execute_random_login();sleep(SLEEP_DURATION);const book=execute_get_book(auth_token);sleep(SLEEP_DURATION);execute_edit_book(auth_token,book);};export function teardown(data){}"
+	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
 
+	// PrepareLG(l, script)
+	// StartLG(l)
+	// StopLG(l)
+	FeedbackLG(l)
+}
+
+func PrepareLG(l loadgenerator.LoadGenerator, script string) {
+	err := l.Prepare(map[string]string{"script": script})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func StartLG(l loadgenerator.LoadGenerator) {
+	err := l.Start(map[string]string{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func StopLG(l loadgenerator.LoadGenerator) {
+	err := l.Stop(map[string]string{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func FeedbackLG(l loadgenerator.LoadGenerator) {
+	f, err := l.GetFeedback(map[string]string{})
+	if err != nil {
+		panic(err)
+	}
+	for k, _ := range f {
+		fmt.Println(k)
+	}
 }
 
 // func F1(rtc workload.ResponseTimeCollector) {
