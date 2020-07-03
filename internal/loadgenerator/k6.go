@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 // K6 connector to work with a K6 Wrapper
@@ -113,4 +115,25 @@ func (k *K6) GetFeedback(values map[string]string) (map[string]interface{}, erro
 	}
 
 	return feedbackRes, nil
+}
+
+// CreateLoadGeneartorScript ...
+func CreateLoadGeneartorScript(scriptPath string, virtualUsers, durationSec int, authProb, bookProb, exitProb, sleepDuration float32) string {
+	res := readLoadGeneratorScript(scriptPath)
+	res = strings.ReplaceAll(res, "ARG_VUS", strconv.Itoa(virtualUsers))
+	res = strings.ReplaceAll(res, "ARG_DURATION", strconv.Itoa(durationSec))
+	res = strings.ReplaceAll(res, "ARG_SLEEP_DURATION", strconv.FormatFloat(sleepDuration, 'f', -1, 32))
+	res = strings.ReplaceAll(res, "ARG_AuthProb", strconv.FormatFloat(authProb, 'f', -1, 32))
+	res = strings.ReplaceAll(res, "ARG_BookProb", strconv.FormatFloat(bookProb, 'f', -1, 32))
+	res = strings.ReplaceAll(res, "ARG_ExitProb", strconv.FormatFloat(exitProb, 'f', -1, 32))
+	return res
+}
+
+// ReadLoadGeneratorScript ...
+func readLoadGeneratorScript(path string) string {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Errorf("cant load k6 load geneartor script at: %s; %w", path, err))
+	}
+	return string(b)
 }
