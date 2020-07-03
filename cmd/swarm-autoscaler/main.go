@@ -11,27 +11,20 @@ package main
 // "github.com/montanaflynn/stats"
 
 import (
-	"fmt"
-	"sync"
-	"time"
-
-	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
-	"github.com/VahidMostofi/swarmmanager/internal/resource/collector"
-	"github.com/montanaflynn/stats"
 )
 
 func main() {
-	stackName := "bookstore"
-	c := collector.GetNewCollector("SingleCollector")
-	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
-	if err != nil {
-		panic(err)
-	}
-	err = c.Start()
-	if err != nil {
-		panic(err)
-	}
+	// stackName := "bookstore"
+	// c := collector.GetNewCollector("SingleCollector")
+	// err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = c.Start()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// time.AfterFunc(time.Second*5, func() { c.Stop(); wg.Done() })
 	// wg.Wait()
@@ -44,41 +37,51 @@ func main() {
 	// }
 
 	// "getone", "update","login"
-	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"auth_req_login", "update_book", "get_book"})
+	// j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"auth_req_login", "books_edit_book", "books_get_book"})
 	// fmt.Println(j)
 	// j.GetTraces(1593568965858000, 1593568975858000, "gateway")
+	// time.Sleep(20 * time.Second)
+	// start := time.Now().UnixNano() / 1e3
+	// start := int64(1593737202594662)
+	// time.Sleep(20 * time.Second)
+	// end := time.Now().UnixNano() / 1e3
+	// end := int64(1593737212597534)
 
-	start := time.Now().UnixNano()
-	time.Sleep(10 * time.Second)
-	end := time.Now().UnixNano()
+	// ru := c.GetResourceUtilization()
+	// for key, value := range ru {
+	// 	count := 0
+	// 	for k := range value.CPUUtilizationsAtTime {
+	// 		if k/1e3 >= start && k/1e3 <= end {
+	// 			count++
+	// 		}
+	// 	}
+	// 	fmt.Println(key[:12], value.GetResourceRecordingRate(), len(value.CPUUtilizationsAtTime), count)
 
-	ru := c.GetResourceUtilization()
-	for key, value := range ru {
-		fmt.Println(key, value.GetResourceRecordingRate())
-		// value.Print()
-		// fmt.Println("======")
-	}
+	// 	// value.Print()
+	// 	// fmt.Println("======")
+	// }
 
-	j.GetTraces(start, end, "gateway")
-	count, err := j.GetRequestCount("auth_req_login")
-	fmt.Println("request count login", count)
-	count, err = j.GetRequestCount("update_book")
-	fmt.Println("request count update book", count)
-	count, err = j.GetRequestCount("get_book")
-	fmt.Println("request count get book", count)
+	// j.GetTraces(start, end, "gateway")
+	// fmt.Println(start, end)
+	// count, err := j.GetRequestCount("auth_req_login")
+	// fmt.Println("request count login", count)
+	// count, err = j.GetRequestCount("books_edit_book")
+	// fmt.Println("request count update book", count)
+	// count, err = j.GetRequestCount("books_get_book")
+	// fmt.Println("request count get book", count)
 
-	rt, err := j.GetResponseTimes("auth_req_login")
-	m, err := stats.Mean(rt)
-	fmt.Println("mean response time login", m)
-	rt, err = j.GetResponseTimes("update_book")
-	m, err = stats.Mean(rt)
-	fmt.Println("mean response time update book", m)
-	rt, err = j.GetResponseTimes("get_book")
-	m, err = stats.Mean(rt)
-	fmt.Println("mean response time get book", m)
-	if err != nil {
-		panic(err)
-	}
+	// rt, err := j.GetResponseTimes("auth_req_login")
+	// m, err := stats.Mean(rt)
+	// fmt.Println("mean response time login", m)
+	// rt, err = j.GetResponseTimes("books_edit_book")
+	// m, err = stats.Mean(rt)
+	// fmt.Println("mean response time update book", m)
+	// rt, err = j.GetResponseTimes("books_get_book")
+	// m, err = stats.Mean(rt)
+	// fmt.Println("mean response time get book", m)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// F2(j)
 	// F1(j)
@@ -119,9 +122,13 @@ func main() {
 	// 	panic(err)
 	// }
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	wg.Wait()
+	// wg := sync.WaitGroup{}
+	// wg.Add(1)
+	// wg.Wait()
+
+	// c := autoconfigure.CPUUsageIncrease{}
+	// c.Configure()
+
 }
 
 func PrepareLG(l loadgenerator.LoadGenerator, script string) {

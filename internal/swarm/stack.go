@@ -8,9 +8,9 @@ import (
 )
 
 // RemoveStack ...
-func (s *Manager) RemoveStack(host string, stackName string) error {
+func (s *Manager) RemoveStack() error {
 	fmt.Println("removing stack")
-	cmd := exec.Command("docker", "-H", host, "stack", "remove", stackName)
+	cmd := exec.Command("docker", "-H", s.Host, "stack", "remove", s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error while removing stack with error: %w; %s", err, string(out))
@@ -20,16 +20,16 @@ func (s *Manager) RemoveStack(host string, stackName string) error {
 }
 
 // DeployStackWithDockerCompose ....
-func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, host string, stackName string, attempt int) error {
+func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt int) error {
 	fmt.Println("deploying stack")
-	cmd := exec.Command("docker", "-H", host, "stack", "deploy", "--compose-file", dockerComposePath, stackName)
+	cmd := exec.Command("docker", "-H", s.Host, "stack", "deploy", "--compose-file", dockerComposePath, s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(out), "not found") && strings.Contains(string(out), "network") && attempt <= 25 {
 			var waitTime int64 = 5
 			fmt.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
 			time.Sleep(time.Duration(waitTime) * time.Second)
-			return s.DeployStackWithDockerCompose(dockerComposePath, host, stackName, attempt+1)
+			return s.DeployStackWithDockerCompose(dockerComposePath, attempt+1)
 		}
 		return fmt.Errorf("deploying stack with docker compose file failed with error: %w; %s", err, string(out))
 	}

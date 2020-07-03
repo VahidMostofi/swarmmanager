@@ -29,6 +29,7 @@ type ServiceSpecs struct {
 // Manager manages the swarm cluster
 type Manager struct {
 	Client            *client.Client
+	Host              string
 	Ctx               context.Context
 	CtxCancelFunc     context.CancelFunc
 	StackName         string
@@ -64,6 +65,7 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 
 	m := &Manager{
 		Client:        cli,
+		Host:          values["host"],
 		Ctx:           ctx,
 		CtxCancelFunc: cancelFunc,
 		StackName:     values["stackname"],
