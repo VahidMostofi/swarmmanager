@@ -11,25 +11,28 @@ package main
 // "github.com/montanaflynn/stats"
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
+	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
+	"github.com/VahidMostofi/swarmmanager/internal/resource/collector"
+	"github.com/montanaflynn/stats"
 )
 
 func main() {
-	// c := collector.GetNewCollector("SingleCollector")
-	// err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": "bookstore"})
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = c.Start()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	stackName := "bookstore"
+	c := collector.GetNewCollector("SingleCollector")
+	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
+	if err != nil {
+		panic(err)
+	}
+	err = c.Start()
+	if err != nil {
+		panic(err)
+	}
 
-	// wg := sync.WaitGroup{}
-	// wg.Add(1)
 	// time.AfterFunc(time.Second*5, func() { c.Stop(); wg.Done() })
 	// wg.Wait()
 	// time.Sleep(3 * time.Second)
@@ -41,12 +44,45 @@ func main() {
 	// }
 
 	// "getone", "update","login"
-	// j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"auth_req_login", "update_book", "get_book"})
+	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"auth_req_login", "update_book", "get_book"})
+	// fmt.Println(j)
 	// j.GetTraces(1593568965858000, 1593568975858000, "gateway")
+
+	start := time.Now().UnixNano()
+	time.Sleep(10 * time.Second)
+	end := time.Now().UnixNano()
+
+	ru := c.GetResourceUtilization()
+	for key, value := range ru {
+		fmt.Println(key, value.GetResourceRecordingRate())
+		// value.Print()
+		// fmt.Println("======")
+	}
+
+	j.GetTraces(start, end, "gateway")
+	count, err := j.GetRequestCount("auth_req_login")
+	fmt.Println("request count login", count)
+	count, err = j.GetRequestCount("update_book")
+	fmt.Println("request count update book", count)
+	count, err = j.GetRequestCount("get_book")
+	fmt.Println("request count get book", count)
+
+	rt, err := j.GetResponseTimes("auth_req_login")
+	m, err := stats.Mean(rt)
+	fmt.Println("mean response time login", m)
+	rt, err = j.GetResponseTimes("update_book")
+	m, err = stats.Mean(rt)
+	fmt.Println("mean response time update book", m)
+	rt, err = j.GetResponseTimes("get_book")
+	m, err = stats.Mean(rt)
+	fmt.Println("mean response time get book", m)
+	if err != nil {
+		panic(err)
+	}
 
 	// F2(j)
 	// F1(j)
-	// script := "import{check,sleep}from'k6';import{execute_random_login,execute_get_book,execute_edit_book}from'./bookstore_content/bookstore_units.js';export let options={vus:3,duration:'5s',userAgent:'MyK6UserAgentString/1.0',};const SLEEP_DURATION=0.1;export function setup(){}\nexport default function(data){const auth_token=execute_random_login();sleep(SLEEP_DURATION);const book=execute_get_book(auth_token);sleep(SLEEP_DURATION);execute_edit_book(auth_token,book);};export function teardown(data){}"
+	// script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 15, 3600, 0.2, 0.8, 0, 0.1)
 	// l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
 
 	// PrepareLG(l, script)
@@ -54,22 +90,22 @@ func main() {
 	// StopLG(l)
 	// FeedbackLG(l)
 	// ========================================================================
-	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375"})
-	m.StackStateCh <- swarm.StackStateServicesAreReady
-	m.FillDesiredSpecsCurrentSpecs()
-	if err != nil {
-		panic(err)
-	}
-	time.Sleep(5 * time.Second)
-	for serviceID, spec := range m.DesiredSpecs {
-		if spec.Name == "gateway" {
-			spec.ReplicaCount = 3
-			spec.CPULimits = 2
-			spec.CPUReservation = 2
-			spec.EnvironmentVariables = []string{"JWT_KEY=someKeyIsGoodAndSomeOfThemBNoGEo1ioD!", "WorkerCount=2"}
-			m.DesiredSpecs[serviceID] = spec
-		}
-	}
+	// m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375"})
+	// m.StackStateCh <- swarm.StackStateServicesAreReady
+	// m.FillDesiredSpecsCurrentSpecs()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// time.Sleep(5 * time.Second)
+	// for serviceID, spec := range m.DesiredSpecs {
+	// 	if spec.Name == "gateway" {
+	// 		spec.ReplicaCount = 3
+	// 		spec.CPULimits = 2
+	// 		spec.CPUReservation = 2
+	// 		spec.EnvironmentVariables = []string{"JWT_KEY=someKeyIsGoodAndSomeOfThemBNoGEo1ioD!", "WorkerCount=2"}
+	// 		m.DesiredSpecs[serviceID] = spec
+	// 	}
+	// }
 	// go m.Temp()
 
 	// err = m.RemoveStack("tcp://136.159.209.204:2375", "bookstore")
@@ -86,22 +122,21 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()
-
 }
 
-// func PrepareLG(l loadgenerator.LoadGenerator, script string) {
-// 	err := l.Prepare(map[string]string{"script": script})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
+func PrepareLG(l loadgenerator.LoadGenerator, script string) {
+	err := l.Prepare(map[string]string{"script": script})
+	if err != nil {
+		panic(err)
+	}
+}
 
-// func StartLG(l loadgenerator.LoadGenerator) {
-// 	err := l.Start(map[string]string{})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
+func StartLG(l loadgenerator.LoadGenerator) {
+	err := l.Start(map[string]string{})
+	if err != nil {
+		panic(err)
+	}
+}
 
 // func StopLG(l loadgenerator.LoadGenerator) {
 // 	err := l.Stop(map[string]string{})

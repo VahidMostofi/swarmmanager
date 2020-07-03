@@ -41,8 +41,6 @@ func (ru *Utilization) GetResourceRecordingRate() float64 {
 		}
 	}
 	count = float64(len(ru.CPUUtilizationsAtTime))
-	fmt.Println(count)
-	fmt.Println((float64(end) - float64(start)))
 	return (count) / ((float64(end) - float64(start)) / 1e9)
 }
 

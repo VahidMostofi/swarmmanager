@@ -118,14 +118,14 @@ func (k *K6) GetFeedback(values map[string]string) (map[string]interface{}, erro
 }
 
 // CreateLoadGeneartorScript ...
-func CreateLoadGeneartorScript(scriptPath string, virtualUsers, durationSec int, authProb, bookProb, exitProb, sleepDuration float32) string {
+func CreateLoadGeneartorScript(scriptPath string, virtualUsers, durationSec int, authProb, bookProb, exitProb, sleepDuration float64) string {
 	res := readLoadGeneratorScript(scriptPath)
 	res = strings.ReplaceAll(res, "ARG_VUS", strconv.Itoa(virtualUsers))
 	res = strings.ReplaceAll(res, "ARG_DURATION", strconv.Itoa(durationSec))
-	res = strings.ReplaceAll(res, "ARG_SLEEP_DURATION", strconv.FormatFloat(sleepDuration, 'f', -1, 32))
-	res = strings.ReplaceAll(res, "ARG_AuthProb", strconv.FormatFloat(authProb, 'f', -1, 32))
-	res = strings.ReplaceAll(res, "ARG_BookProb", strconv.FormatFloat(bookProb, 'f', -1, 32))
-	res = strings.ReplaceAll(res, "ARG_ExitProb", strconv.FormatFloat(exitProb, 'f', -1, 32))
+	res = strings.ReplaceAll(res, "ARG_SLEEP_DURATION", strconv.FormatFloat(sleepDuration, 'f', -1, 64))
+	res = strings.ReplaceAll(res, "ARG_AuthProb", strconv.FormatFloat(authProb, 'f', -1, 64))
+	res = strings.ReplaceAll(res, "ARG_BookProb", strconv.FormatFloat(bookProb, 'f', -1, 64))
+	res = strings.ReplaceAll(res, "ARG_ExitProb", strconv.FormatFloat(exitProb, 'f', -1, 64))
 	return res
 }
 
