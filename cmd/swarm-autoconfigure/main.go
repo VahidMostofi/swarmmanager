@@ -28,7 +28,7 @@ func GetTheLoadGenerator() loadgenerator.LoadGenerator {
 	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
 	//TODO: what about the duration of generated load
 	//TODO: this is hard coded
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 15, 3600, 0.2, 0.8, 0, 0.1)
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 8, 3600, 0.2, 0.8, 0, 0.1)
 	l.Prepare(map[string]string{"script": script})
 	return l
 

@@ -25,7 +25,7 @@ func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt
 	cmd := exec.Command("docker", "-H", s.Host, "stack", "deploy", "--compose-file", dockerComposePath, s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		if strings.Contains(string(out), "not found") && strings.Contains(string(out), "network") && attempt <= 25 {
+		if (strings.Contains(string(out), "not found") || strings.Contains(string(out), "cannot be used with services.")) && strings.Contains(string(out), "network") && attempt <= 25 {
 			var waitTime int64 = 5
 			fmt.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
 			time.Sleep(time.Duration(waitTime) * time.Second)

@@ -46,6 +46,7 @@ const (
 	StackStateServicesAreDeployed         = 10
 	StackStateWaitForServicesToBeReady    = 15
 	StackStateServicesAreReady            = 20
+	StackStateMustCompare                 = 22
 	StackStateUpdatingSpecs               = 25
 )
 
@@ -84,7 +85,7 @@ func (s *Manager) monitorSpecs() {
 	waitTime := 10
 	fmt.Printf("monitoring specs every %d seconds\n", waitTime)
 	for {
-		if s.CurrentStackState >= StackStateServicesAreReady {
+		if s.CurrentStackState >= StackStateServicesAreReady || s.CurrentStackState == StackStateMustCompare {
 			err := s.UpdateCurrentSpecs()
 			if err != nil {
 				panic(err)
@@ -122,7 +123,7 @@ func (s *Manager) monitorState() {
 	for {
 		select {
 		case newState := <-s.StackStateCh:
-			fmt.Println(s.getStateString(newState))
+			fmt.Println(time.Now().UnixNano(), "changed state to:", s.getStateString(newState))
 			s.CurrentStackState = newState
 		}
 	}
@@ -173,7 +174,9 @@ func (s *Manager) UpdateServicesSpecs() error {
 	if err != nil {
 		return fmt.Errorf("error while retrieving tasks: %w", err)
 	}
+	// fmt.Println("tasks")
 	for _, t := range tasks {
+		// fmt.Println(t)
 		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 10 {
 			temp := s.CurrentSpecs[t.ServiceID]
 			temp.Containers = append(temp.Containers, t.Status.ContainerStatus.ContainerID)
@@ -239,11 +242,20 @@ func Equal(a, b []string) bool {
 	return true
 }
 
+func listOfContainersToString(cs []string) string {
+	res := ""
+	for _, c := range cs {
+		res += c[:10] + ", "
+	}
+	return res
+}
+
 // IsServiceReady ...
 func (s *Manager) IsServiceReady(serviceID string) bool {
-	if len(s.CurrentSpecs[serviceID].Containers) == s.CurrentSpecs[serviceID].ReplicaCount {
+	if len(s.CurrentSpecs[serviceID].Containers) == s.DesiredSpecs[serviceID].ReplicaCount {
 		return true
 	}
+	fmt.Println(s.CurrentSpecs[serviceID].Name, listOfContainersToString(s.CurrentSpecs[serviceID].Containers), s.DesiredSpecs[serviceID].ReplicaCount)
 	return false
 }
 
@@ -302,6 +314,9 @@ func (s *Manager) getStateString(stateValue int) string {
 	}
 	if stateValue == StackStateUpdatingSpecs {
 		return "StackState UpdatingSpecs"
+	}
+	if stateValue == StackStateMustCompare {
+		return "StackState MustCompare"
 	}
 	return "unknown state"
 }

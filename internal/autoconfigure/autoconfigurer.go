@@ -1,12 +1,15 @@
 package autoconfigure
 
 //TODO I NEED TO REstart every single container
+//TODO check validity of a configuration
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
+	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
 	resource "github.com/VahidMostofi/swarmmanager/internal/resource/collector"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
@@ -21,6 +24,19 @@ type AutoConfigurer struct {
 	ResourceUsageCollector resource.Collector
 	ConfigurerAgent        Configurer
 	SwarmManager           *swarm.Manager
+}
+
+// GetTheResourceUsageCollector ...
+func GetTheResourceUsageCollector() resource.Collector {
+	//TODO SERVICE COUNT IS HARDCODED!!!!!!!!
+	stackName := "bookstore"
+	c := resource.GetNewCollector("SingleCollector")
+	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
+	if err != nil {
+		panic(err)
+	}
+
+	return c
 }
 
 // NewAutoConfigurer ...
@@ -57,35 +73,67 @@ func (a *AutoConfigurer) Start() {
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
-	err = a.ResourceUsageCollector.Start()
-	if err != nil {
-		panic(err)
-	}
 	time.Sleep(15 * time.Second)
-	go a.LoadGenerator.Start(make(map[string]string))
-	fmt.Println("load generator started")
 	for {
-		fmt.Println("FIRST ITERATION")
-		start := time.Now().UnixNano() / 1e3
-		time.Sleep(30 * time.Second)
-		end := time.Now().UnixNano() / 1e3
-		info := a.GatherInfo(int64(start), int64(end))
-		newSpecs, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs)
-		if err != nil {
-			panic(err)
-		}
-		a.SwarmManager.DesiredSpecs = newSpecs
-		time.Sleep(5 * time.Second)
 		for {
+			// fmt.Println(a.SwarmManager.CurrentStackState)
 			if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
+				fmt.Println(time.Now().UnixNano(), "a.SwarmManager.CurrentStackState is", a.SwarmManager.CurrentStackState, "so lets break out of the loop")
 				break
 			}
 			time.Sleep(150 * time.Millisecond)
 		}
+		fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "write after the loop")
 		time.Sleep(15 * time.Second)
+		fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
+		go a.LoadGenerator.Start(make(map[string]string))
+		fmt.Println("load generator started")
+		time.Sleep(15 * time.Second)
+		a.ResourceUsageCollector = GetTheResourceUsageCollector()
+		err := a.ResourceUsageCollector.Start()
+		if err != nil {
+			panic(err)
+		}
+		time.Sleep(2 * time.Second)
+		fmt.Println(time.Now().UnixNano(), "NEW ITERATION")
+		start := time.Now().UnixNano() / 1e3
+		time.Sleep(15 * time.Second)
+		end := time.Now().UnixNano() / 1e3
+		a.LoadGenerator.Stop(make(map[string]string))
+		time.Sleep(2 * time.Second)
+		err = a.ResourceUsageCollector.Stop()
+		if err != nil {
+			panic(err)
+		}
+		info := a.GatherInfo(int64(start), int64(end))
+		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs)
+		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
+		if err != nil {
+			panic(err)
+		}
+		a.SwarmManager.DesiredSpecs = newSpecs
+		if !isChanged {
+			fmt.Println("is changed is false, breaking out of loop")
+		}
+		// if a.SwarmManager.CompareSpecs() {
+		// fmt.Println("specs are the same break out of the loop")
+		// break
+		// }
+		time.Sleep(5 * time.Second)
 	}
+	fmt.Println(a.SwarmManager.DesiredSpecs)
+}
 
-	a.LoadGenerator.Stop(make(map[string]string))
+func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
+	res := "ruMAP:\n"
+	for key, value := range r {
+		if len(key) == 25 {
+			res += a.SwarmManager.DesiredSpecs[key].Name + " " + strconv.Itoa(len(value.CPUUtilizationsAtTime)) + "\n"
+		} else {
+			// res += a.ResourceUsageCollector.
+		}
+	}
+	return res
 }
 
 // GatherInfo ...
@@ -94,14 +142,11 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 	a.RequestCountCollector.(*jaeger.JaegerAggregator).GetTraces(start, end, "gateway") //TODO this is hardcoded!
 	info := make(map[string]ServiceInfo)
 	for serviceID := range a.SwarmManager.CurrentSpecs {
-		// m := map[string]string{"1": "auth", "2": "books", "3": "gateway"}  delete this
-		// for serviceID := range m { //TODO  delete this
 		serviceName := a.SwarmManager.CurrentSpecs[serviceID].Name
-		// serviceName := m[serviceID] delete this
 		if !(serviceName == "books" || serviceName == "auth" || serviceName == "gateway") {
 			continue
 		} //TODO
-		fmt.Println(serviceName)
+		fmt.Println("gathering info about", serviceName, serviceID)
 		serviceInfo := ServiceInfo{
 			Start:        start,
 			End:          end,
@@ -111,6 +156,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		// CPU usage
 		cpuUsages := make([]float64, 0)
 		serviceInfo.NumberOfCores = a.SwarmManager.CurrentSpecs[serviceID].CPULimits
+		fmt.Println(a.printRUMap(ruMap))
 		for timestamp, usage := range ruMap[serviceID].CPUUtilizationsAtTime {
 			if timestamp >= start*1e3 && timestamp <= end*1e3 {
 				cpuUsages = append(cpuUsages, usage/serviceInfo.NumberOfCores)

@@ -27,6 +27,26 @@ type SingleCollector struct {
 	ResourceStats           map[string]*resource.Utilization
 }
 
+// ToString ...
+func (sc *SingleCollector) ToString() string {
+	res := "--------------------------------------------------------\n"
+	res += "monitoring stats:\n"
+	res += "containers:\n"
+	for _, c := range sc.Containers {
+		res += c.ID[:12] + "_" + c.Names[0] + "for service:" + sc.ContainerToService[c.ID] + "\n"
+	}
+	res += "services:\n"
+	for service, containers := range sc.ServiceToContainers {
+		res += service + ": "
+		for _, c := range containers {
+			res += c[:12] + ","
+		}
+		res += "\n"
+	}
+	res += "--------------------------------------------------------"
+	return res
+}
+
 // Configure the collector, the values needs:
 // "host": the host we are connecting to
 // "stackname": only containers with com.docker.stack.namespace label equal to stackname would be considered
@@ -69,6 +89,7 @@ func (sc *SingleCollector) Start() error {
 	for _, container := range containers {
 		if container.Labels["com.docker.stack.namespace"] == sc.Stackname {
 			sc.Containers = append(sc.Containers, container)
+			// fmt.Println("monitoing stats for these conta iners:", sc.Containers)
 			serviceID := container.Labels["com.docker.swarm.service.id"]
 			serviceName := container.Labels["com.docker.swarm.service.name"]
 			sc.ServiceToContainers[serviceID] = append(sc.ServiceToContainers[serviceID], container.ID)
@@ -82,6 +103,8 @@ func (sc *SingleCollector) Start() error {
 	for id := range sc.Services {
 		sc.ResourceStats[id] = resource.NewResourceUtilization(id)
 	}
+
+	// fmt.Println(sc.ToString())
 
 	errCh := make(chan error)
 	statsCh := make(chan struct {
