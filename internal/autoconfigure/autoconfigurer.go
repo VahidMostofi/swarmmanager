@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"log"
+
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
@@ -33,7 +35,7 @@ func GetTheResourceUsageCollector() resource.Collector {
 	c := resource.GetNewCollector("SingleCollector")
 	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	return c
@@ -58,14 +60,14 @@ func (a *AutoConfigurer) Start() {
 	// Remove the current Stack
 	err := a.SwarmManager.RemoveStack()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	// Deploy the stack with basic configuration
 	dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml" //TODO this is hard coded!
 	err = a.SwarmManager.DeployStackWithDockerCompose(dockerComposePath, 1)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	for {
 		if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
@@ -78,24 +80,24 @@ func (a *AutoConfigurer) Start() {
 		for {
 			// fmt.Println(a.SwarmManager.CurrentStackState)
 			if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
-				fmt.Println(time.Now().UnixNano(), "a.SwarmManager.CurrentStackState is", a.SwarmManager.CurrentStackState, "so lets break out of the loop")
+				log.Println("CurrentStackState is", swarm.GetStateString(a.SwarmManager.CurrentStackState), "so lets break out of the loop")
 				break
 			}
 			time.Sleep(150 * time.Millisecond)
 		}
-		fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "write after the loop")
+		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "write after the loop")
 		time.Sleep(15 * time.Second)
-		fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
+		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
 		go a.LoadGenerator.Start(make(map[string]string))
-		fmt.Println("load generator started")
+		log.Println("load generator started")
 		time.Sleep(15 * time.Second)
 		a.ResourceUsageCollector = GetTheResourceUsageCollector()
 		err := a.ResourceUsageCollector.Start()
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		time.Sleep(2 * time.Second)
-		fmt.Println(time.Now().UnixNano(), "NEW ITERATION")
+		log.Println("NEW ITERATION")
 		start := time.Now().UnixNano() / 1e3
 		time.Sleep(15 * time.Second)
 		end := time.Now().UnixNano() / 1e3
@@ -103,25 +105,24 @@ func (a *AutoConfigurer) Start() {
 		time.Sleep(2 * time.Second)
 		err = a.ResourceUsageCollector.Stop()
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		info := a.GatherInfo(int64(start), int64(end))
 		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs)
 		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		a.SwarmManager.DesiredSpecs = newSpecs
 		if !isChanged {
-			fmt.Println("is changed is false, breaking out of loop")
+			log.Println("is changed is false, breaking out of loop")
+			break
 		}
-		// if a.SwarmManager.CompareSpecs() {
-		// fmt.Println("specs are the same break out of the loop")
-		// break
-		// }
 		time.Sleep(5 * time.Second)
 	}
-	fmt.Println(a.SwarmManager.DesiredSpecs)
+	log.Println(a.SwarmManager.DesiredSpecs)
+	b := swarm.StackSpecs(a.SwarmManager.DesiredSpecs).SaveYML()
+	fmt.Println(string(b))
 }
 
 func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
@@ -146,7 +147,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		if !(serviceName == "books" || serviceName == "auth" || serviceName == "gateway") {
 			continue
 		} //TODO
-		fmt.Println("gathering info about", serviceName, serviceID)
+		// fmt.Println("gathering info about", serviceName, serviceID)
 		serviceInfo := ServiceInfo{
 			Start:        start,
 			End:          end,
@@ -156,7 +157,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		// CPU usage
 		cpuUsages := make([]float64, 0)
 		serviceInfo.NumberOfCores = a.SwarmManager.CurrentSpecs[serviceID].CPULimits
-		fmt.Println(a.printRUMap(ruMap))
+		// fmt.Println(a.printRUMap(ruMap))
 		for timestamp, usage := range ruMap[serviceID].CPUUtilizationsAtTime {
 			if timestamp >= start*1e3 && timestamp <= end*1e3 {
 				cpuUsages = append(cpuUsages, usage/serviceInfo.NumberOfCores)
@@ -164,25 +165,25 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		}
 		v, err := stats.Mean(cpuUsages)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.CPUUsageMean = v
 
 		v, err = stats.Percentile(cpuUsages, 90)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.CPUUsage95Percentile = v
 
 		v, err = stats.Percentile(cpuUsages, 95)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.CPUUsage99Percentile = v
 
 		v, err = stats.Percentile(cpuUsages, 99)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.CPUUsage90Percentile = v
 
@@ -190,34 +191,34 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		if serviceName == "books" {
 			c, e := a.RequestCountCollector.GetRequestCount("books_edit_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount = c
 			c, e = a.RequestCountCollector.GetRequestCount("books_get_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount += c
 		} else if serviceName == "auth" {
 			c, e := a.RequestCountCollector.GetRequestCount("auth_req_login")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount = c
 		} else if serviceName == "gateway" {
 			c, e := a.RequestCountCollector.GetRequestCount("auth_req_login")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount = c
 			c, e = a.RequestCountCollector.GetRequestCount("books_edit_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount += c
 			c, e = a.RequestCountCollector.GetRequestCount("books_get_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			serviceInfo.RequestCount += c
 		}
@@ -227,58 +228,58 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		if serviceName == "books" {
 			rts, e := a.ResponseTimeCollector.GetResponseTimes("books_edit_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_get_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 		} else if serviceName == "auth" {
 			rts, e := a.ResponseTimeCollector.GetResponseTimes("auth_req_login")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 		} else if serviceName == "gateway" {
 			rts, e := a.ResponseTimeCollector.GetResponseTimes("auth_req_login")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_edit_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_get_book")
 			if e != nil {
-				panic(e)
+				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
 		}
 		m, err := stats.Mean(responseTimes)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.ResponseTimesMean = m
 
 		m, err = stats.Percentile(responseTimes, 90)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.ResponseTimes90Percentile = m
 
 		m, err = stats.Percentile(responseTimes, 95)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.ResponseTimes95Percentile = m
 
 		m, err = stats.Percentile(responseTimes, 99)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		serviceInfo.ResponseTimes99Percentile = m
 

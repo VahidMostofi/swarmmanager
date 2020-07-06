@@ -2,6 +2,8 @@ package main
 
 //TODO I NEED TO REstart every single container
 import (
+	"log"
+
 	"github.com/VahidMostofi/swarmmanager/internal/autoconfigure"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
@@ -17,7 +19,7 @@ func GetTheResourceUsageCollector() resource.Collector {
 	c := resource.GetNewCollector("SingleCollector")
 	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	return c
@@ -55,7 +57,7 @@ func GetAConfigurer() autoconfigure.Configurer {
 func GetSwarmManager() *swarm.Manager {
 	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375"})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	return m
 }

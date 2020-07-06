@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -133,7 +134,7 @@ func CreateLoadGeneartorScript(scriptPath string, virtualUsers, durationSec int,
 func readLoadGeneratorScript(path string) string {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(fmt.Errorf("cant load k6 load geneartor script at: %s; %w", path, err))
+		log.Panic(fmt.Errorf("cant load k6 load geneartor script at: %s; %w", path, err))
 	}
 	return string(b)
 }

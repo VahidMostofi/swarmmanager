@@ -6,24 +6,40 @@ import (
 	"strings"
 	"time"
 
+	"log"
+
 	"github.com/docker/docker/api/types"
 	dockerswarm "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
+	"gopkg.in/yaml.v2"
 )
 
 // ServiceSpecs ...
 type ServiceSpecs struct {
 	ID                   string
-	Name                 string
+	Name                 string `yaml:"name"`
 	ImageName            string
-	ReplicaCount         int
-	EnvironmentVariables []string
+	ReplicaCount         int      `yaml:"replicaCount"`
+	EnvironmentVariables []string `yaml:"envs"`
 	StackName            string
-	CPULimits            float64
-	CPUReservation       float64
-	MemoryLimits         int64
-	MemoryReservations   int64
+	CPULimits            float64 `yaml:"CPULimits"`
+	CPUReservation       float64 `yaml:"CPUReservation"`
+	MemoryLimits         int64   `yaml:"memoryLimits"`
+	MemoryReservations   int64   `yaml:"memoryReservations"`
 	Containers           []string
+}
+
+// StackSpecs ...
+type StackSpecs map[string]ServiceSpecs
+
+// SaveYML ...
+func (m StackSpecs) SaveYML() []byte {
+	b, e := yaml.Marshal(&m)
+	if e != nil {
+		log.Panic(e)
+	}
+
+	return b
 }
 
 // Manager manages the swarm cluster
@@ -83,15 +99,17 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 
 func (s *Manager) monitorSpecs() {
 	waitTime := 10
-	fmt.Printf("monitoring specs every %d seconds\n", waitTime)
+	log.Printf("monitoring specs every %d seconds\n", waitTime)
 	for {
 		if s.CurrentStackState >= StackStateServicesAreReady || s.CurrentStackState == StackStateMustCompare {
 			err := s.UpdateCurrentSpecs()
 			if err != nil {
-				panic(err)
+				log.Panic(err)
 			}
 			comparision := s.CompareSpecs()
-			fmt.Println("specs comparision is:", comparision)
+			if !comparision {
+				log.Println("specs comparision is:", comparision)
+			}
 			if !comparision {
 				s.UpdateServices()
 			} else {
@@ -123,8 +141,10 @@ func (s *Manager) monitorState() {
 	for {
 		select {
 		case newState := <-s.StackStateCh:
-			fmt.Println(time.Now().UnixNano(), "changed state to:", s.getStateString(newState))
-			s.CurrentStackState = newState
+			if newState != s.CurrentStackState {
+				log.Println("changed state to:", GetStateString(newState))
+				s.CurrentStackState = newState
+			}
 		}
 	}
 }
@@ -190,32 +210,32 @@ func (s *Manager) UpdateServicesSpecs() error {
 func (s *Manager) CompareSpecs() bool {
 	for serviceID := range s.CurrentSpecs {
 		if s.CurrentSpecs[serviceID].ImageName != s.DesiredSpecs[serviceID].ImageName {
-			fmt.Println("CompareSpecs: ImageName")
+			log.Println("CompareSpecs: ImageName")
 			return false
 		}
 		if s.CurrentSpecs[serviceID].ReplicaCount != s.DesiredSpecs[serviceID].ReplicaCount {
-			fmt.Println("CompareSpecs: ReplicaCount")
+			log.Println("CompareSpecs: ReplicaCount")
 			return false
 		}
 		if s.CurrentSpecs[serviceID].CPULimits != s.DesiredSpecs[serviceID].CPULimits {
-			fmt.Println("CompareSpecs: CPULimits")
+			log.Println("CompareSpecs: CPULimits")
 			return false
 		}
 		if s.CurrentSpecs[serviceID].CPUReservation != s.DesiredSpecs[serviceID].CPUReservation {
-			fmt.Println("CompareSpecs: CPUReservation")
+			log.Println("CompareSpecs: CPUReservation")
 			return false
 		}
 		if s.CurrentSpecs[serviceID].MemoryLimits != s.DesiredSpecs[serviceID].MemoryLimits {
-			fmt.Println("CompareSpecs: MemoryLimits")
+			log.Println("CompareSpecs: MemoryLimits")
 			return false
 		}
 		if s.CurrentSpecs[serviceID].MemoryReservations != s.DesiredSpecs[serviceID].MemoryReservations {
-			fmt.Println("CompareSpecs: MemoryReservations")
+			log.Println("CompareSpecs: MemoryReservations")
 			return false
 		}
 
 		if !Equal(s.CurrentSpecs[serviceID].EnvironmentVariables, s.DesiredSpecs[serviceID].EnvironmentVariables) {
-			fmt.Println("CompareSpecs: EnvironmentVariables")
+			log.Println("CompareSpecs: EnvironmentVariables")
 			return false
 		}
 	}
@@ -255,7 +275,7 @@ func (s *Manager) IsServiceReady(serviceID string) bool {
 	if len(s.CurrentSpecs[serviceID].Containers) == s.DesiredSpecs[serviceID].ReplicaCount {
 		return true
 	}
-	fmt.Println(s.CurrentSpecs[serviceID].Name, listOfContainersToString(s.CurrentSpecs[serviceID].Containers), s.DesiredSpecs[serviceID].ReplicaCount)
+	// fmt.Println(s.CurrentSpecs[serviceID].Name, listOfContainersToString(s.CurrentSpecs[serviceID].Containers), s.DesiredSpecs[serviceID].ReplicaCount)
 	return false
 }
 
@@ -265,12 +285,12 @@ func (s *Manager) CheckforServicesReadiness() {
 	flag := true
 	err := s.UpdateServicesSpecs()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	for serviceID := range s.CurrentSpecs {
 		if !s.IsServiceReady(serviceID) {
-			fmt.Println(s.CurrentSpecs[serviceID].Name, "is not ready")
+			// fmt.Println(s.CurrentSpecs[serviceID].Name, "is not ready")
 			flag = false
 			break
 		}
@@ -289,14 +309,15 @@ func (s *Manager) CheckServicedDeployment(numberOfServices int) {
 
 	services, err = s.Client.ServiceList(s.Ctx, types.ServiceListOptions{})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	if len(services) == numberOfServices {
 		s.StackStateCh <- StackStateServicesAreDeployed
 	}
 }
 
-func (s *Manager) getStateString(stateValue int) string {
+// GetStateString ...
+func GetStateString(stateValue int) string {
 	if stateValue == StackStateEmpty {
 		return "StackState Empty"
 	}

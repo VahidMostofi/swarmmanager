@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/VahidMostofi/swarmmanager/internal/resource"
@@ -72,7 +73,7 @@ func (sc *SingleCollector) Configure(values map[string]string) error {
 
 // Start the collector
 func (sc *SingleCollector) Start() error {
-	fmt.Println("Starting SingleCollector...")
+	log.Println("SingleCollector:", "Starting SingleCollector...")
 	// List the containers
 
 	containers, err := sc.Client.ContainerList(sc.Ctx, types.ContainerListOptions{})
@@ -85,11 +86,11 @@ func (sc *SingleCollector) Start() error {
 	sc.Services = make(map[string]string)
 	sc.ResourceStats = make(map[string]*resource.Utilization)
 	sc.ContainerToService = make(map[string]string)
-	fmt.Printf("Found %d containers on host\n", len(containers))
+	log.Printf("SingleCollector: Found %d containers on host\n", len(containers))
 	for _, container := range containers {
 		if container.Labels["com.docker.stack.namespace"] == sc.Stackname {
 			sc.Containers = append(sc.Containers, container)
-			// fmt.Println("monitoing stats for these conta iners:", sc.Containers)
+			// fmt.Println("monitoing stats for these containers:", sc.Containers)
 			serviceID := container.Labels["com.docker.swarm.service.id"]
 			serviceName := container.Labels["com.docker.swarm.service.name"]
 			sc.ServiceToContainers[serviceID] = append(sc.ServiceToContainers[serviceID], container.ID)
@@ -124,7 +125,7 @@ func (sc *SingleCollector) Start() error {
 // Stop collecting stats, aggregate and clean the results
 func (sc *SingleCollector) Stop() error {
 	sc.StatRecordingCancelFunc()
-	fmt.Println("signal to stop!")
+	// fmt.Println("signal to stop!")
 	return nil
 }
 
@@ -177,7 +178,7 @@ func (sc *SingleCollector) getContainerStats(containerID string, errorCh chan er
 	for {
 		select {
 		case <-sc.StatRecordingContext.Done():
-			fmt.Println("got a signal for stop, stopping recording for " + containerID)
+			// fmt.Println("got a signal for stop, stopping recording for " + containerID)
 			stats.Body.Close()
 			return
 		default:

@@ -11,6 +11,8 @@ package main
 // "github.com/montanaflynn/stats"
 
 import (
+	"log"
+
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 )
 
@@ -19,11 +21,11 @@ func main() {
 	// c := collector.GetNewCollector("SingleCollector")
 	// err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 	// err = c.Start()
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 
 	// time.AfterFunc(time.Second*5, func() { c.Stop(); wg.Done() })
@@ -80,7 +82,7 @@ func main() {
 	// m, err = stats.Mean(rt)
 	// fmt.Println("mean response time get book", m)
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 
 	// F2(j)
@@ -97,7 +99,7 @@ func main() {
 	// m.StackStateCh <- swarm.StackStateServicesAreReady
 	// m.FillDesiredSpecsCurrentSpecs()
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 	// time.Sleep(5 * time.Second)
 	// for serviceID, spec := range m.DesiredSpecs {
@@ -113,13 +115,13 @@ func main() {
 
 	// err = m.RemoveStack("tcp://136.159.209.204:2375", "bookstore")
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 
 	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml"
 	// err = m.DeployStackWithDockerCompose(dockerComposePath, "tcp://136.159.209.204:2375", "bookstore", 1)
 	// if err != nil {
-	// 	panic(err)
+	// 	 log.Panic(err)
 	// }
 
 	// wg := sync.WaitGroup{}
@@ -134,28 +136,28 @@ func main() {
 func PrepareLG(l loadgenerator.LoadGenerator, script string) {
 	err := l.Prepare(map[string]string{"script": script})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 }
 
 func StartLG(l loadgenerator.LoadGenerator) {
 	err := l.Start(map[string]string{})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 }
 
 // func StopLG(l loadgenerator.LoadGenerator) {
 // 	err := l.Stop(map[string]string{})
 // 	if err != nil {
-// 		panic(err)
+// 		 log.Panic(err)
 // 	}
 // }
 
 // func FeedbackLG(l loadgenerator.LoadGenerator) {
 // 	f, err := l.GetFeedback(map[string]string{})
 // 	if err != nil {
-// 		panic(err)
+// 		 log.Panic(err)
 // 	}
 // 	for k, _ := range f {
 // 		fmt.Println(k)
@@ -170,7 +172,7 @@ func StartLG(l loadgenerator.LoadGenerator) {
 // 	rt, err = rtc.GetResponseTimes("get_book")
 // 	fmt.Println(stats.Mean(rt))
 // 	if err != nil {
-// 		panic(err)
+// 		 log.Panic(err)
 // 	}
 // }
 

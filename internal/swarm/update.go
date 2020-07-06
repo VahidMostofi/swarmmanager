@@ -1,7 +1,7 @@
 package swarm
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/docker/docker/api/types"
 	dockerswarm "github.com/docker/docker/api/types/swarm"
@@ -15,7 +15,7 @@ func (m *Manager) UpdateServices() {
 		serviceReplicaCount := uint64(m.DesiredSpecs[serviceID].ReplicaCount)
 		onlineService, _, err := m.Client.ServiceInspectWithRaw(m.Ctx, serviceID)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		newSpec := onlineService.Spec
 		newSpec.TaskTemplate.ContainerSpec.Env = m.DesiredSpecs[serviceID].EnvironmentVariables
@@ -25,14 +25,14 @@ func (m *Manager) UpdateServices() {
 		newSpec.TaskTemplate.Resources.Reservations.MemoryBytes = m.DesiredSpecs[serviceID].MemoryReservations
 		newSpec.Mode.Replicated.Replicas = &serviceReplicaCount
 
-		fmt.Println("updating service...", m.DesiredSpecs[serviceID].Name)
+		log.Println("updating service...", m.DesiredSpecs[serviceID].Name)
 		serviceUpdateResponse, err := m.Client.ServiceUpdate(m.Ctx, serviceID, dockerswarm.Version{onlineService.Version.Index}, newSpec, types.ServiceUpdateOptions{})
-		fmt.Println("update done", m.DesiredSpecs[serviceID].Name)
+		log.Println("update done", m.DesiredSpecs[serviceID].Name)
 		if err != nil {
-			panic(err)
+			log.Panic(err)
 		}
 		if len(serviceUpdateResponse.Warnings) > 0 {
-			fmt.Println("updating", m.DesiredSpecs[serviceID].Name, "warnings", serviceUpdateResponse.Warnings)
+			log.Println("updating", m.DesiredSpecs[serviceID].Name, "warnings", serviceUpdateResponse.Warnings)
 		}
 	}
 	m.StackStateCh <- StackStateWaitForServicesToBeDeployed

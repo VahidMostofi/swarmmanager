@@ -5,11 +5,13 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"log"
 )
 
 // RemoveStack ...
 func (s *Manager) RemoveStack() error {
-	fmt.Println("removing stack")
+	log.Println("removing stack")
 	cmd := exec.Command("docker", "-H", s.Host, "stack", "remove", s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -21,13 +23,13 @@ func (s *Manager) RemoveStack() error {
 
 // DeployStackWithDockerCompose ....
 func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt int) error {
-	fmt.Println("deploying stack")
+	log.Println("deploying stack")
 	cmd := exec.Command("docker", "-H", s.Host, "stack", "deploy", "--compose-file", dockerComposePath, s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if (strings.Contains(string(out), "not found") || strings.Contains(string(out), "cannot be used with services.")) && strings.Contains(string(out), "network") && attempt <= 25 {
 			var waitTime int64 = 5
-			fmt.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
+			log.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
 			time.Sleep(time.Duration(waitTime) * time.Second)
 			return s.DeployStackWithDockerCompose(dockerComposePath, attempt+1)
 		}
@@ -51,7 +53,7 @@ func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt
 // FillDesiredSpecsCurrentSpecs ...
 func (s *Manager) FillDesiredSpecsCurrentSpecs() { //TODO update
 	s.UpdateCurrentSpecs()
-	fmt.Println("Filling Desired Specs with Current Specs")
+	log.Println("Filling Desired Specs with Current Specs")
 	for serviceID := range s.CurrentSpecs {
 		// containers := make([]string, len(s.CurrentSpecs[serviceID].Containers))
 		// for i, c := range s.CurrentSpecs[serviceID].Containers {
