@@ -16,7 +16,15 @@ import (
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 	"github.com/montanaflynn/stats"
+
+	"gopkg.in/yaml.v2"
 )
+
+// TimingConfigs ...
+type TimingConfigs struct {
+	IterationDuration                 time.Duration
+	WaitAfterServicesAreReadyDuration time.Duration
+}
 
 // AutoConfigurer ...
 type AutoConfigurer struct {
@@ -26,6 +34,7 @@ type AutoConfigurer struct {
 	ResourceUsageCollector resource.Collector
 	ConfigurerAgent        Configurer
 	SwarmManager           *swarm.Manager
+	TimingConfigs
 }
 
 // GetTheResourceUsageCollector ...
@@ -50,6 +59,7 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ResourceUsageCollector: ruc,
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
+		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 15},
 	}
 	return a
 }
@@ -76,6 +86,8 @@ func (a *AutoConfigurer) Start() {
 		time.Sleep(150 * time.Millisecond)
 	}
 	time.Sleep(15 * time.Second)
+	var start int64
+	var end int64
 	for {
 		for {
 			// fmt.Println(a.SwarmManager.CurrentStackState)
@@ -86,7 +98,7 @@ func (a *AutoConfigurer) Start() {
 			time.Sleep(150 * time.Millisecond)
 		}
 		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "write after the loop")
-		time.Sleep(15 * time.Second)
+		time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
 		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
 		go a.LoadGenerator.Start(make(map[string]string))
 		log.Println("load generator started")
@@ -98,9 +110,9 @@ func (a *AutoConfigurer) Start() {
 		}
 		time.Sleep(2 * time.Second)
 		log.Println("NEW ITERATION")
-		start := time.Now().UnixNano() / 1e3
-		time.Sleep(15 * time.Second)
-		end := time.Now().UnixNano() / 1e3
+		start = time.Now().UnixNano() / 1e3
+		time.Sleep(a.IterationDuration * time.Second)
+		end = time.Now().UnixNano() / 1e3
 		a.LoadGenerator.Stop(make(map[string]string))
 		time.Sleep(2 * time.Second)
 		err = a.ResourceUsageCollector.Stop()
@@ -108,7 +120,7 @@ func (a *AutoConfigurer) Start() {
 			log.Panic(err)
 		}
 		info := a.GatherInfo(int64(start), int64(end))
-		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs)
+		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, []string{"auth", "books", "gateway"})
 		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if err != nil {
 			log.Panic(err)
@@ -120,8 +132,14 @@ func (a *AutoConfigurer) Start() {
 		}
 		time.Sleep(5 * time.Second)
 	}
-	log.Println(a.SwarmManager.DesiredSpecs)
-	b := swarm.StackSpecs(a.SwarmManager.DesiredSpecs).SaveYML()
+	// log.Println(a.SwarmManager.DesiredSpecs)
+	b := a.SwarmManager.SaveYML(a.SwarmManager.DesiredSpecs)
+	log.Println(string(b))
+	info := a.GatherInfo(int64(start), int64(end))
+	b, err = yaml.Marshal(&info)
+	if err != nil {
+		log.Panic(err)
+	}
 	fmt.Println(string(b))
 }
 
@@ -163,29 +181,54 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 				cpuUsages = append(cpuUsages, usage/serviceInfo.NumberOfCores)
 			}
 		}
+		// fmt.Println(serviceName, cpuUsages)
 		v, err := stats.Mean(cpuUsages)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsageMean = v
 
+		v, err = stats.Percentile(cpuUsages, 70)
+		if err != nil {
+			log.Panic(err)
+		}
+		serviceInfo.CPUUsage70Percentile = v
+
+		v, err = stats.Percentile(cpuUsages, 75)
+		if err != nil {
+			log.Panic(err)
+		}
+		serviceInfo.CPUUsage75Percentile = v
+
+		v, err = stats.Percentile(cpuUsages, 80)
+		if err != nil {
+			log.Panic(err)
+		}
+		serviceInfo.CPUUsage80Percentile = v
+
+		v, err = stats.Percentile(cpuUsages, 85)
+		if err != nil {
+			log.Panic(err)
+		}
+		serviceInfo.CPUUsage85Percentile = v
+
 		v, err = stats.Percentile(cpuUsages, 90)
 		if err != nil {
 			log.Panic(err)
 		}
-		serviceInfo.CPUUsage95Percentile = v
+		serviceInfo.CPUUsage90Percentile = v
 
 		v, err = stats.Percentile(cpuUsages, 95)
 		if err != nil {
 			log.Panic(err)
 		}
-		serviceInfo.CPUUsage99Percentile = v
+		serviceInfo.CPUUsage95Percentile = v
 
 		v, err = stats.Percentile(cpuUsages, 99)
 		if err != nil {
 			log.Panic(err)
 		}
-		serviceInfo.CPUUsage90Percentile = v
+		serviceInfo.CPUUsage99Percentile = v
 
 		// Request Count
 		if serviceName == "books" {

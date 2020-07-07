@@ -30,7 +30,7 @@ func GetTheLoadGenerator() loadgenerator.LoadGenerator {
 	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
 	//TODO: what about the duration of generated load
 	//TODO: this is hard coded
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 8, 3600, 0.2, 0.8, 0, 0.1)
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 14, 3600, 0.2, 0.8, 0, 0.1)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
@@ -49,7 +49,24 @@ func GetJaegerCollector() *jaeger.JaegerAggregator {
 // GetAConfigurer ...
 func GetAConfigurer() autoconfigure.Configurer {
 	return &autoconfigure.CPUUsageIncrease{
-		Threshold: 70,
+		Threshold:       70,
+		ValueToConsider: "CPUUsage90Percentile",
+	}
+}
+
+// GetAnotherConfigurer ...
+func GetAnotherConfigurer() autoconfigure.Configurer {
+	return &autoconfigure.ResponseTimeIncrease{
+		Agreements: []autoconfigure.Agreement{
+			{
+				PropertyToConsider: "ResponseTimes95Percentile",
+				Value:              200,
+			},
+			{
+				PropertyToConsider: "ResponseTimes99Percentile",
+				Value:              400,
+			},
+		},
 	}
 }
 
@@ -68,6 +85,7 @@ func main() {
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
 	var lg = GetTheLoadGenerator()
 	var c = GetAConfigurer()
+	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m)
 	a.Start()

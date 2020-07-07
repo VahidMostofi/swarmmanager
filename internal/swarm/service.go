@@ -16,31 +16,21 @@ import (
 
 // ServiceSpecs ...
 type ServiceSpecs struct {
-	ID                   string
-	Name                 string `yaml:"name"`
-	ImageName            string
+	ID                   string   `yaml:"-"`
+	Name                 string   `yaml:"-"`
+	ImageName            string   `yaml:"-"`
 	ReplicaCount         int      `yaml:"replicaCount"`
 	EnvironmentVariables []string `yaml:"envs"`
-	StackName            string
-	CPULimits            float64 `yaml:"CPULimits"`
-	CPUReservation       float64 `yaml:"CPUReservation"`
-	MemoryLimits         int64   `yaml:"memoryLimits"`
-	MemoryReservations   int64   `yaml:"memoryReservations"`
-	Containers           []string
+	StackName            string   `yaml:"-"`
+	CPULimits            float64  `yaml:"CPULimits"`
+	CPUReservation       float64  `yaml:"CPUReservation"`
+	MemoryLimits         int64    `yaml:"-"`
+	MemoryReservations   int64    `yaml:"-"`
+	Containers           []string `yaml:"-"`
 }
 
 // StackSpecs ...
 type StackSpecs map[string]ServiceSpecs
-
-// SaveYML ...
-func (m StackSpecs) SaveYML() []byte {
-	b, e := yaml.Marshal(&m)
-	if e != nil {
-		log.Panic(e)
-	}
-
-	return b
-}
 
 // Manager manages the swarm cluster
 type Manager struct {
@@ -53,6 +43,30 @@ type Manager struct {
 	CurrentSpecs      map[string]ServiceSpecs
 	StackStateCh      chan int
 	CurrentStackState int
+	ServicesToManage  []string
+}
+
+// SaveYML ...
+func (s *Manager) SaveYML(m StackSpecs) []byte {
+	m2 := make(map[string]ServiceSpecs)
+	for _, value := range m {
+		flag := false
+		for _, str := range s.ServicesToManage {
+			if str == value.Name {
+				flag = true
+				break
+			}
+		}
+		if flag {
+			m2[value.Name] = value
+		}
+	}
+	b, e := yaml.Marshal(&m2)
+	if e != nil {
+		log.Panic(e)
+	}
+
+	return b
 }
 
 // StackStates ...
@@ -81,14 +95,15 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	m := &Manager{
-		Client:        cli,
-		Host:          values["host"],
-		Ctx:           ctx,
-		CtxCancelFunc: cancelFunc,
-		StackName:     values["stackname"],
-		CurrentSpecs:  make(map[string]ServiceSpecs),
-		DesiredSpecs:  make(map[string]ServiceSpecs),
-		StackStateCh:  make(chan int),
+		Client:           cli,
+		Host:             values["host"],
+		Ctx:              ctx,
+		CtxCancelFunc:    cancelFunc,
+		StackName:        values["stackname"],
+		CurrentSpecs:     make(map[string]ServiceSpecs),
+		DesiredSpecs:     make(map[string]ServiceSpecs),
+		StackStateCh:     make(chan int),
+		ServicesToManage: []string{"auth", "gateway", "books"},
 	}
 
 	go m.monitorState()
