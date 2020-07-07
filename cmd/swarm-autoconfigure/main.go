@@ -2,7 +2,11 @@ package main
 
 //TODO I NEED TO REstart every single container
 import (
+	"fmt"
 	"log"
+	"os"
+
+	"flag"
 
 	"github.com/VahidMostofi/swarmmanager/internal/autoconfigure"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
@@ -30,7 +34,7 @@ func GetTheLoadGenerator() loadgenerator.LoadGenerator {
 	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
 	//TODO: what about the duration of generated load
 	//TODO: this is hard coded
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 14, 3600, 0.2, 0.8, 0, 0.1)
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 15, 3600, 0.2, 0.8, 0, 0.1)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
@@ -46,11 +50,30 @@ func GetJaegerCollector() *jaeger.JaegerAggregator {
 	return j
 }
 
-// GetAConfigurer ...
-func GetAConfigurer() autoconfigure.Configurer {
+// GetCPUIncreaseConfigurer ...
+func GetCPUIncreaseConfigurer() autoconfigure.Configurer {
+	cpuOnlyCmd := flag.NewFlagSet("CPUUsageIncrease", flag.ExitOnError)
+	cpuOnlyValueName := cpuOnlyCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	cpuOnlyThreshold := cpuOnlyCmd.Float64("threshold", 0, "what is the threshold")
+	cpuOnlyCmd.Parse(os.Args[2:])
+	cpuOnlyCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[1])
+		cpuOnlyCmd.PrintDefaults()
+	}
+
+	if *cpuOnlyValueName == "" {
+		cpuOnlyCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *cpuOnlyThreshold == 0 {
+		cpuOnlyCmd.Usage()
+		os.Exit(1)
+	}
+	fmt.Println("Configuring CPUUsageIncreaseConfigurer with Threshold:", *cpuOnlyThreshold, "and property of", *cpuOnlyValueName)
 	return &autoconfigure.CPUUsageIncrease{
-		Threshold:       70,
-		ValueToConsider: "CPUUsage90Percentile",
+		Threshold:       *cpuOnlyThreshold,
+		ValueToConsider: *cpuOnlyValueName,
 	}
 }
 
@@ -80,11 +103,25 @@ func GetSwarmManager() *swarm.Manager {
 }
 
 func main() {
+
 	var ruc = GetTheResourceUsageCollector()
 	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
 	var lg = GetTheLoadGenerator()
-	var c = GetAConfigurer()
+
+	if len(os.Args) < 2 {
+		log.Println("expected 'CPUUsageIncrease' or '' subcommands")
+		os.Exit(1)
+	}
+
+	var c autoconfigure.Configurer
+	switch os.Args[1] {
+	case "CPUUsageIncrease":
+		c = GetCPUIncreaseConfigurer()
+	default:
+		log.Println("expected 'CPUUsageIncrease' or '' subcommands")
+		os.Exit(1)
+	}
 	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m)
