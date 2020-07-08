@@ -11,7 +11,6 @@ import (
 	"github.com/docker/docker/api/types"
 	dockerswarm "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-	"gopkg.in/yaml.v2"
 )
 
 // ServiceSpecs ...
@@ -46,8 +45,8 @@ type Manager struct {
 	ServicesToManage  []string
 }
 
-// SaveYML ...
-func (s *Manager) SaveYML(m StackSpecs) []byte {
+// ToHumanReadable ...
+func (s *Manager) ToHumanReadable(m map[string]ServiceSpecs) map[string]ServiceSpecs {
 	m2 := make(map[string]ServiceSpecs)
 	for _, value := range m {
 		flag := false
@@ -61,12 +60,7 @@ func (s *Manager) SaveYML(m StackSpecs) []byte {
 			m2[value.Name] = value
 		}
 	}
-	b, e := yaml.Marshal(&m2)
-	if e != nil {
-		log.Panic(e)
-	}
-
-	return b
+	return m2
 }
 
 // StackStates ...

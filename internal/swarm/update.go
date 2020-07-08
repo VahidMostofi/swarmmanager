@@ -24,6 +24,8 @@ func (m *Manager) UpdateServices() {
 		newSpec.TaskTemplate.Resources.Reservations.NanoCPUs = int64(m.DesiredSpecs[serviceID].CPUReservation * 1e9)
 		newSpec.TaskTemplate.Resources.Reservations.MemoryBytes = m.DesiredSpecs[serviceID].MemoryReservations
 		newSpec.Mode.Replicated.Replicas = &serviceReplicaCount
+		newSpec.TaskTemplate.ForceUpdate++
+		log.Println("forcing update on", m.DesiredSpecs[serviceID].Name)
 
 		log.Println("updating service...", m.DesiredSpecs[serviceID].Name)
 		serviceUpdateResponse, err := m.Client.ServiceUpdate(m.Ctx, serviceID, dockerswarm.Version{onlineService.Version.Index}, newSpec, types.ServiceUpdateOptions{})

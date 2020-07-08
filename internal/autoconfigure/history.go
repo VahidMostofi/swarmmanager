@@ -1,5 +1,19 @@
 package autoconfigure
 
+import "github.com/VahidMostofi/swarmmanager/internal/swarm"
+
+// StackHistory ...
+type StackHistory struct {
+	Name    string        `yaml:"name"`
+	History []Information `yaml:"configs"`
+}
+
+// Information ...
+type Information struct {
+	Infomations map[string]ServiceInfo        `yaml:"info"`
+	Specs       map[string]swarm.ServiceSpecs `yaml:"specs"`
+}
+
 // ServiceInfo ...
 type ServiceInfo struct {
 	Start int64 `yaml:"start,omitempty"` // miliseconds

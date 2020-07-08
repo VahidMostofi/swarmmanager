@@ -9,12 +9,19 @@ import (
 	"log"
 )
 
+// TODO add attempts to this too
 // RemoveStack ...
-func (s *Manager) RemoveStack() error {
+func (s *Manager) RemoveStack(attempt int) error {
 	log.Println("removing stack")
 	cmd := exec.Command("docker", "-H", s.Host, "stack", "remove", s.StackName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		if attempt <= 5 {
+			var waitTime int64 = 5
+			log.Printf("removing stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
+			time.Sleep(time.Duration(waitTime) * time.Second)
+			return s.RemoveStack(attempt + 1)
+		}
 		return fmt.Errorf("error while removing stack with error: %w; %s", err, string(out))
 	}
 	s.StackStateCh <- StackStateEmpty

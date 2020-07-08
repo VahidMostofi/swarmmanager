@@ -4,11 +4,14 @@ package autoconfigure
 //TODO check validity of a configuration
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"time"
 
 	"log"
 
+	"github.com/VahidMostofi/swarmmanager"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
@@ -64,11 +67,26 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 	return a
 }
 
+// Validate ...
+func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
+	var sum float64
+	for serviceID := range config {
+		sum += (float64(config[serviceID].ReplicaCount) * config[serviceID].CPULimits)
+	}
+	log.Println("there are", sum, "cores required!")
+	return sum, sum <= 24
+}
+
 // Start ...
-func (a *AutoConfigurer) Start() {
+func (a *AutoConfigurer) Start(name string) {
+
+	stackHistory := &StackHistory{
+		Name:    name,
+		History: make([]Information, 0),
+	}
 
 	// Remove the current Stack
-	err := a.SwarmManager.RemoveStack()
+	err := a.SwarmManager.RemoveStack(1)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -88,7 +106,9 @@ func (a *AutoConfigurer) Start() {
 	time.Sleep(15 * time.Second)
 	var start int64
 	var end int64
+	var iteration int
 	for {
+		iteration++
 		for {
 			// fmt.Println(a.SwarmManager.CurrentStackState)
 			if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
@@ -109,21 +129,30 @@ func (a *AutoConfigurer) Start() {
 			log.Panic(err)
 		}
 		time.Sleep(2 * time.Second)
-		log.Println("NEW ITERATION")
+		log.Printf("ITERATION %d\n", iteration)
 		start = time.Now().UnixNano() / 1e3
 		time.Sleep(a.IterationDuration * time.Second)
 		end = time.Now().UnixNano() / 1e3
 		a.LoadGenerator.Stop(make(map[string]string))
-		time.Sleep(2 * time.Second)
+		time.Sleep(30 * time.Second)
 		err = a.ResourceUsageCollector.Stop()
 		if err != nil {
 			log.Panic(err)
 		}
 		info := a.GatherInfo(int64(start), int64(end))
+		historyItem := Information{
+			Infomations: info,
+			Specs:       a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
+		}
+		stackHistory.History = append(stackHistory.History, historyItem)
 		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, []string{"auth", "books", "gateway"})
 		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if err != nil {
 			log.Panic(err)
+		}
+		if _, ok := Validate(newSpecs); !ok {
+			log.Println("new config is not valid, breaking out of loop")
+			break
 		}
 		a.SwarmManager.DesiredSpecs = newSpecs
 		if !isChanged {
@@ -131,16 +160,19 @@ func (a *AutoConfigurer) Start() {
 			break
 		}
 		time.Sleep(5 * time.Second)
+		saveHistory(stackHistory)
+		fmt.Println("partial results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
 	}
-	// log.Println(a.SwarmManager.DesiredSpecs)
-	b := a.SwarmManager.SaveYML(a.SwarmManager.DesiredSpecs)
-	log.Println(string(b))
-	info := a.GatherInfo(int64(start), int64(end))
-	b, err = yaml.Marshal(&info)
+	saveHistory(stackHistory)
+	fmt.Println("final results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
+}
+
+func saveHistory(stackHistory *StackHistory) {
+	b, err := yaml.Marshal(stackHistory)
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Println(string(b))
+	ioutil.WriteFile(swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml", b, os.FileMode(int(0777)))
 }
 
 func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
@@ -205,31 +237,31 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsage80Percentile = v
-
+		//--------------------------------------------------
 		v, err = stats.Percentile(cpuUsages, 85)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsage85Percentile = v
-
+		//--------------------------------------------------
 		v, err = stats.Percentile(cpuUsages, 90)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsage90Percentile = v
-
+		//--------------------------------------------------
 		v, err = stats.Percentile(cpuUsages, 95)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsage95Percentile = v
-
+		//--------------------------------------------------
 		v, err = stats.Percentile(cpuUsages, 99)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.CPUUsage99Percentile = v
-
+		//--------------------------------------------------
 		// Request Count
 		if serviceName == "books" {
 			c, e := a.RequestCountCollector.GetRequestCount("books_edit_book")
@@ -307,19 +339,19 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 			log.Panic(err)
 		}
 		serviceInfo.ResponseTimesMean = m
-
+		//--------------------------------------------------
 		m, err = stats.Percentile(responseTimes, 90)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.ResponseTimes90Percentile = m
-
+		//--------------------------------------------------
 		m, err = stats.Percentile(responseTimes, 95)
 		if err != nil {
 			log.Panic(err)
 		}
 		serviceInfo.ResponseTimes95Percentile = m
-
+		//--------------------------------------------------
 		m, err = stats.Percentile(responseTimes, 99)
 		if err != nil {
 			log.Panic(err)

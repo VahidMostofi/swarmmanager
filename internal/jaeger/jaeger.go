@@ -31,7 +31,6 @@ func NewJaegerAggregator(host string, keys []string) *JaegerAggregator {
 func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	url := fmt.Sprintf("%s/api/traces?end=%d&limit=100000&service=%s&start=%d", j.Host, end, service, start)
 	method := "GET"
-
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 
@@ -46,6 +45,10 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 		Data []*trace `json:"data"`
 	}{}
 	json.Unmarshal(body, &data)
+
+	for _, key := range j.Keys {
+		j.Spans[key] = make([]float64, 0)
+	}
 
 	for _, trace := range data.Data {
 		for _, span := range trace.Spans {

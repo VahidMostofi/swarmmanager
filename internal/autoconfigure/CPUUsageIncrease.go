@@ -47,7 +47,7 @@ func (c *CPUUsageIncrease) Configure(values map[string]ServiceInfo, currentState
 			return nil, false, fmt.Errorf("the PropertyToConsider is unknown: %s", c.ValueToConsider)
 		}
 		log.Println("Configurer Agent:", currentState[service].Name, c.ValueToConsider, "is", whatToCompareTo, "it should be less than or equal to", c.Threshold)
-		if values[currentState[service].Name].CPUUsage90Percentile > c.Threshold {
+		if whatToCompareTo > c.Threshold {
 			log.Println("Configurer Agent:", currentState[service].Name, "change replica count from", currentState[service].ReplicaCount, "to", currentState[service].ReplicaCount+1)
 			temp := currentState[service]
 			temp.ReplicaCount++
