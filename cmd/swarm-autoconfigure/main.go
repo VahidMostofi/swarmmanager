@@ -79,17 +79,32 @@ func GetCPUIncreaseConfigurer() autoconfigure.Configurer {
 	}
 }
 
-// GetAnotherConfigurer ...
-func GetAnotherConfigurer() autoconfigure.Configurer {
-	return &autoconfigure.ResponseTimeIncrease{
+// GetResponseTimeSimpleIncreaseConfigurer ...
+func GetResponseTimeSimpleIncreaseConfigurer() autoconfigure.Configurer {
+	rtsiCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
+	rtsiValueName := rtsiCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	rtsiThreshold := rtsiCmd.Float64("value", 0, "what is the threshold")
+	rtsiCmd.Parse(os.Args[beforeConfigArgCount:])
+	rtsiCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[beforeConfigArgCount-1])
+		rtsiCmd.PrintDefaults()
+	}
+
+	if *rtsiValueName == "" {
+		rtsiCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *rtsiThreshold == 0 {
+		rtsiCmd.Usage()
+		os.Exit(1)
+	}
+	log.Println("Configuring ResponseTimeSimpleIncrease with Value:", *rtsiThreshold, "and property of", *rtsiValueName)
+	return &autoconfigure.ResponseTimeSimpleIncrease{
 		Agreements: []autoconfigure.Agreement{
 			{
-				PropertyToConsider: "ResponseTimes95Percentile",
-				Value:              200,
-			},
-			{
-				PropertyToConsider: "ResponseTimes99Percentile",
-				Value:              400,
+				PropertyToConsider: *rtsiValueName,
+				Value:              *rtsiThreshold,
 			},
 		},
 	}
@@ -97,7 +112,7 @@ func GetAnotherConfigurer() autoconfigure.Configurer {
 
 // GetSwarmManager ...
 func GetSwarmManager() *swarm.Manager {
-	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375"})
+	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375", "services": "auth,gateway,books"})
 	if err != nil {
 		log.Panic(err)
 	}
@@ -112,7 +127,7 @@ func main() {
 	var lg = GetTheLoadGenerator()
 
 	if len(os.Args) < beforeConfigArgCount {
-		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or '' subcommands")
+		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' subcommands")
 		os.Exit(1)
 	}
 
@@ -120,8 +135,10 @@ func main() {
 	switch os.Args[beforeConfigArgCount-1] {
 	case "CPUUsageIncrease":
 		c = GetCPUIncreaseConfigurer()
+	case "ResponseTimeSimpleIncrease":
+		c = GetResponseTimeSimpleIncreaseConfigurer()
 	default:
-		log.Println("expected 'CPUUsageIncrease' or '' subcommands")
+		log.Println("expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' subcommands")
 		os.Exit(1)
 	}
 	// var c = GetAnotherConfigurer()

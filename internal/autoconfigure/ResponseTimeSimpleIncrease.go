@@ -13,14 +13,20 @@ type Agreement struct {
 	Value              float64
 }
 
-// ResponseTimeIncrease ...
-type ResponseTimeIncrease struct {
+// ResponseTimeSimpleIncrease ...
+type ResponseTimeSimpleIncrease struct {
 	Agreements []Agreement
 }
 
 // Configure ...
-func (rti *ResponseTimeIncrease) Configure(values map[string]ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
+
+	initialReplicaCounts := make(map[string]int)
+	for serviceID := range currentState {
+		initialReplicaCounts[serviceID] = currentState[serviceID].ReplicaCount
+	}
+
 	for service := range currentState {
 		doMonitor := false
 		for _, srv := range servicesToMonitor {
@@ -48,7 +54,7 @@ func (rti *ResponseTimeIncrease) Configure(values map[string]ServiceInfo, curren
 			} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
 				whatToCompareTo = values[currentState[service].Name].ResponseTimes99Percentile
 			} else {
-				return nil, false, fmt.Errorf("the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
+				return nil, false, fmt.Errorf("ResponseTimeSimpleIncrease: the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
 			}
 			log.Println("Configurer Agent:", currentState[service].Name, ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
 			if ag.Value < whatToCompareTo {
@@ -75,5 +81,15 @@ func (rti *ResponseTimeIncrease) Configure(values map[string]ServiceInfo, curren
 		}
 
 	}
+
+	for serviceID := range currentState {
+		if currentState[serviceID].ReplicaCount-initialReplicaCounts[serviceID] > 1 {
+			log.Println("Configurer Agent:", currentState[serviceID].Name, "replica count has increased", currentState[serviceID].ReplicaCount-initialReplicaCounts[serviceID], "changing the increase to 1")
+			temp := currentState[serviceID]
+			temp.ReplicaCount = initialReplicaCounts[serviceID] + 1
+			currentState[serviceID] = temp
+		}
+	}
+
 	return currentState, isChanged, nil
 }

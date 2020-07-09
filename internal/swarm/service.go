@@ -75,6 +75,7 @@ const (
 )
 
 // GetNewSwarmManager is constructor
+// required fields: host, stackname, services: one string with comma separated services' names
 func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 	defaultHeaders := map[string]string{"User-Agent": "engine-api-cli-1.0"}
 	cli, err := client.NewClient(values["host"], "", nil, defaultHeaders)
@@ -86,6 +87,15 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 		return nil, fmt.Errorf("no stackname is provided in the values map")
 	}
 
+	if _, ok := values["services"]; !ok {
+		return nil, fmt.Errorf("no 'services' field is provided in the value map")
+	}
+
+	servicesToMonitor := strings.Split(values["services"], ",")
+	for i, s := range servicesToMonitor {
+		servicesToMonitor[i] = strings.Trim(s, " ")
+	}
+	log.Println("Services to monitor:", servicesToMonitor)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	m := &Manager{
@@ -97,7 +107,7 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 		CurrentSpecs:     make(map[string]ServiceSpecs),
 		DesiredSpecs:     make(map[string]ServiceSpecs),
 		StackStateCh:     make(chan int),
-		ServicesToManage: []string{"auth", "gateway", "books"},
+		ServicesToManage: servicesToMonitor,
 	}
 
 	go m.monitorState()

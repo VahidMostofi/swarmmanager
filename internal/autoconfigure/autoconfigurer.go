@@ -62,7 +62,7 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ResourceUsageCollector: ruc,
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
-		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 15},
+		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 10},
 	}
 	return a
 }
@@ -122,7 +122,7 @@ func (a *AutoConfigurer) Start(name string) {
 		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
 		go a.LoadGenerator.Start(make(map[string]string))
 		log.Println("load generator started")
-		time.Sleep(15 * time.Second)
+		time.Sleep(10 * time.Second)
 		a.ResourceUsageCollector = GetTheResourceUsageCollector()
 		err := a.ResourceUsageCollector.Start()
 		if err != nil {
@@ -145,7 +145,7 @@ func (a *AutoConfigurer) Start(name string) {
 			Specs:       a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
 		}
 		stackHistory.History = append(stackHistory.History, historyItem)
-		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, []string{"auth", "books", "gateway"})
+		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
 		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if err != nil {
 			log.Panic(err)
