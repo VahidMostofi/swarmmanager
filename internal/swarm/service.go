@@ -215,36 +215,46 @@ func (s *Manager) UpdateServicesSpecs() error {
 	return nil
 }
 
+// comapeServiceSpecs ... returns true if they are equal
+func (s *Manager) comapeServiceSpecs(serviceID string) (bool, []string) {
+	changes := []string{}
+	if s.CurrentSpecs[serviceID].ImageName != s.DesiredSpecs[serviceID].ImageName {
+		log.Println("CompareSpecs: ImageName is changed")
+		changes = append(changes, "ImageName")
+	}
+	if s.CurrentSpecs[serviceID].ReplicaCount != s.DesiredSpecs[serviceID].ReplicaCount {
+		log.Println("CompareSpecs: ReplicaCount is changed")
+		changes = append(changes, "ReplicaCount")
+	}
+	if s.CurrentSpecs[serviceID].CPULimits != s.DesiredSpecs[serviceID].CPULimits {
+		log.Println("CompareSpecs: CPULimits is changed")
+		changes = append(changes, "CPULimits")
+	}
+	if s.CurrentSpecs[serviceID].CPUReservation != s.DesiredSpecs[serviceID].CPUReservation {
+		log.Println("CompareSpecs: CPUReservation is changed")
+		changes = append(changes, "CPUReservation")
+	}
+	if s.CurrentSpecs[serviceID].MemoryLimits != s.DesiredSpecs[serviceID].MemoryLimits {
+		log.Println("CompareSpecs: MemoryLimits is changed")
+		changes = append(changes, "MemoryLimits")
+	}
+	if s.CurrentSpecs[serviceID].MemoryReservations != s.DesiredSpecs[serviceID].MemoryReservations {
+		log.Println("CompareSpecs: MemoryReservations is changed")
+		changes = append(changes, "MemoryReservations")
+	}
+
+	if !Equal(s.CurrentSpecs[serviceID].EnvironmentVariables, s.DesiredSpecs[serviceID].EnvironmentVariables) {
+		log.Println("CompareSpecs: EnvironmentVariables is changed")
+		changes = append(changes, "EnvironmentVariables")
+	}
+	return len(changes) == 0, changes
+}
+
 // CompareSpecs ...
 func (s *Manager) CompareSpecs() bool {
 	for serviceID := range s.CurrentSpecs {
-		if s.CurrentSpecs[serviceID].ImageName != s.DesiredSpecs[serviceID].ImageName {
-			log.Println("CompareSpecs: ImageName")
-			return false
-		}
-		if s.CurrentSpecs[serviceID].ReplicaCount != s.DesiredSpecs[serviceID].ReplicaCount {
-			log.Println("CompareSpecs: ReplicaCount")
-			return false
-		}
-		if s.CurrentSpecs[serviceID].CPULimits != s.DesiredSpecs[serviceID].CPULimits {
-			log.Println("CompareSpecs: CPULimits")
-			return false
-		}
-		if s.CurrentSpecs[serviceID].CPUReservation != s.DesiredSpecs[serviceID].CPUReservation {
-			log.Println("CompareSpecs: CPUReservation")
-			return false
-		}
-		if s.CurrentSpecs[serviceID].MemoryLimits != s.DesiredSpecs[serviceID].MemoryLimits {
-			log.Println("CompareSpecs: MemoryLimits")
-			return false
-		}
-		if s.CurrentSpecs[serviceID].MemoryReservations != s.DesiredSpecs[serviceID].MemoryReservations {
-			log.Println("CompareSpecs: MemoryReservations")
-			return false
-		}
-
-		if !Equal(s.CurrentSpecs[serviceID].EnvironmentVariables, s.DesiredSpecs[serviceID].EnvironmentVariables) {
-			log.Println("CompareSpecs: EnvironmentVariables")
+		flag, _ := s.comapeServiceSpecs(serviceID)
+		if !flag {
 			return false
 		}
 	}

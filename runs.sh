@@ -1,10 +1,10 @@
 #!/bin/bash
 # CPUUsage95Percentile
-# go run cmd/swarm-autoconfigure/main.go cpu95_50 CPUUsageIncrease -property CPUUsage95Percentile -threshold 50
-# go run cmd/swarm-autoconfigure/main.go cpu95_60 CPUUsageIncrease -property CPUUsage95Percentile -threshold 60
-# go run cmd/swarm-autoconfigure/main.go cpu95_70 CPUUsageIncrease -property CPUUsage95Percentile -threshold 70
-# go run cmd/swarm-autoconfigure/main.go cpu95_80 CPUUsageIncrease -property CPUUsage95Percentile -threshold 80
-# go run cmd/swarm-autoconfigure/main.go cpu95_90 CPUUsageIncrease -property CPUUsage95Percentile -threshold 90
+go run cmd/swarm-autoconfigure/main.go cpu95_50 CPUUsageIncrease -property CPUUsage95Percentile -threshold 50
+go run cmd/swarm-autoconfigure/main.go cpu95_60 CPUUsageIncrease -property CPUUsage95Percentile -threshold 60
+go run cmd/swarm-autoconfigure/main.go cpu95_70 CPUUsageIncrease -property CPUUsage95Percentile -threshold 70
+go run cmd/swarm-autoconfigure/main.go cpu95_80 CPUUsageIncrease -property CPUUsage95Percentile -threshold 80
+go run cmd/swarm-autoconfigure/main.go cpu95_90 CPUUsageIncrease -property CPUUsage95Percentile -threshold 90
 
 # CPUUsage90Percentile
 go run cmd/swarm-autoconfigure/main.go cpu90_50 CPUUsageIncrease -property CPUUsage90Percentile -threshold 50

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -51,10 +52,23 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	}
 
 	for _, trace := range data.Data {
+		var operationName string
+		var duration float64
 		for _, span := range trace.Spans {
 			if j.isSpanKey(span) {
-				j.Spans[span.OperationName] = append(j.Spans[span.OperationName], span.Duration/1e3)
+				operationName = span.OperationName
 			}
+			if len(span.References) == 0 {
+				duration = span.Duration / 1e3
+			}
+		}
+		if len(trace.Spans) != 8 {
+			log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
+		}
+		if operationName == "" || duration == 0 {
+			log.Println("warning", "len(trace.Spans) is", len(trace.Spans), "operationName:", operationName, "duration", duration)
+		} else {
+			j.Spans[operationName] = append(j.Spans[operationName], duration)
 		}
 	}
 }
@@ -94,10 +108,11 @@ type trace struct {
 
 // Span struct contains information about each span
 type span struct {
-	StartTime     float64 `json:"startTime"`
-	Duration      float64 `json:"duration"`
-	OperationName string  `json:"operationName"`
-	SpanID        string  `json:"spanID"`
-	TraceID       string  `json:"traceID"`
-	IsRoot        bool    `json:"-"`
+	StartTime     float64       `json:"startTime"`
+	Duration      float64       `json:"duration"`
+	OperationName string        `json:"operationName"`
+	SpanID        string        `json:"spanID"`
+	TraceID       string        `json:"traceID"`
+	IsRoot        bool          `json:"-"`
+	References    []interface{} `json:"references"`
 }
