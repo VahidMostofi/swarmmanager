@@ -1,3 +1,3 @@
 ```
-go run cmd/swarm-autoconfigure/main.go CPUUsageIncrease -property CPUUsage90Percentile -threshold 90
+go run cmd/swarm-autoconfigure/main.go <NAME> CPUUsageIncrease -property CPUUsage90Percentile -threshold 90
 ```
