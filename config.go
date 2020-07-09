@@ -2,9 +2,12 @@ package swarmmanager
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -12,6 +15,7 @@ import (
 // config ...
 type config struct {
 	ResultsDirectoryPath string `yaml:"resultsPath"`
+	LogDirectory         string `yaml:"logDirectory"`
 }
 
 var c *config
@@ -28,7 +32,7 @@ func (c *config) check() {
 	if c.ResultsDirectoryPath[len(c.ResultsDirectoryPath)-1] != '/' {
 		c.ResultsDirectoryPath += "/"
 	}
-	fmt.Println("Config: ResultPath is", c.ResultsDirectoryPath)
+	log.Println("Config: ResultPath is", c.ResultsDirectoryPath)
 }
 
 // GetConfig ...
@@ -43,6 +47,12 @@ func GetConfig() *config {
 		if e != nil {
 			panic(e)
 		}
+		logFile, err := os.OpenFile(c.LogDirectory+"/"+time.Now().Local().Format(time.RFC3339)+".log", os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			panic(err)
+		}
+		mw := io.MultiWriter(os.Stdout, logFile)
+		log.SetOutput(mw)
 		c.check()
 	}
 	return c

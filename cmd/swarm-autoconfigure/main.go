@@ -72,7 +72,7 @@ func GetCPUIncreaseConfigurer() autoconfigure.Configurer {
 		cpuOnlyCmd.Usage()
 		os.Exit(1)
 	}
-	fmt.Println("Configuring CPUUsageIncreaseConfigurer with Threshold:", *cpuOnlyThreshold, "and property of", *cpuOnlyValueName)
+	log.Println("Configuring CPUUsageIncreaseConfigurer with Threshold:", *cpuOnlyThreshold, "and property of", *cpuOnlyValueName)
 	return &autoconfigure.CPUUsageIncrease{
 		Threshold:       *cpuOnlyThreshold,
 		ValueToConsider: *cpuOnlyValueName,
@@ -127,6 +127,6 @@ func main() {
 	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m)
-	fmt.Println("name of the test is:", os.Args[beforeConfigArgCount-2])
+	log.Println("name of the test is:", os.Args[beforeConfigArgCount-2])
 	a.Start(os.Args[beforeConfigArgCount-2])
 }
