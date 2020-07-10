@@ -127,7 +127,7 @@ func main() {
 	var lg = GetTheLoadGenerator()
 
 	if len(os.Args) < beforeConfigArgCount {
-		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' subcommands")
+		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands")
 		os.Exit(1)
 	}
 
@@ -137,8 +137,12 @@ func main() {
 		c = GetCPUIncreaseConfigurer()
 	case "ResponseTimeSimpleIncrease":
 		c = GetResponseTimeSimpleIncreaseConfigurer()
+	case "PredefinedSearch":
+		c = autoconfigure.GetNewPredefinedSearcher()
+	case "Single":
+		c = &autoconfigure.SingleRun{}
 	default:
-		log.Println("expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' subcommands")
+		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands")
 		os.Exit(1)
 	}
 	// var c = GetAnotherConfigurer()
