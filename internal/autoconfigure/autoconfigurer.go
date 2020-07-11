@@ -31,6 +31,7 @@ type TimingConfigs struct {
 
 // AutoConfigurer ...
 type AutoConfigurer struct {
+	Workload               interface{}
 	LoadGenerator          loadgenerator.LoadGenerator
 	ResponseTimeCollector  workload.ResponseTimeCollector
 	RequestCountCollector  workload.RequestCountCollector
@@ -54,7 +55,7 @@ func GetTheResourceUsageCollector() resource.Collector {
 }
 
 // NewAutoConfigurer ...
-func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c Configurer, m *swarm.Manager) *AutoConfigurer {
+func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c Configurer, m *swarm.Manager, workload interface{}) *AutoConfigurer {
 	a := &AutoConfigurer{
 		LoadGenerator:          lg,
 		ResponseTimeCollector:  rtc,
@@ -63,6 +64,7 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
 		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 10},
+		Workload:               workload,
 	}
 	return a
 }
@@ -81,8 +83,9 @@ func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
 func (a *AutoConfigurer) Start(name string) {
 
 	stackHistory := &StackHistory{
-		Name:    name,
-		History: make([]Information, 0),
+		Name:     name,
+		Workload: a.Workload,
+		History:  make([]Information, 0),
 	}
 
 	// Remove the current Stack

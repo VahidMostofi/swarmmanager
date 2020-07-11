@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"flag"
 
@@ -16,7 +18,7 @@ import (
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 )
 
-const beforeConfigArgCount = 3
+const beforeConfigArgCount = 4
 
 // GetTheResourceUsageCollector ...
 func GetTheResourceUsageCollector() resource.Collector {
@@ -32,11 +34,28 @@ func GetTheResourceUsageCollector() resource.Collector {
 }
 
 // GetTheLoadGenerator ...
-func GetTheLoadGenerator() loadgenerator.LoadGenerator {
+func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
-	//TODO: what about the duration of generated load
-	//TODO: this is hard coded
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", 20, 80, 0.2, 0.8, 0, 0.1)
+	log.Println("workload string:", workloadStr)
+	parts := strings.Split(workloadStr, "_")
+	vus, err := strconv.Atoi(parts[0])
+	if err != nil {
+		panic(err)
+	}
+	duration, err := strconv.Atoi(parts[1])
+	if err != nil {
+		panic(err)
+	}
+	authProb, err := strconv.ParseFloat(parts[2], 64)
+	if err != nil {
+		panic(err)
+	}
+	bookProb := 1 - authProb
+	sleepDuration, err := strconv.ParseFloat(parts[3], 64)
+	if err != nil {
+		panic(err)
+	}
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", vus, duration, authProb, bookProb, 0, sleepDuration)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
@@ -124,7 +143,11 @@ func main() {
 	var ruc = GetTheResourceUsageCollector()
 	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
-	var lg = GetTheLoadGenerator()
+	workloadStr := os.Args[1]
+	if !strings.Contains(workloadStr, "_") {
+		log.Panic("the first argument must be the workload")
+	}
+	var lg = GetTheLoadGenerator(os.Args[1])
 
 	if len(os.Args) < beforeConfigArgCount {
 		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands")
@@ -147,7 +170,7 @@ func main() {
 	}
 	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager()
-	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m)
+	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m, workloadStr)
 	log.Println("name of the test is:", os.Args[beforeConfigArgCount-2])
 	a.Start(os.Args[beforeConfigArgCount-2])
 }

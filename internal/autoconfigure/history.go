@@ -4,8 +4,9 @@ import "github.com/VahidMostofi/swarmmanager/internal/swarm"
 
 // StackHistory ...
 type StackHistory struct {
-	Name    string        `yaml:"name"`
-	History []Information `yaml:"configs"`
+	Name     string        `yaml:"name"`
+	Workload interface{}   `yaml:"workload"`
+	History  []Information `yaml:"configs"`
 }
 
 // Information ...
