@@ -1,4 +1,4 @@
-# #!/bin/bash
+#!/bin/bash
 # CPUUsage95Percentile
 go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 cpu95_50 CPUUsageIncrease -property CPUUsage95Percentile -threshold 50
 go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 cpu95_60 CPUUsageIncrease -property CPUUsage95Percentile -threshold 60
@@ -21,7 +21,7 @@ go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 cpu_mean_80 CPUUsageIncreas
 go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 cpu_mean_90 CPUUsageIncrease -property CPUUsageMean -threshold 90
 
 # # ResponseTimeSimpleIncrease
-# go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 rtsi_95_300 ResponseTimeSimpleIncrease -property ResponseTimes95Percentile -value 300
+go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 rtsi_95_300 ResponseTimeSimpleIncrease -property ResponseTimes95Percentile -value 300
 
 # PredefinedSearch
 # go run cmd/swarm-autoconfigure/main.go 370_45_0.2_10 predefined_rtsi_95_300 PredefinedSearch
