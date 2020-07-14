@@ -13,6 +13,7 @@ type StackHistory struct {
 type Information struct {
 	Infomations map[string]ServiceInfo        `yaml:"info"`
 	Specs       map[string]swarm.ServiceSpecs `yaml:"specs"`
+	JaegerFile  string                        `yaml:"jaegerFile"`
 }
 
 // ServiceInfo ...

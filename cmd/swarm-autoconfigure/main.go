@@ -165,7 +165,7 @@ func main() {
 	case "Single":
 		c = &autoconfigure.SingleRun{}
 	default:
-		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands")
+		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands but got", os.Args[beforeConfigArgCount-1])
 		os.Exit(1)
 	}
 	// var c = GetAnotherConfigurer()

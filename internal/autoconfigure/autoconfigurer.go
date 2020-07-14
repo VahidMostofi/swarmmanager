@@ -146,6 +146,7 @@ func (a *AutoConfigurer) Start(name string) {
 		historyItem := Information{
 			Infomations: info,
 			Specs:       a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
+			JaegerFile:  a.ResponseTimeCollector.(*jaeger.JaegerAggregator).LastStoredFile,
 		}
 		stackHistory.History = append(stackHistory.History, historyItem)
 		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
@@ -336,6 +337,9 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 				log.Panic(e)
 			}
 			responseTimes = append(responseTimes, rts...)
+		}
+		if len(responseTimes) == 0{
+			responseTimes = append(responseTimes, 0)
 		}
 		m, err := stats.Mean(responseTimes)
 		if err != nil {

@@ -6,20 +6,26 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/VahidMostofi/swarmmanager"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type JaegerAggregator struct {
-	Host  string
-	Keys  []string // important spans that we want to consider
-	Spans map[string][]float64
+	Host           string
+	Keys           []string // important spans that we want to consider
+	Spans          map[string][]float64
+	StorePath      string
+	LastStoredFile string
 }
 
 // NewJaegerAggregator is the constructor for JaegerAggregator
 func NewJaegerAggregator(host string, keys []string) *JaegerAggregator {
 	j := &JaegerAggregator{
-		Host:  host,
-		Keys:  keys,
-		Spans: make(map[string][]float64),
+		Host:      host,
+		Keys:      keys,
+		Spans:     make(map[string][]float64),
+		StorePath: swarmmanager.GetConfig().JaegerStorePath,
 	}
 
 	for _, key := range j.Keys {
@@ -42,6 +48,15 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 
+	if len(j.StorePath) > 1 {
+		id, err := uuid.NewV4()
+		if err != nil {
+			panic(err) //TODO
+		}
+		j.LastStoredFile = j.StorePath + "/" + id.String() + ".json"
+		ioutil.WriteFile(j.LastStoredFile, body, 0666)
+	}
+
 	data := struct {
 		Data []*trace `json:"data"`
 	}{}
@@ -62,9 +77,9 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 				duration = span.Duration / 1e3
 			}
 		}
-		if len(trace.Spans) != 8 {
+		if len(trace.Spans) < 8 {
 			log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
-		}
+		} //TODO implement retry
 		if operationName == "" || duration == 0 {
 			log.Println("warning", "len(trace.Spans) is", len(trace.Spans), "operationName:", operationName, "duration", duration)
 		} else {

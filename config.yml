@@ -1,2 +1,3 @@
 resultsPath: "/Users/vahid/Desktop/projects/swarm-manager-data"
 logDirectory: "/Users/vahid/Desktop/projects/swarm-manager-data/logs"
+jegerStorePath: "/Users/vahid/Desktop/projects/swarm-manager-data/jaegers"

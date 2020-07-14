@@ -16,6 +16,7 @@ import (
 type config struct {
 	ResultsDirectoryPath string `yaml:"resultsPath"`
 	LogDirectory         string `yaml:"logDirectory"`
+	JaegerStorePath      string `yaml:"jegerStorePath"`
 }
 
 var c *config
