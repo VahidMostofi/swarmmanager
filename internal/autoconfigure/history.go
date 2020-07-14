@@ -40,8 +40,8 @@ type ServiceInfo struct {
 	ResponseTimes95Percentile float64 `yaml:"responseTimes95th,omitempty"`
 	ResponseTimes99Percentile float64 `yaml:"responseTimes99th,omitempty"`
 
-	SubTracesResponseTimeMean          []float64 `yaml:"subTracesResponseTimeMean,omitempty"`
-	SubTracesResponseTimes90Percentile []float64 `yaml:"subTracesResponseTime90th,omitempty"`
-	SubTracesResponseTimes95Percentile []float64 `yaml:"subTracesResponseTime95th,omitempty"`
-	SubTracesResponseTimes99Percentile []float64 `yaml:"subTracesResponseTime99th,omitempty"`
+	SubTracesResponseTimeMean          map[string]float64 `yaml:"subTracesResponseTimeMean,omitempty"`
+	SubTracesResponseTimes90Percentile map[string]float64 `yaml:"subTracesResponseTime90th,omitempty"`
+	SubTracesResponseTimes95Percentile map[string]float64 `yaml:"subTracesResponseTime95th,omitempty"`
+	SubTracesResponseTimes99Percentile map[string]float64 `yaml:"subTracesResponseTime99th,omitempty"`
 }

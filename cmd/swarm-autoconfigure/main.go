@@ -67,7 +67,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 // GetJaegerCollector ...
 func GetJaegerCollector() *jaeger.JaegerAggregator {
 	//TODO these are hardcoded!
-	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"auth_req_login", "books_edit_book", "books_get_book"})
+	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"gateway","auth","books","gateway","auth_total", "auth_gateway", "auth_sub","books_total", "books_gateway", "books_sub"})
 	return j
 }
 

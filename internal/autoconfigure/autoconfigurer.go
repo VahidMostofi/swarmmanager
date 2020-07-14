@@ -267,105 +267,75 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		serviceInfo.CPUUsage99Percentile = v
 		//--------------------------------------------------
 		// Request Count
-		if serviceName == "books" {
-			c, e := a.RequestCountCollector.GetRequestCount("books_edit_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount = c
-			c, e = a.RequestCountCollector.GetRequestCount("books_get_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount += c
-		} else if serviceName == "auth" {
-			c, e := a.RequestCountCollector.GetRequestCount("auth_req_login")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount = c
-		} else if serviceName == "gateway" {
-			c, e := a.RequestCountCollector.GetRequestCount("auth_req_login")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount = c
-			c, e = a.RequestCountCollector.GetRequestCount("books_edit_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount += c
-			c, e = a.RequestCountCollector.GetRequestCount("books_get_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			serviceInfo.RequestCount += c
+		c, e := a.RequestCountCollector.GetRequestCount(serviceName)
+		if e != nil {
+			log.Panic(e)
 		}
+		serviceInfo.RequestCount = c
 
-		// Response Times
-		responseTimes := make([]float64, 0)
-		if serviceName == "books" {
-			rts, e := a.ResponseTimeCollector.GetResponseTimes("books_edit_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
-			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_get_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
-		} else if serviceName == "auth" {
-			rts, e := a.ResponseTimeCollector.GetResponseTimes("auth_req_login")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
-		} else if serviceName == "gateway" {
-			rts, e := a.ResponseTimeCollector.GetResponseTimes("auth_req_login")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
-			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_edit_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
-			rts, e = a.ResponseTimeCollector.GetResponseTimes("books_get_book")
-			if e != nil {
-				log.Panic(e)
-			}
-			responseTimes = append(responseTimes, rts...)
+		
+		responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(serviceName)
+		if e != nil {
+			log.Panic(e)
 		}
-		if len(responseTimes) == 0{
-			responseTimes = append(responseTimes, 0)
+		m1,m2,m3,m4 := getDifferentResponseTimes(responseTimes)
+		serviceInfo.ResponseTimesMean = m1
+		serviceInfo.ResponseTimes90Percentile = m2
+		serviceInfo.ResponseTimes95Percentile = m3
+		serviceInfo.ResponseTimes99Percentile = m4
+
+		if serviceName != "gateway"{
+			serviceInfo.SubTracesResponseTimeMean = make(map[string]float64)
+			serviceInfo.SubTracesResponseTimes90Percentile = make(map[string]float64)
+			serviceInfo.SubTracesResponseTimes95Percentile = make(map[string]float64)
+			serviceInfo.SubTracesResponseTimes99Percentile = make(map[string]float64)
+			// sub response times
+			for _,sub := range []string{"_total","_gateway","_sub"}{
+				subName := serviceName + sub
+				responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(subName)
+				if e != nil {
+					log.Panic(e)
+				}
+				m1,m2,m3,m4 := getDifferentResponseTimes(responseTimes)
+				serviceInfo.SubTracesResponseTimeMean[subName] = m1
+				serviceInfo.SubTracesResponseTimes90Percentile[subName] = m2
+				serviceInfo.SubTracesResponseTimes95Percentile[subName] = m3
+				serviceInfo.SubTracesResponseTimes99Percentile[subName] = m4
+
+			}
 		}
-		m, err := stats.Mean(responseTimes)
-		if err != nil {
-			log.Panic(err)
-		}
-		serviceInfo.ResponseTimesMean = m
-		//--------------------------------------------------
-		m, err = stats.Percentile(responseTimes, 90)
-		if err != nil {
-			log.Panic(err)
-		}
-		serviceInfo.ResponseTimes90Percentile = m
-		//--------------------------------------------------
-		m, err = stats.Percentile(responseTimes, 95)
-		if err != nil {
-			log.Panic(err)
-		}
-		serviceInfo.ResponseTimes95Percentile = m
-		//--------------------------------------------------
-		m, err = stats.Percentile(responseTimes, 99)
-		if err != nil {
-			log.Panic(err)
-		}
-		serviceInfo.ResponseTimes99Percentile = m
+		
 
 		info[serviceName] = serviceInfo
 	}
 	return info
+}
+
+func getDifferentResponseTimes(responseTimes []float64)(float64,float64,float64,float64){
+	if len(responseTimes) == 0{
+		responseTimes = append(responseTimes, 0)
+	}
+	m1, err := stats.Mean(responseTimes)
+	if err != nil {
+		log.Panic(err)
+	}
+	//--------------------------------------------------
+	m2, err := stats.Percentile(responseTimes, 90)
+	if err != nil {
+		log.Panic(err)
+	}
+	
+	//--------------------------------------------------
+	m3, err := stats.Percentile(responseTimes, 95)
+	if err != nil {
+		log.Panic(err)
+	}
+	
+	//--------------------------------------------------
+	m4, err := stats.Percentile(responseTimes, 99)
+	if err != nil {
+		log.Panic(err)
+	}
+	
+	return m1,m2,m3,m4
 }
