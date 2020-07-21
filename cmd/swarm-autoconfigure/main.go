@@ -55,7 +55,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 	if err != nil {
 		panic(err)
 	}
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type5.js", vus, duration, authProb, bookProb, 0, sleepDuration)
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type7.js", vus, duration, authProb, bookProb, 0, sleepDuration)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
@@ -67,7 +67,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 // GetJaegerCollector ...
 func GetJaegerCollector() *jaeger.JaegerAggregator {
 	//TODO these are hardcoded!
-	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"gateway","auth","books","gateway","auth_total", "auth_gateway", "auth_sub","books_total", "books_gateway", "books_sub"})
+	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"gateway", "auth", "books", "gateway", "auth_total", "auth_gateway", "auth_sub", "books_total", "books_gateway", "books_sub"})
 	return j
 }
 

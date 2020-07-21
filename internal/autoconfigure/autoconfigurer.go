@@ -63,7 +63,7 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ResourceUsageCollector: ruc,
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
-		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 10},
+		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 7},
 		Workload:               workload,
 	}
 	return a
@@ -95,7 +95,8 @@ func (a *AutoConfigurer) Start(name string) {
 	}
 
 	// Deploy the stack with basic configuration
-	dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml" //TODO this is hard coded!
+	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml" //TODO this is hard coded!
+	dockerComposePath := "/Users/vahid/Desktop/docker-compose-nodb.yml"
 	err = a.SwarmManager.DeployStackWithDockerCompose(dockerComposePath, 1)
 	if err != nil {
 		log.Panic(err)
@@ -106,7 +107,7 @@ func (a *AutoConfigurer) Start(name string) {
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
-	time.Sleep(15 * time.Second)
+	time.Sleep(8 * time.Second)
 	var start int64
 	var end int64
 	var iteration int
@@ -125,13 +126,13 @@ func (a *AutoConfigurer) Start(name string) {
 		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
 		go a.LoadGenerator.Start(make(map[string]string))
 		log.Println("load generator started")
-		time.Sleep(10 * time.Second)
+		time.Sleep(5 * time.Second)
 		a.ResourceUsageCollector = GetTheResourceUsageCollector()
 		err := a.ResourceUsageCollector.Start()
 		if err != nil {
 			log.Panic(err)
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		log.Printf("ITERATION %d\n", iteration)
 		start = time.Now().UnixNano() / 1e3
 		time.Sleep(a.IterationDuration * time.Second)
@@ -273,30 +274,29 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		}
 		serviceInfo.RequestCount = c
 
-		
 		responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(serviceName)
 		if e != nil {
 			log.Panic(e)
 		}
-		m1,m2,m3,m4 := getDifferentResponseTimes(responseTimes)
+		m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
 		serviceInfo.ResponseTimesMean = m1
 		serviceInfo.ResponseTimes90Percentile = m2
 		serviceInfo.ResponseTimes95Percentile = m3
 		serviceInfo.ResponseTimes99Percentile = m4
 
-		if serviceName != "gateway"{
+		if serviceName != "gateway" {
 			serviceInfo.SubTracesResponseTimeMean = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes90Percentile = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes95Percentile = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes99Percentile = make(map[string]float64)
 			// sub response times
-			for _,sub := range []string{"_total","_gateway","_sub"}{
+			for _, sub := range []string{"_total", "_gateway", "_sub"} {
 				subName := serviceName + sub
 				responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(subName)
 				if e != nil {
 					log.Panic(e)
 				}
-				m1,m2,m3,m4 := getDifferentResponseTimes(responseTimes)
+				m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
 				serviceInfo.SubTracesResponseTimeMean[subName] = m1
 				serviceInfo.SubTracesResponseTimes90Percentile[subName] = m2
 				serviceInfo.SubTracesResponseTimes95Percentile[subName] = m3
@@ -304,15 +304,14 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 
 			}
 		}
-		
 
 		info[serviceName] = serviceInfo
 	}
 	return info
 }
 
-func getDifferentResponseTimes(responseTimes []float64)(float64,float64,float64,float64){
-	if len(responseTimes) == 0{
+func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64) {
+	if len(responseTimes) == 0 {
 		responseTimes = append(responseTimes, 0)
 	}
 	m1, err := stats.Mean(responseTimes)
@@ -324,18 +323,18 @@ func getDifferentResponseTimes(responseTimes []float64)(float64,float64,float64,
 	if err != nil {
 		log.Panic(err)
 	}
-	
+
 	//--------------------------------------------------
 	m3, err := stats.Percentile(responseTimes, 95)
 	if err != nil {
 		log.Panic(err)
 	}
-	
+
 	//--------------------------------------------------
 	m4, err := stats.Percentile(responseTimes, 99)
 	if err != nil {
 		log.Panic(err)
 	}
-	
-	return m1,m2,m3,m4
+
+	return m1, m2, m3, m4
 }

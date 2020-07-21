@@ -131,6 +131,9 @@ func (sc *SingleCollector) Stop() error {
 
 // GetResourceUtilization ... returns stats
 func (sc *SingleCollector) GetResourceUtilization() map[string]*resource.Utilization {
+	for key, value := range sc.ResourceStats {
+		fmt.Println(key, value.CPUUtilizationsAtTime)
+	}
 	return sc.ResourceStats
 }
 

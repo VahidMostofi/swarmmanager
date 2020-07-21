@@ -51,7 +51,7 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	if len(j.StorePath) > 1 {
 		id, err := uuid.NewV4()
 		if err != nil {
-			panic(err) //TODO
+			panic(fmt.Errorf("error in generating uuid %w", err)) //TODO
 		}
 		j.LastStoredFile = j.StorePath + "/" + id.String() + ".json"
 		ioutil.WriteFile(j.LastStoredFile, body, 0666)
@@ -69,7 +69,7 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	for _, trace := range data.Data {
 		var service string
 		var request string
-		
+
 		spans := make(map[string]*span)
 		for _, span := range trace.Spans {
 			if len(trace.Spans) < 8 {
@@ -78,16 +78,16 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 			} //TODO implement retry
 			span.EndTime = span.StartTime + span.Duration
 			spans[span.OperationName] = span
-			
-			if span.OperationName == "auth_req_login"{
+
+			if span.OperationName == "auth_req_login" {
 				service = "auth"
 				request = "login"
 			}
-			if span.OperationName == "books_get_book"{
+			if span.OperationName == "books_get_book" {
 				service = "books"
 				request = "get_book"
 			}
-			if span.OperationName == "books_edit_book"{
+			if span.OperationName == "books_edit_book" {
 				service = "books"
 				request = "edit_book"
 			}
@@ -95,35 +95,35 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 
 		var sup float64
 		var sub float64
-		if request == "login"{
+		if request == "login" {
 			sup = spans["gateway"].Duration
 			sub = spans["auth"].EndTime - spans["auth_req_login"].StartTime
-		}else if request == "edit_book"{
+		} else if request == "edit_book" {
 			sup = spans["gateway"].Duration
 			sub = spans["books"].EndTime - spans["books_edit_book"].StartTime
-		}else if request == "get_book"{
+		} else if request == "get_book" {
 			sup = spans["gateway"].Duration
 			sub = spans["books"].EndTime - spans["books_get_book"].StartTime
-		}else{
+		} else {
 			continue
 		}
 		sub /= 1000
 		sup /= 1000
-		if service == "auth"{
+		if service == "auth" {
 			j.Spans["auth"] = append(j.Spans["auth"], sup)
 			j.Spans["auth_total"] = append(j.Spans["auth_total"], sup)
-			j.Spans["auth_gateway"] = append(j.Spans["auth_gateway"], sup - sub)
+			j.Spans["auth_gateway"] = append(j.Spans["auth_gateway"], sup-sub)
 			j.Spans["auth_sub"] = append(j.Spans["auth_sub"], sub)
-		}else{
+		} else {
 			j.Spans["books"] = append(j.Spans["books"], sup)
 			j.Spans["books_total"] = append(j.Spans["books_total"], sup)
-			j.Spans["books_gateway"] = append(j.Spans["books_gateway"], sup - sub)
+			j.Spans["books_gateway"] = append(j.Spans["books_gateway"], sup-sub)
 			j.Spans["books_sub"] = append(j.Spans["books_sub"], sub)
 		}
 		j.Spans["gateway"] = append(j.Spans["gateway"], sup)
 	}
 	fmt.Println("these are the keys")
-	for key := range j.Spans{
+	for key := range j.Spans {
 		fmt.Println(key)
 	}
 }
@@ -166,7 +166,7 @@ type trace struct {
 // Span struct contains information about each span
 type span struct {
 	StartTime     float64       `json:"startTime"`
-	EndTime		  float64		`json:"endTime"`
+	EndTime       float64       `json:"endTime"`
 	Duration      float64       `json:"duration"`
 	OperationName string        `json:"operationName"`
 	SpanID        string        `json:"spanID"`

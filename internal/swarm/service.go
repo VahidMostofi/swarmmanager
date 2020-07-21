@@ -148,7 +148,7 @@ func (s *Manager) manageState() {
 		if s.CurrentStackState == StackStateEmpty {
 			//
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeDeployed {
-			s.CheckServicedDeployment(5)
+			s.CheckServicedDeployment(4) //TODO hardcode!
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeReady {
 			s.CheckforServicesReadiness()
 		}
@@ -319,7 +319,6 @@ func (s *Manager) CheckforServicesReadiness() {
 
 	for serviceID := range s.CurrentSpecs {
 		if !s.IsServiceReady(serviceID) {
-			// fmt.Println(s.CurrentSpecs[serviceID].Name, "is not ready")
 			flag = false
 			break
 		}

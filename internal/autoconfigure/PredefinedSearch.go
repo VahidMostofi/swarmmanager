@@ -24,12 +24,12 @@ func GetNewPredefinedSearcher() *PredefinedSearch {
 func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 	log.Println("Configurer Agent: configure at step", c.Step)
-	if c.Step == 0 {
+	if c.Step == 0 { // the input configuration
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
 		return c.Configure(values, currentSpecs, servicesToMonitor)
 	}
-	if c.Step == 1 {
+	if c.Step == 1 { // 1 container with multiple (= replica count) cores
 		currentSpecs = clone(c.PreviousSpecs[0])
 		for serviceID := range currentSpecs {
 			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
