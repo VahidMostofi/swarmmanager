@@ -278,6 +278,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		if e != nil {
 			log.Panic(e)
 		}
+		fmt.Println(serviceName, responseTimes)
 		m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
 		serviceInfo.ResponseTimesMean = m1
 		serviceInfo.ResponseTimes90Percentile = m2

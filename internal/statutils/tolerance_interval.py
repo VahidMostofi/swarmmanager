@@ -27,4 +27,4 @@ interval = sqrt((dof * (1 + (1/n)) * gauss_critical**2) / chi_critical)
 data_mean = mean(data)
 lower, upper = data_mean-interval, data_mean+interval
 # print('%.2f to %.2f covers %d%% of data with a confidence of %d%%' % (lower, upper, prop*100, prob*100))
-print('%.2f,%.2f' % (lower, upper))
+print('%.2f,%.2f,%.2f' % (len(data),lower, upper))

@@ -1,40 +1,68 @@
 package statutils
 
 import (
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/senseyeio/roger"
 )
 
-// ComputeToleranceInterval computes the tolerance interval and returns the the lower and upper bound
+// ComputeToleranceIntervalNormalDist computes the tolerance interval and returns the the lower and upper bound
 // todo add the p and alpha as parameters
-func ComputeToleranceInterval(data []float64) (float64, float64, error) {
+func ComputeToleranceIntervalNormalDist(data []float64) (float64, float64, error) {
 	valuesStr := make([]string, len(data)+1)
-	valuesStr[0] = "/Users/vahid/Desktop/projects/swarm-manager/internal/statutils/tolerance_interval.py"
+	valuesStr[0] = "/Users/vahid/Desktop/projects/swarm-manager/internal/statutils/tolerance_interval.py" //TODO
 	for i, v := range data {
 		valuesStr[i+1] = strconv.FormatFloat(v, 'f', 6, 64)
 	}
 	cmd := exec.Command("python", valuesStr...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// 	if (strings.Contains(string(out), "not found") || strings.Contains(string(out), "cannot be used with services.")) && strings.Contains(string(out), "network") && attempt <= 25 {
-		// 		var waitTime int64 = 5
-		// 		log.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
-		// 		time.Sleep(time.Duration(waitTime) * time.Second)
-		// 		return s.DeployStackWithDockerCompose(dockerComposePath, attempt+1)
-		// 	}
-		// 	return fmt.Errorf("deploying stack with docker compose file failed with error: %w; %s", err, string(out))
+		return 0, 0, err
 	}
 	outStr := strings.Trim(string(out), "\n")
 	outStr = strings.Trim(outStr, " ")
 	tempStrs := strings.Split(outStr, ",")
-	lower, err := strconv.ParseFloat(tempStrs[0], 64)
+	count, err := strconv.Atoi(tempStrs[0], 64)
 	if err != nil {
 		return 0, 0, err
 	}
-	upper, err := strconv.ParseFloat(tempStrs[1], 64)
+	if count != len(data) {
+		return 0, 0, fmt.Errorf("count returned by python code is not equal to len(data)")
+	}
+	lower, err := strconv.ParseFloat(tempStrs[1], 64)
 	if err != nil {
 		return 0, 0, err
 	}
+	upper, err := strconv.ParseFloat(tempStrs[2], 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	return lower, upper, nil
+}
+
+// ComputeToleranceIntervalNonParametric returns both lower and upper bound
+func ComputeToleranceIntervalNonParametric(data []float64) (float64, float64, error) {
+	rClient, err := roger.NewRClient("127.0.0.1", 6311)
+	if err != nil {
+		return 0, 0, fmt.Errorf("error connecting to R server: %w", err)
+	}
+	numbers := ""
+	for i, v := range data {
+		numbers += strconv.FormatFloat(v, 'f', 8, 64)
+		if i != len(data)-1 {
+			numbers += ", "
+		}
+	}
+	command := "library(\"tolerance\"); nptol.int(x = c(" + numbers + "), alpha = 0.05, P = 0.95, side = 1,  method = \"WALD\", upper = NULL, lower = NULL)"
+
+	value, err := rClient.Eval(command)
+	if err != nil {
+		return 0, 0, fmt.Errorf("error executing command in R server: %w", err)
+	}
+	upper := value.(map[string]interface{})["1-sided.upper"].(float64)
+	lower := value.(map[string]interface{})["1-sided.lower"].(float64)
 	return lower, upper, nil
 }
