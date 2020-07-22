@@ -55,7 +55,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 	if err != nil {
 		panic(err)
 	}
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type7.js", vus, duration, authProb, bookProb, 0, sleepDuration)
+	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type8.js", vus, duration, authProb, bookProb, 0, sleepDuration)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
