@@ -1,3 +1,4 @@
 resultsPath: "/Users/vahid/Desktop/projects/swarm-manager-data/test"
 logDirectory: "/Users/vahid/Desktop/projects/swarm-manager-data/logs"
 jegerStorePath: "/Users/vahid/Desktop/projects/swarm-manager-data/jaegers"
+mongodbURL: "mongodb://server214:27017"

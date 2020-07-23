@@ -12,6 +12,7 @@ import (
 	"log"
 
 	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/internal/caching"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
@@ -38,6 +39,7 @@ type AutoConfigurer struct {
 	ResourceUsageCollector resource.Collector
 	ConfigurerAgent        Configurer
 	SwarmManager           *swarm.Manager
+	Database               caching.Database
 	TimingConfigs
 }
 
@@ -107,6 +109,7 @@ func (a *AutoConfigurer) Start(name string) {
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
+	a.Database.Retrieve(a.Workload, a.SwarmManager.DesiredSpecs)
 	time.Sleep(8 * time.Second)
 	var start int64
 	var end int64

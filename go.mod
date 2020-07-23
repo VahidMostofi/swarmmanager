@@ -22,6 +22,7 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2 // indirect
+	go.mongodb.org/mongo-driver v1.3.5
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect
@@ -29,5 +30,6 @@ require (
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.2.4
 )

@@ -28,6 +28,37 @@ type ServiceSpecs struct {
 	Containers           []string `yaml:"-"`
 }
 
+// SerializableServiceSpec ...
+type serializableServiceSpec struct {
+	ImageName            string
+	ReplicaCount         int
+	EnvironmentVariables []string
+	StackName            string
+	CPULimits            float64
+	CPUReservation       float64
+	MemoryLimits         int64
+	MemoryReservations   int64
+}
+
+func (ss ServiceSpecs) toSerializable() serializableServiceSpec {
+	sss := serializableServiceSpec{
+		ImageName:            ss.ImageName,
+		ReplicaCount:         ss.ReplicaCount,
+		EnvironmentVariables: ss.EnvironmentVariables, //TODO sorted?
+		StackName:            ss.StackName,
+		CPULimits:            ss.CPULimits,
+		CPUReservation:       ss.CPUReservation,
+		MemoryLimits:         ss.MemoryLimits,
+		MemoryReservations:   ss.MemoryReservations,
+	}
+	return sss
+}
+
+// GetBytes ...
+func (ss ServiceSpecs) GetBytes() []byte {
+	return []byte(fmt.Sprintf("%v", ss.toSerializable()))
+}
+
 // StackSpecs ...
 type StackSpecs map[string]ServiceSpecs
 

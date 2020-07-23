@@ -17,6 +17,7 @@ type config struct {
 	ResultsDirectoryPath string `yaml:"resultsPath"`
 	LogDirectory         string `yaml:"logDirectory"`
 	JaegerStorePath      string `yaml:"jegerStorePath"`
+	MongoDBURL			 string `yaml:"mongodbURL"`
 }
 
 var c *config
