@@ -1,4 +1,4 @@
-package autoconfigure
+package strategies
 
 import (
 	"fmt"

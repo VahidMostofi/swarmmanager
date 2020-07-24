@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"flag"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	resource "github.com/VahidMostofi/swarmmanager/internal/resource/collector"
+	"github.com/VahidMostofi/swarmmanager/internal/strategies"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 )
@@ -77,7 +77,7 @@ func GetJaegerCollector() *jaeger.JaegerAggregator {
 }
 
 // GetCPUIncreaseConfigurer ...
-func GetCPUIncreaseConfigurer() autoconfigure.Configurer {
+func GetCPUIncreaseConfigurer() strategies.Configurer {
 	cpuOnlyCmd := flag.NewFlagSet("CPUUsageIncrease", flag.ExitOnError)
 	cpuOnlyValueName := cpuOnlyCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
 	cpuOnlyThreshold := cpuOnlyCmd.Float64("threshold", 0, "what is the threshold")
@@ -97,14 +97,14 @@ func GetCPUIncreaseConfigurer() autoconfigure.Configurer {
 		os.Exit(1)
 	}
 	log.Println("Configuring CPUUsageIncreaseConfigurer with Threshold:", *cpuOnlyThreshold, "and property of", *cpuOnlyValueName)
-	return &autoconfigure.CPUUsageIncrease{
+	return &strategies.CPUUsageIncrease{
 		Threshold:       *cpuOnlyThreshold,
 		ValueToConsider: *cpuOnlyValueName,
 	}
 }
 
 // GetResponseTimeSimpleIncreaseConfigurer ...
-func GetResponseTimeSimpleIncreaseConfigurer() autoconfigure.Configurer {
+func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 	rtsiCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
 	rtsiValueName := rtsiCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
 	rtsiThreshold := rtsiCmd.Float64("value", 0, "what is the threshold")
@@ -124,8 +124,8 @@ func GetResponseTimeSimpleIncreaseConfigurer() autoconfigure.Configurer {
 		os.Exit(1)
 	}
 	log.Println("Configuring ResponseTimeSimpleIncrease with Value:", *rtsiThreshold, "and property of", *rtsiValueName)
-	return &autoconfigure.ResponseTimeSimpleIncrease{
-		Agreements: []autoconfigure.Agreement{
+	return &strategies.ResponseTimeSimpleIncrease{
+		Agreements: []strategies.Agreement{
 			{
 				PropertyToConsider: *rtsiValueName,
 				Value:              *rtsiThreshold,
@@ -153,7 +153,6 @@ func GetNewDatabase() caching.Database {
 }
 
 func main() {
-	time.Sleep(10 * time.Second)
 	var ruc = GetTheResourceUsageCollector()
 	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
@@ -168,16 +167,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	var c autoconfigure.Configurer
+	var c strategies.Configurer
 	switch os.Args[beforeConfigArgCount-1] {
 	case "CPUUsageIncrease":
 		c = GetCPUIncreaseConfigurer()
 	case "ResponseTimeSimpleIncrease":
 		c = GetResponseTimeSimpleIncreaseConfigurer()
 	case "PredefinedSearch":
-		c = autoconfigure.GetNewPredefinedSearcher()
+		c = strategies.GetNewPredefinedSearcher()
 	case "Single":
-		c = &autoconfigure.SingleRun{}
+		c = &strategies.SingleRun{}
 	default:
 		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands but got", os.Args[beforeConfigArgCount-1])
 		os.Exit(1)

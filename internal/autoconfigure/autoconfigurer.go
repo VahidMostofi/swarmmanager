@@ -19,6 +19,7 @@ import (
 	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
 	resource "github.com/VahidMostofi/swarmmanager/internal/resource/collector"
 	"github.com/VahidMostofi/swarmmanager/internal/statutils"
+	"github.com/VahidMostofi/swarmmanager/internal/strategies"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 	"github.com/montanaflynn/stats"
@@ -40,7 +41,7 @@ type AutoConfigurer struct {
 	ResponseTimeCollector  workload.ResponseTimeCollector
 	RequestCountCollector  workload.RequestCountCollector
 	ResourceUsageCollector resource.Collector
-	ConfigurerAgent        Configurer
+	ConfigurerAgent        strategies.Configurer
 	SwarmManager           *swarm.Manager
 	Database               caching.Database
 	TimingConfigs
@@ -60,7 +61,7 @@ func GetTheResourceUsageCollector() resource.Collector {
 }
 
 // NewAutoConfigurer ...
-func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c Configurer, m *swarm.Manager, workload string, database caching.Database) *AutoConfigurer {
+func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c strategies.Configurer, m *swarm.Manager, workload string, database caching.Database) *AutoConfigurer {
 	a := &AutoConfigurer{
 		LoadGenerator:          lg,
 		ResponseTimeCollector:  rtc,

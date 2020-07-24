@@ -1,4 +1,4 @@
-package autoconfigure
+package strategies
 
 import (
 	"github.com/VahidMostofi/swarmmanager/internal/history"
