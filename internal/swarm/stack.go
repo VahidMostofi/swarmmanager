@@ -61,27 +61,22 @@ func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt
 func (s *Manager) FillDesiredSpecsCurrentSpecs() { //TODO update
 	s.UpdateCurrentSpecs()
 	log.Println("Filling Desired Specs with Current Specs")
-	for serviceID := range s.CurrentSpecs {
-		// containers := make([]string, len(s.CurrentSpecs[serviceID].Containers))
-		// for i, c := range s.CurrentSpecs[serviceID].Containers {
-		// 	containers[i] = c
-		// }
-
-		envs := make([]string, len(s.CurrentSpecs[serviceID].EnvironmentVariables))
-		for i, e := range s.CurrentSpecs[serviceID].EnvironmentVariables {
+	for key := range s.CurrentSpecs {
+		envs := make([]string, len(s.CurrentSpecs[key].EnvironmentVariables))
+		for i, e := range s.CurrentSpecs[key].EnvironmentVariables {
 			envs[i] = e
 		}
-		s.DesiredSpecs[serviceID] = ServiceSpecs{
-			ID:                   serviceID,
-			Name:                 s.CurrentSpecs[serviceID].Name,
-			ImageName:            s.CurrentSpecs[serviceID].ImageName,
-			ReplicaCount:         s.CurrentSpecs[serviceID].ReplicaCount,
+		s.DesiredSpecs[key] = ServiceSpecs{
+			ID:                   s.CurrentSpecs[key].ID,
+			Name:                 s.CurrentSpecs[key].Name,
+			ImageName:            s.CurrentSpecs[key].ImageName,
+			ReplicaCount:         s.CurrentSpecs[key].ReplicaCount,
 			EnvironmentVariables: envs,
-			StackName:            s.CurrentSpecs[serviceID].StackName,
-			CPULimits:            s.CurrentSpecs[serviceID].CPULimits,
-			CPUReservation:       s.CurrentSpecs[serviceID].CPUReservation,
-			MemoryLimits:         s.CurrentSpecs[serviceID].MemoryLimits,
-			MemoryReservations:   s.CurrentSpecs[serviceID].MemoryReservations,
+			StackName:            s.CurrentSpecs[key].StackName,
+			CPULimits:            s.CurrentSpecs[key].CPULimits,
+			CPUReservation:       s.CurrentSpecs[key].CPUReservation,
+			MemoryLimits:         s.CurrentSpecs[key].MemoryLimits,
+			MemoryReservations:   s.CurrentSpecs[key].MemoryReservations,
 		}
 	}
 }

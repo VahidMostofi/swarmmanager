@@ -32,4 +32,5 @@ require (
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )

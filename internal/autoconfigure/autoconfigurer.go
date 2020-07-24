@@ -13,10 +13,12 @@ import (
 
 	"github.com/VahidMostofi/swarmmanager"
 	"github.com/VahidMostofi/swarmmanager/internal/caching"
+	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	r2 "github.com/VahidMostofi/swarmmanager/internal/resource"
 	resource "github.com/VahidMostofi/swarmmanager/internal/resource/collector"
+	"github.com/VahidMostofi/swarmmanager/internal/statutils"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 	"github.com/montanaflynn/stats"
@@ -28,11 +30,12 @@ import (
 type TimingConfigs struct {
 	IterationDuration                 time.Duration
 	WaitAfterServicesAreReadyDuration time.Duration
+	WaitAfterLoadGeneratorStopped     time.Duration
 }
 
 // AutoConfigurer ...
 type AutoConfigurer struct {
-	Workload               interface{}
+	Workload               string
 	LoadGenerator          loadgenerator.LoadGenerator
 	ResponseTimeCollector  workload.ResponseTimeCollector
 	RequestCountCollector  workload.RequestCountCollector
@@ -46,9 +49,9 @@ type AutoConfigurer struct {
 // GetTheResourceUsageCollector ...
 func GetTheResourceUsageCollector() resource.Collector {
 	//TODO SERVICE COUNT IS HARDCODED!!!!!!!!
-	stackName := "bookstore"
+	stackName := swarmmanager.GetConfig().StackName
 	c := resource.GetNewCollector("SingleCollector")
-	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
+	err := c.Configure(map[string]string{"host": swarmmanager.GetConfig().Host, "stackname": stackName})
 	if err != nil {
 		log.Panic(err)
 	}
@@ -57,7 +60,7 @@ func GetTheResourceUsageCollector() resource.Collector {
 }
 
 // NewAutoConfigurer ...
-func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c Configurer, m *swarm.Manager, workload interface{}) *AutoConfigurer {
+func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c Configurer, m *swarm.Manager, workload string, database caching.Database) *AutoConfigurer {
 	a := &AutoConfigurer{
 		LoadGenerator:          lg,
 		ResponseTimeCollector:  rtc,
@@ -65,8 +68,13 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ResourceUsageCollector: ruc,
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
-		TimingConfigs:          TimingConfigs{IterationDuration: 45, WaitAfterServicesAreReadyDuration: 7},
-		Workload:               workload,
+		TimingConfigs: TimingConfigs{
+			IterationDuration:                 time.Duration(swarmmanager.GetConfig().TestDuration),
+			WaitAfterServicesAreReadyDuration: 7,
+			WaitAfterLoadGeneratorStopped:     time.Duration(swarmmanager.GetConfig().WaitAfterLoadGenerator),
+		},
+		Workload: workload,
+		Database: database,
 	}
 	return a
 }
@@ -74,20 +82,20 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 // Validate ...
 func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
 	var sum float64
-	for serviceID := range config {
-		sum += (float64(config[serviceID].ReplicaCount) * config[serviceID].CPULimits)
+	for key := range config {
+		sum += (float64(config[key].ReplicaCount) * config[key].CPULimits)
 	}
 	log.Println("there are", sum, "cores required!")
-	return sum, sum <= 24
+	return sum, sum <= swarmmanager.GetConfig().AvailabeCPUCount
 }
 
 // Start ...
 func (a *AutoConfigurer) Start(name string) {
 
-	stackHistory := &StackHistory{
+	stackHistory := &history.StackHistory{
 		Name:     name,
 		Workload: a.Workload,
-		History:  make([]Information, 0),
+		History:  make([]history.Information, 0),
 	}
 
 	// Remove the current Stack
@@ -97,64 +105,84 @@ func (a *AutoConfigurer) Start(name string) {
 	}
 
 	// Deploy the stack with basic configuration
-	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml" //TODO this is hard coded!
-	dockerComposePath := "/Users/vahid/Desktop/docker-compose-nodb.yml"
+	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml"
+	dockerComposePath := swarmmanager.GetConfig().DockerComposeFile
 	err = a.SwarmManager.DeployStackWithDockerCompose(dockerComposePath, 1)
 	if err != nil {
 		log.Panic(err)
 	}
-	for {
-		if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
-			break
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-	a.Database.Retrieve(a.Workload, a.SwarmManager.DesiredSpecs)
+	// for {
+	// 	if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
+	// 		break
+	// 	}
+	// 	time.Sleep(150 * time.Millisecond)
+	// }
 	time.Sleep(8 * time.Second)
 	var start int64
 	var end int64
 	var iteration int
 	for {
 		iteration++
+		log.Printf("ITERATION %d\n", iteration)
 		for {
-			// fmt.Println(a.SwarmManager.CurrentStackState)
 			if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
 				log.Println("CurrentStackState is", swarm.GetStateString(a.SwarmManager.CurrentStackState), "so lets break out of the loop")
+				a.SwarmManager.UpdateCurrentSpecs()
 				break
 			}
 			time.Sleep(150 * time.Millisecond)
 		}
-		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "write after the loop")
-		time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
-		// fmt.Println(time.Now().UnixNano(), a.SwarmManager.CurrentStackState, "15 seconds after the after the loop")
-		go a.LoadGenerator.Start(make(map[string]string))
-		log.Println("load generator started")
-		time.Sleep(5 * time.Second)
-		a.ResourceUsageCollector = GetTheResourceUsageCollector()
-		err := a.ResourceUsageCollector.Start()
-		if err != nil {
-			log.Panic(err)
+		info, err := a.Database.Retrieve(string(a.Workload), a.SwarmManager.DesiredSpecs)
+		if err == nil {
+			log.Println("Autoconfigurer: information is found for this configuration/workload")
+			// a.SwarmManager.CurrentSpecs = make(map[string]swarm.ServiceSpecs)
+
+			// services, err := a.SwarmManager.Client.ServiceList(a.SwarmManager.Ctx, types.ServiceListOptions{})
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// for _, srv := range services {
+			// 	serviceName := strings.Split(srv.Spec.Name, "_")[1]
+			// 	temp := info.Specs[serviceName]
+			// 	temp.Name = serviceName
+			// 	temp.ID = srv.ID
+			// 	a.SwarmManager.CurrentSpecs[serviceName] = temp
+			// }
+		} else {
+			time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
+			go a.LoadGenerator.Start(make(map[string]string))
+			log.Println("load generator started")
+			time.Sleep(30 * time.Second)
+			a.ResourceUsageCollector = GetTheResourceUsageCollector()
+			err = a.ResourceUsageCollector.Start()
+			if err != nil {
+				log.Panic(err)
+			}
+			time.Sleep(1 * time.Second)
+			start = time.Now().UnixNano() / 1e3
+			time.Sleep(a.IterationDuration * time.Second)
+			end = time.Now().UnixNano() / 1e3
+			a.LoadGenerator.Stop(make(map[string]string))
+			time.Sleep(a.WaitAfterLoadGeneratorStopped * time.Second)
+			err = a.ResourceUsageCollector.Stop()
+			if err != nil {
+				log.Panic(err)
+			}
+			servicesInfo := a.GatherInfo(int64(start), int64(end))
+			info = history.Information{
+				ServicesInfo: servicesInfo,
+				Specs:        a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
+				JaegerFile:   a.ResponseTimeCollector.(*jaeger.JaegerAggregator).LastStoredFile,
+				Workload:     a.Workload,
+			}
+			hash, err := a.Database.Store(a.Workload, a.SwarmManager.DesiredSpecs, info)
+			if err != nil {
+				log.Panicf("Error while storing run information: %w", err)
+			}
+			info.HashCode = hash
 		}
-		time.Sleep(1 * time.Second)
-		log.Printf("ITERATION %d\n", iteration)
-		start = time.Now().UnixNano() / 1e3
-		time.Sleep(a.IterationDuration * time.Second)
-		end = time.Now().UnixNano() / 1e3
-		a.LoadGenerator.Stop(make(map[string]string))
-		time.Sleep(30 * time.Second)
-		err = a.ResourceUsageCollector.Stop()
-		if err != nil {
-			log.Panic(err)
-		}
-		info := a.GatherInfo(int64(start), int64(end))
-		historyItem := Information{
-			Infomations: info,
-			Specs:       a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
-			JaegerFile:  a.ResponseTimeCollector.(*jaeger.JaegerAggregator).LastStoredFile,
-		}
-		stackHistory.History = append(stackHistory.History, historyItem)
-		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
-		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
+		stackHistory.History = append(stackHistory.History, info)
+		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info.ServicesInfo, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -162,7 +190,9 @@ func (a *AutoConfigurer) Start(name string) {
 			log.Println("new config is not valid, breaking out of loop")
 			break
 		}
+		fmt.Println("validated the new specs")
 		a.SwarmManager.DesiredSpecs = newSpecs
+		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if !isChanged {
 			log.Println("is changed is false, breaking out of loop")
 			break
@@ -175,7 +205,7 @@ func (a *AutoConfigurer) Start(name string) {
 	fmt.Println("final results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
 }
 
-func saveHistory(stackHistory *StackHistory) {
+func saveHistory(stackHistory *history.StackHistory) {
 	b, err := yaml.Marshal(stackHistory)
 	if err != nil {
 		log.Panic(err)
@@ -196,27 +226,25 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 }
 
 // GatherInfo ...
-func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
+func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
 	a.RequestCountCollector.(*jaeger.JaegerAggregator).GetTraces(start, end, "gateway") //TODO this is hardcoded!
-	info := make(map[string]ServiceInfo)
-	for serviceID := range a.SwarmManager.CurrentSpecs {
-		serviceName := a.SwarmManager.CurrentSpecs[serviceID].Name
+	info := make(map[string]history.ServiceInfo)
+	for key := range a.SwarmManager.CurrentSpecs {
+		serviceName := a.SwarmManager.CurrentSpecs[key].Name
 		if !(serviceName == "books" || serviceName == "auth" || serviceName == "gateway") {
 			continue
 		} //TODO
-		// fmt.Println("gathering info about", serviceName, serviceID)
-		serviceInfo := ServiceInfo{
+		serviceInfo := history.ServiceInfo{
 			Start:        start,
 			End:          end,
-			ReplicaCount: a.SwarmManager.CurrentSpecs[serviceID].ReplicaCount,
+			ReplicaCount: a.SwarmManager.CurrentSpecs[key].ReplicaCount,
 		}
 
 		// CPU usage
 		cpuUsages := make([]float64, 0)
-		serviceInfo.NumberOfCores = a.SwarmManager.CurrentSpecs[serviceID].CPULimits
-		// fmt.Println(a.printRUMap(ruMap))
-		for timestamp, usage := range ruMap[serviceID].CPUUtilizationsAtTime {
+		serviceInfo.NumberOfCores = a.SwarmManager.CurrentSpecs[key].CPULimits
+		for timestamp, usage := range ruMap[a.SwarmManager.StackName+"_"+serviceName].CPUUtilizationsAtTime {
 			if timestamp >= start*1e3 && timestamp <= end*1e3 {
 				cpuUsages = append(cpuUsages, usage/serviceInfo.NumberOfCores)
 			}
@@ -281,7 +309,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		if e != nil {
 			log.Panic(e)
 		}
-		fmt.Println(serviceName, responseTimes)
+
 		m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
 		serviceInfo.ResponseTimesMean = m1
 		serviceInfo.ResponseTimes90Percentile = m2
@@ -289,6 +317,12 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		serviceInfo.ResponseTimes99Percentile = m4
 
 		if serviceName != "gateway" {
+			c90p95, c95p95, c99p95 := getDifferentToleranceIntervals(responseTimes)
+
+			serviceInfo.RTToleranceIntervalUBoundc90p95 = c90p95
+			serviceInfo.RTToleranceIntervalUBoundc95p95 = c95p95
+			serviceInfo.RTToleranceIntervalUBoundc99p95 = c99p95
+
 			serviceInfo.SubTracesResponseTimeMean = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes90Percentile = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes95Percentile = make(map[string]float64)
@@ -312,6 +346,27 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]ServiceInfo {
 		info[serviceName] = serviceInfo
 	}
 	return info
+}
+
+func getDifferentToleranceIntervals(responseTimes []float64) (float64, float64, float64) {
+	// because we want the upper bound for the first 95% of the population, we need to look at 90% of the population
+	// _, c90p90, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.90)
+
+	_, c90p95, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
+	if err != nil {
+		panic(err)
+	}
+	// _, c90p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.99)
+
+	// _, c95p90, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.90)
+	_, c95p95, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.95)
+	// _, c95p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.99)
+
+	// _, c99p90, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.90)
+	_, c99p95, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.95)
+	// _, c99p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.99)
+
+	return c90p95, c95p95, c99p95
 }
 
 func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64) {

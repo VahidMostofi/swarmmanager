@@ -1,11 +1,14 @@
 package jaeger
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/VahidMostofi/swarmmanager"
 	uuid "github.com/nu7hatch/gouuid"
@@ -36,26 +39,46 @@ func NewJaegerAggregator(host string, keys []string) *JaegerAggregator {
 
 // GetTraces retrieves traces form Jaeger instance
 func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
-	url := fmt.Sprintf("%s/api/traces?end=%d&limit=100000&service=%s&start=%d", j.Host, end, service, start)
-	method := "GET"
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, nil)
+	body := make([]byte, 0)
+	for len(body) < 100 { //TODO WTF with 100?!?!?!?
+		url := fmt.Sprintf("%s/api/traces?end=%d&limit=100000&service=%s&start=%d", j.Host, end, service, start)
+		method := "GET"
+		client := &http.Client{}
+		req, err := http.NewRequest(method, url, nil)
 
-	if err != nil {
-		fmt.Println(err)
+		if err != nil {
+			panic(fmt.Errorf("error while getting traces: %w", err))
+		}
+		res, err := client.Do(req)
+		body, err = ioutil.ReadAll(res.Body)
+		fmt.Println("len(body)", len(body))
+		fmt.Println(url)
+		res.Body.Close()
+		time.Sleep(3 * time.Second)
 	}
-	res, err := client.Do(req)
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
 
 	if len(j.StorePath) > 1 {
 		id, err := uuid.NewV4()
 		if err != nil {
 			panic(fmt.Errorf("error in generating uuid %w", err)) //TODO
 		}
-		j.LastStoredFile = j.StorePath + "/" + id.String() + ".json"
-		ioutil.WriteFile(j.LastStoredFile, body, 0666)
-	}
+		j.LastStoredFile = j.StorePath + "/" + id.String() + ".zip"
+		newZipFile, err := os.Create(j.LastStoredFile)
+		if err != nil {
+			panic(err)
+		}
+		defer newZipFile.Close()
+		zipWriter := zip.NewWriter(newZipFile)
+		defer zipWriter.Close()
+		f, err := zipWriter.Create("jaeger-info.json")
+		if err != nil {
+			panic(err)
+		}
+		_, err = f.Write(body)
+		if err != nil {
+			panic(err)
+		}
+	} //TODO separate this function into multiple functions
 
 	data := struct {
 		Data []*trace `json:"data"`
@@ -72,7 +95,7 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 
 		spans := make(map[string]*span)
 		for _, span := range trace.Spans {
-			if len(trace.Spans) < 8 {
+			if len(trace.Spans) < 6 {
 				log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
 				continue
 			} //TODO implement retry
@@ -96,14 +119,14 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 		var sup float64
 		var sub float64
 		if request == "login" {
-			sup = spans["gateway"].Duration
-			sub = spans["auth"].EndTime - spans["auth_req_login"].StartTime
+			sup = spans["auth_req_login"].Duration
+			sub = spans["auth"].StartTime - spans["auth_connect"].EndTime
 		} else if request == "edit_book" {
-			sup = spans["gateway"].Duration
-			sub = spans["books"].EndTime - spans["books_edit_book"].StartTime
+			sup = spans["books_edit_book"].Duration
+			sub = spans["books"].StartTime - spans["books_connect"].EndTime
 		} else if request == "get_book" {
-			sup = spans["gateway"].Duration
-			sub = spans["books"].EndTime - spans["books_get_book"].StartTime
+			sup = spans["books_get_book"].Duration
+			sub = spans["books"].StartTime - spans["books_connect"].EndTime
 		} else {
 			continue
 		}

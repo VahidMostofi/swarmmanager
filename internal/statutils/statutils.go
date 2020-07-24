@@ -2,6 +2,7 @@ package statutils
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ func ComputeToleranceIntervalNormalDist(data []float64) (float64, float64, error
 	outStr := strings.Trim(string(out), "\n")
 	outStr = strings.Trim(outStr, " ")
 	tempStrs := strings.Split(outStr, ",")
-	count, err := strconv.Atoi(tempStrs[0], 64)
+	count, err := strconv.Atoi(tempStrs[0])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -44,7 +45,7 @@ func ComputeToleranceIntervalNormalDist(data []float64) (float64, float64, error
 }
 
 // ComputeToleranceIntervalNonParametric returns both lower and upper bound
-func ComputeToleranceIntervalNonParametric(data []float64) (float64, float64, error) {
+func ComputeToleranceIntervalNonParametric(data []float64, confidence, portionOfPopulation float64) (float64, float64, error) {
 	rClient, err := roger.NewRClient("127.0.0.1", 6311)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error connecting to R server: %w", err)
@@ -56,7 +57,10 @@ func ComputeToleranceIntervalNonParametric(data []float64) (float64, float64, er
 			numbers += ", "
 		}
 	}
-	command := "library(\"tolerance\"); nptol.int(x = c(" + numbers + "), alpha = 0.05, P = 0.95, side = 1,  method = \"WALD\", upper = NULL, lower = NULL)"
+	alpha := strconv.FormatFloat(1-float64(confidence), 'f', 4, 64)
+	p := strconv.FormatFloat(portionOfPopulation, 'f', 4, 64)
+	log.Println("Statutils: alpha:", alpha, "P:", p)
+	command := "library(\"tolerance\"); nptol.int(x = c(" + numbers + "), alpha = " + alpha + ", P = " + p + ", side = 1,  method = \"WALD\", upper = NULL, lower = NULL)"
 
 	value, err := rClient.Eval(command)
 	if err != nil {

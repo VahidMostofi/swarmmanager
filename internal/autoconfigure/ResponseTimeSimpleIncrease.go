@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
@@ -19,12 +20,13 @@ type ResponseTimeSimpleIncrease struct {
 }
 
 // Configure ...
-func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+// this is not stable! //TODO
+func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 
 	initialReplicaCounts := make(map[string]int)
-	for serviceID := range currentState {
-		initialReplicaCounts[serviceID] = currentState[serviceID].ReplicaCount
+	for key := range currentState {
+		initialReplicaCounts[key] = currentState[key].ReplicaCount
 	}
 
 	for service := range currentState {
@@ -82,12 +84,12 @@ func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]ServiceInfo, 
 
 	}
 
-	for serviceID := range currentState {
-		if currentState[serviceID].ReplicaCount-initialReplicaCounts[serviceID] > 1 {
-			log.Println("Configurer Agent:", currentState[serviceID].Name, "replica count has increased", currentState[serviceID].ReplicaCount-initialReplicaCounts[serviceID], "changing the increase to 1")
-			temp := currentState[serviceID]
-			temp.ReplicaCount = initialReplicaCounts[serviceID] + 1
-			currentState[serviceID] = temp
+	for key := range currentState {
+		if currentState[key].ReplicaCount-initialReplicaCounts[key] > 1 {
+			log.Println("Configurer Agent:", currentState[key].Name, "replica count has increased", currentState[key].ReplicaCount-initialReplicaCounts[key], "changing the increase to 1")
+			temp := currentState[key]
+			temp.ReplicaCount = initialReplicaCounts[key] + 1
+			currentState[key] = temp
 		}
 	}
 

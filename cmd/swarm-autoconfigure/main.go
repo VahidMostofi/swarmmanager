@@ -7,10 +7,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"flag"
 
+	"github.com/VahidMostofi/swarmmanager"
 	"github.com/VahidMostofi/swarmmanager/internal/autoconfigure"
+	"github.com/VahidMostofi/swarmmanager/internal/caching"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	resource "github.com/VahidMostofi/swarmmanager/internal/resource/collector"
@@ -22,10 +25,9 @@ const beforeConfigArgCount = 4
 
 // GetTheResourceUsageCollector ...
 func GetTheResourceUsageCollector() resource.Collector {
-	//TODO SERVICE COUNT IS HARDCODED!!!!!!!!
-	stackName := "bookstore"
+	stackName := swarmmanager.GetConfig().StackName
 	c := resource.GetNewCollector("SingleCollector")
-	err := c.Configure(map[string]string{"host": "tcp://136.159.209.204:2375", "stackname": stackName})
+	err := c.Configure(map[string]string{"host": swarmmanager.GetConfig().Host, "stackname": stackName})
 	if err != nil {
 		log.Panic(err)
 	}
@@ -46,6 +48,9 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 	if err != nil {
 		panic(err)
 	}
+	if duration < swarmmanager.GetConfig().TestDuration {
+		panic("for now these two values should be equal or duration should be more than TestDuration!")
+	}
 	authProb, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil {
 		panic(err)
@@ -55,7 +60,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 	if err != nil {
 		panic(err)
 	}
-	script := loadgenerator.CreateLoadGeneartorScript("/Users/vahid/Desktop/type8.js", vus, duration, authProb, bookProb, 0, sleepDuration)
+	script := loadgenerator.CreateLoadGeneartorScript(swarmmanager.GetConfig().K6Script, vus, duration, authProb, bookProb, 0, sleepDuration)
 	l.Prepare(map[string]string{"script": script})
 	return l
 
@@ -67,7 +72,7 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 // GetJaegerCollector ...
 func GetJaegerCollector() *jaeger.JaegerAggregator {
 	//TODO these are hardcoded!
-	j := jaeger.NewJaegerAggregator("http://136.159.209.204:16686", []string{"gateway", "auth", "books", "gateway", "auth_total", "auth_gateway", "auth_sub", "books_total", "books_gateway", "books_sub"})
+	j := jaeger.NewJaegerAggregator(swarmmanager.GetConfig().JaegerHost, []string{"gateway", "auth", "books", "gateway", "auth_total", "auth_gateway", "auth_sub", "books_total", "books_gateway", "books_sub"})
 	return j
 }
 
@@ -131,15 +136,24 @@ func GetResponseTimeSimpleIncreaseConfigurer() autoconfigure.Configurer {
 
 // GetSwarmManager ...
 func GetSwarmManager() *swarm.Manager {
-	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": "bookstore", "host": "tcp://136.159.209.204:2375", "services": "auth,gateway,books"})
+	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": swarmmanager.GetConfig().StackName, "host": swarmmanager.GetConfig().Host, "services": "auth,gateway,books"})
 	if err != nil {
 		log.Panic(err)
 	}
 	return m
 }
 
-func main() {
+// GetNewDatabase ...
+func GetNewDatabase() caching.Database {
+	db, err := caching.GetNewDropboxDatabase(swarmmanager.GetConfig().DropboxPath)
+	if err != nil {
+		panic(fmt.Errorf("error in getting mongo database for caching: %w", err))
+	}
+	return db
+}
 
+func main() {
+	time.Sleep(10 * time.Second)
 	var ruc = GetTheResourceUsageCollector()
 	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
@@ -147,7 +161,7 @@ func main() {
 	if !strings.Contains(workloadStr, "_") {
 		log.Panic("the first argument must be the workload")
 	}
-	var lg = GetTheLoadGenerator(os.Args[1])
+	var lg = GetTheLoadGenerator(workloadStr)
 
 	if len(os.Args) < beforeConfigArgCount {
 		fmt.Println("expect name of test as the first argument, expected 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands")
@@ -170,7 +184,8 @@ func main() {
 	}
 	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager()
-	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m, workloadStr)
+	db := GetNewDatabase()
+	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m, workloadStr, db)
 	log.Println("name of the test is:", os.Args[beforeConfigArgCount-2])
 	a.Start(os.Args[beforeConfigArgCount-2])
 }

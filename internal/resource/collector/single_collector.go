@@ -91,18 +91,17 @@ func (sc *SingleCollector) Start() error {
 		if container.Labels["com.docker.stack.namespace"] == sc.Stackname {
 			sc.Containers = append(sc.Containers, container)
 			// fmt.Println("monitoing stats for these containers:", sc.Containers)
-			serviceID := container.Labels["com.docker.swarm.service.id"]
 			serviceName := container.Labels["com.docker.swarm.service.name"]
-			sc.ServiceToContainers[serviceID] = append(sc.ServiceToContainers[serviceID], container.ID)
-			sc.Services[serviceID] = serviceName
+			sc.ServiceToContainers[serviceName] = append(sc.ServiceToContainers[serviceName], container.ID)
+			sc.Services[serviceName] = serviceName
 
 			sc.ResourceStats[container.ID] = resource.NewResourceUtilization(container.ID)
-			sc.ContainerToService[container.ID] = serviceID
+			sc.ContainerToService[container.ID] = serviceName
 		}
 	}
 
-	for id := range sc.Services {
-		sc.ResourceStats[id] = resource.NewResourceUtilization(id)
+	for name := range sc.Services {
+		sc.ResourceStats[name] = resource.NewResourceUtilization(name)
 	}
 
 	// fmt.Println(sc.ToString())
@@ -131,9 +130,9 @@ func (sc *SingleCollector) Stop() error {
 
 // GetResourceUtilization ... returns stats
 func (sc *SingleCollector) GetResourceUtilization() map[string]*resource.Utilization {
-	for key, value := range sc.ResourceStats {
-		fmt.Println(key, value.CPUUtilizationsAtTime)
-	}
+	// for key, value := range sc.ResourceStats {
+	// 	fmt.Println(key, value.CPUUtilizationsAtTime)
+	// }
 	return sc.ResourceStats
 }
 

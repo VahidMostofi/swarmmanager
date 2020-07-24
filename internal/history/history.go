@@ -1,4 +1,4 @@
-package autoconfigure
+package history
 
 import "github.com/VahidMostofi/swarmmanager/internal/swarm"
 
@@ -11,9 +11,11 @@ type StackHistory struct {
 
 // Information ...
 type Information struct {
-	Infomations map[string]ServiceInfo        `yaml:"info"`
-	Specs       map[string]swarm.ServiceSpecs `yaml:"specs"`
-	JaegerFile  string                        `yaml:"jaegerFile"`
+	ServicesInfo map[string]ServiceInfo        `yaml:"info"`
+	Specs        map[string]swarm.ServiceSpecs `yaml:"specs"`
+	JaegerFile   string                        `yaml:"jaegerFile"`
+	Workload     string                        `yaml:"workload"`
+	HashCode     string                        `yaml:"hash"`
 }
 
 // ServiceInfo ...
@@ -44,4 +46,16 @@ type ServiceInfo struct {
 	SubTracesResponseTimes90Percentile map[string]float64 `yaml:"subTracesResponseTime90th,omitempty"`
 	SubTracesResponseTimes95Percentile map[string]float64 `yaml:"subTracesResponseTime95th,omitempty"`
 	SubTracesResponseTimes99Percentile map[string]float64 `yaml:"subTracesResponseTime99th,omitempty"`
+
+	RTToleranceIntervalUBoundc90p90 float64 `yaml:"rt_ti_u_bound_c90_p90"`
+	RTToleranceIntervalUBoundc90p95 float64 `yaml:"rt_ti_u_bound_c90_p95"`
+	RTToleranceIntervalUBoundc90p99 float64 `yaml:"rt_ti_u_bound_c90_p99"`
+
+	RTToleranceIntervalUBoundc95p90 float64 `yaml:"rt_ti_u_bound_c95_p90"`
+	RTToleranceIntervalUBoundc95p95 float64 `yaml:"rt_ti_u_bound_c95_p95"`
+	RTToleranceIntervalUBoundc95p99 float64 `yaml:"rt_ti_u_bound_c95_p99"`
+
+	RTToleranceIntervalUBoundc99p90 float64 `yaml:"rt_ti_u_bound_c99_p90"`
+	RTToleranceIntervalUBoundc99p95 float64 `yaml:"rt_ti_u_bound_c99_p95"`
+	RTToleranceIntervalUBoundc99p99 float64 `yaml:"rt_ti_u_bound_c99_p99"`
 }

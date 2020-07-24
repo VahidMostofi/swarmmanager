@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
@@ -21,7 +22,8 @@ func GetNewPredefinedSearcher() *PredefinedSearch {
 }
 
 // Configure ...
-func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+// this is not stable! //TODO
+func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, currentSpecs map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 	log.Println("Configurer Agent: configure at step", c.Step)
 	if c.Step == 0 { // the input configuration
@@ -31,17 +33,17 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 1 { // 1 container with multiple (= replica count) cores
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
 			temp.ReplicaCount = 1
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -49,17 +51,17 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 2 {
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount*2)
 			temp.ReplicaCount = 1
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -67,17 +69,17 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 3 {
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount+1)
 			temp.ReplicaCount = 1
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -85,20 +87,20 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 4 {
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
-			if currentSpecs[serviceID].ReplicaCount%2 != 0 {
+			if currentSpecs[key].ReplicaCount%2 != 0 {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount / 2)
 			temp.CPULimits = float64(temp.ReplicaCount / 2)
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount/2)
 			temp.ReplicaCount = 2
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -109,20 +111,20 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 5 {
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
-			if currentSpecs[serviceID].ReplicaCount%2 != 0 {
+			if currentSpecs[key].ReplicaCount%2 != 0 {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount / 2)
 			temp.CPULimits = float64(temp.ReplicaCount / 2)
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, 1+temp.ReplicaCount/2)
 			temp.ReplicaCount = 2
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -133,17 +135,17 @@ func (c *PredefinedSearch) Configure(values map[string]ServiceInfo, currentSpecs
 	}
 	if c.Step == 6 {
 		currentSpecs = clone(c.PreviousSpecs[0])
-		for serviceID := range currentSpecs {
-			if !contains(servicesToMonitor, currentSpecs[serviceID].Name) {
+		for key := range currentSpecs {
+			if !contains(servicesToMonitor, currentSpecs[key].Name) {
 				continue
 			}
 			isChanged = true
-			temp := currentSpecs[serviceID]
+			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount) - 0.5
 			temp.CPULimits = float64(temp.ReplicaCount) - 0.5
 			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
 			temp.ReplicaCount = 1
-			currentSpecs[serviceID] = temp
+			currentSpecs[key] = temp
 		}
 		c.PreviousSpecs = append(c.PreviousSpecs, currentSpecs)
 		c.Step++
@@ -173,8 +175,8 @@ func updateENVWorkerCounts(envs []string, count int) []string {
 
 func clone(m map[string]swarm.ServiceSpecs) map[string]swarm.ServiceSpecs {
 	clone := make(map[string]swarm.ServiceSpecs)
-	for serviceID, specs := range m {
-		clone[serviceID] = specs
+	for key, specs := range m {
+		clone[key] = specs
 	}
 	return clone
 }

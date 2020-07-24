@@ -14,10 +14,21 @@ import (
 
 // config ...
 type config struct {
-	ResultsDirectoryPath string `yaml:"resultsPath"`
-	LogDirectory         string `yaml:"logDirectory"`
-	JaegerStorePath      string `yaml:"jegerStorePath"`
-	MongoDBURL			 string `yaml:"mongodbURL"`
+	ResultsDirectoryPath   string  `yaml:"resultsPath"`
+	LogDirectory           string  `yaml:"logDirectory"`
+	JaegerStorePath        string  `yaml:"jaegerStorePath"`
+	MongoDBURL             string  `yaml:"mongodbURL"`
+	DockerComposeFile      string  `yaml:"docker-compose-file"`
+	ServiceCount           int     `yaml:"service-count"`
+	StackName              string  `yaml:"stack-name"`
+	Host                   string  `yaml:"host"`
+	JaegerHost             string  `yaml:"jaeger-host"`
+	K6Script               string  `yaml:"k6-script"`
+	DropboxPath            string  `yaml:"dropbox-path"`
+	Version                string  `yaml:"version"`
+	TestDuration           int     `yaml:"test-duration"`
+	AvailabeCPUCount       float64 `yaml:"available-cpu-count"`
+	WaitAfterLoadGenerator int     `yaml:"wait-after-load-test"`
 }
 
 var c *config
@@ -49,7 +60,7 @@ func GetConfig() *config {
 		if e != nil {
 			panic(e)
 		}
-		logFile, err := os.OpenFile(c.LogDirectory+"/"+time.Now().Local().Format(time.RFC3339)+".log", os.O_RDWR|os.O_CREATE, 0666)
+		logFile, err := os.OpenFile(c.LogDirectory+"/"+time.Now().Local().Format(time.RFC3339)+".log", os.O_RDWR|os.O_CREATE, 0777)
 		if err != nil {
 			panic(err)
 		}

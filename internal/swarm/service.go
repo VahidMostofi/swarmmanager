@@ -3,11 +3,13 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"log"
 
+	"github.com/VahidMostofi/swarmmanager"
 	"github.com/docker/docker/api/types"
 	dockerswarm "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
@@ -44,13 +46,14 @@ func (ss ServiceSpecs) toSerializable() serializableServiceSpec {
 	sss := serializableServiceSpec{
 		ImageName:            ss.ImageName,
 		ReplicaCount:         ss.ReplicaCount,
-		EnvironmentVariables: ss.EnvironmentVariables, //TODO sorted?
+		EnvironmentVariables: ss.EnvironmentVariables,
 		StackName:            ss.StackName,
 		CPULimits:            ss.CPULimits,
 		CPUReservation:       ss.CPUReservation,
 		MemoryLimits:         ss.MemoryLimits,
 		MemoryReservations:   ss.MemoryReservations,
 	}
+	sort.Strings(sss.EnvironmentVariables)
 	return sss
 }
 
@@ -162,12 +165,6 @@ func (s *Manager) monitorSpecs() {
 			}
 			if !comparision {
 				s.UpdateServices()
-			} else {
-				//todo remove this
-				// specs := s.DesiredSpecs["books"]
-				// specs.ReplicaCount = 3
-				// s.DesiredSpecs["books"] = specs
-				// fmt.Println(s.CurrentSpecs["books"])
 			}
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
@@ -179,7 +176,7 @@ func (s *Manager) manageState() {
 		if s.CurrentStackState == StackStateEmpty {
 			//
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeDeployed {
-			s.CheckServicedDeployment(4) //TODO hardcode!
+			s.CheckServicedDeployment(swarmmanager.GetConfig().ServiceCount)
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeReady {
 			s.CheckforServicesReadiness()
 		}
@@ -212,10 +209,9 @@ func (s *Manager) UpdateCurrentSpecs() error {
 	s.CurrentSpecs = make(map[string]ServiceSpecs)
 	for _, service := range services {
 		serviceName := s.removeStackName(service.Spec.Name)
-		serviceID := service.ID
 
-		s.CurrentSpecs[serviceID] = ServiceSpecs{}
-		tempState := s.CurrentSpecs[serviceID]
+		s.CurrentSpecs[serviceName] = ServiceSpecs{}
+		tempState := s.CurrentSpecs[serviceName]
 		tempState.ID = service.ID
 		tempState.ImageName = service.Spec.Labels["com.docker.stack.image"]
 		tempState.EnvironmentVariables = service.Spec.TaskTemplate.ContainerSpec.Env
@@ -226,7 +222,7 @@ func (s *Manager) UpdateCurrentSpecs() error {
 		tempState.CPUReservation = float64(service.Spec.TaskTemplate.Resources.Reservations.NanoCPUs) / 1e9
 		tempState.MemoryLimits = service.Spec.TaskTemplate.Resources.Limits.MemoryBytes
 		tempState.MemoryReservations = service.Spec.TaskTemplate.Resources.Reservations.MemoryBytes
-		s.CurrentSpecs[serviceID] = tempState
+		s.CurrentSpecs[serviceName] = tempState
 	}
 	return nil
 }
@@ -235,56 +231,60 @@ func (s *Manager) UpdateCurrentSpecs() error {
 func (s *Manager) UpdateServicesSpecs() error {
 
 	// check running containers for services
-	for serviceID := range s.CurrentSpecs {
-		temp := s.CurrentSpecs[serviceID]
+	for key := range s.CurrentSpecs {
+		temp := s.CurrentSpecs[key]
 		temp.Containers = make([]string, 0)
-		s.CurrentSpecs[serviceID] = temp
+		s.CurrentSpecs[key] = temp
 	}
 	tasks, err := s.Client.TaskList(s.Ctx, types.TaskListOptions{})
 	if err != nil {
 		return fmt.Errorf("error while retrieving tasks: %w", err)
 	}
-	// fmt.Println("tasks")
 	for _, t := range tasks {
-		// fmt.Println(t)
 		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 10 {
-			temp := s.CurrentSpecs[t.ServiceID]
+			key := ""
+			for k, specs := range s.CurrentSpecs {
+				if specs.ID == t.ServiceID {
+					key = k
+				}
+			}
+			temp := s.CurrentSpecs[key]
 			temp.Containers = append(temp.Containers, t.Status.ContainerStatus.ContainerID)
-			s.CurrentSpecs[t.ServiceID] = temp
+			s.CurrentSpecs[temp.Name] = temp
 		}
 	}
 	return nil
 }
 
 // comapeServiceSpecs ... returns true if they are equal
-func (s *Manager) comapeServiceSpecs(serviceID string) (bool, []string) {
+func (s *Manager) comapeServiceSpecs(serviceName string) (bool, []string) {
 	changes := []string{}
-	if s.CurrentSpecs[serviceID].ImageName != s.DesiredSpecs[serviceID].ImageName {
+	if s.CurrentSpecs[serviceName].ImageName != s.DesiredSpecs[serviceName].ImageName {
 		log.Println("CompareSpecs: ImageName is changed")
 		changes = append(changes, "ImageName")
 	}
-	if s.CurrentSpecs[serviceID].ReplicaCount != s.DesiredSpecs[serviceID].ReplicaCount {
+	if s.CurrentSpecs[serviceName].ReplicaCount != s.DesiredSpecs[serviceName].ReplicaCount {
 		log.Println("CompareSpecs: ReplicaCount is changed")
 		changes = append(changes, "ReplicaCount")
 	}
-	if s.CurrentSpecs[serviceID].CPULimits != s.DesiredSpecs[serviceID].CPULimits {
+	if s.CurrentSpecs[serviceName].CPULimits != s.DesiredSpecs[serviceName].CPULimits {
 		log.Println("CompareSpecs: CPULimits is changed")
 		changes = append(changes, "CPULimits")
 	}
-	if s.CurrentSpecs[serviceID].CPUReservation != s.DesiredSpecs[serviceID].CPUReservation {
+	if s.CurrentSpecs[serviceName].CPUReservation != s.DesiredSpecs[serviceName].CPUReservation {
 		log.Println("CompareSpecs: CPUReservation is changed")
 		changes = append(changes, "CPUReservation")
 	}
-	if s.CurrentSpecs[serviceID].MemoryLimits != s.DesiredSpecs[serviceID].MemoryLimits {
+	if s.CurrentSpecs[serviceName].MemoryLimits != s.DesiredSpecs[serviceName].MemoryLimits {
 		log.Println("CompareSpecs: MemoryLimits is changed")
 		changes = append(changes, "MemoryLimits")
 	}
-	if s.CurrentSpecs[serviceID].MemoryReservations != s.DesiredSpecs[serviceID].MemoryReservations {
+	if s.CurrentSpecs[serviceName].MemoryReservations != s.DesiredSpecs[serviceName].MemoryReservations {
 		log.Println("CompareSpecs: MemoryReservations is changed")
 		changes = append(changes, "MemoryReservations")
 	}
 
-	if !Equal(s.CurrentSpecs[serviceID].EnvironmentVariables, s.DesiredSpecs[serviceID].EnvironmentVariables) {
+	if !Equal(s.CurrentSpecs[serviceName].EnvironmentVariables, s.DesiredSpecs[serviceName].EnvironmentVariables) {
 		log.Println("CompareSpecs: EnvironmentVariables is changed")
 		changes = append(changes, "EnvironmentVariables")
 	}
@@ -293,8 +293,8 @@ func (s *Manager) comapeServiceSpecs(serviceID string) (bool, []string) {
 
 // CompareSpecs ...
 func (s *Manager) CompareSpecs() bool {
-	for serviceID := range s.CurrentSpecs {
-		flag, _ := s.comapeServiceSpecs(serviceID)
+	for _, spec := range s.CurrentSpecs {
+		flag, _ := s.comapeServiceSpecs(spec.Name)
 		if !flag {
 			return false
 		}
@@ -331,11 +331,11 @@ func listOfContainersToString(cs []string) string {
 }
 
 // IsServiceReady ...
-func (s *Manager) IsServiceReady(serviceID string) bool {
-	if len(s.CurrentSpecs[serviceID].Containers) == s.DesiredSpecs[serviceID].ReplicaCount {
+func (s *Manager) IsServiceReady(serviceName string) bool {
+	if len(s.CurrentSpecs[serviceName].Containers) == s.DesiredSpecs[serviceName].ReplicaCount {
 		return true
 	}
-	// fmt.Println(s.CurrentSpecs[serviceID].Name, listOfContainersToString(s.CurrentSpecs[serviceID].Containers), s.DesiredSpecs[serviceID].ReplicaCount)
+	// fmt.Println(s.CurrentSpecs[serviceName].Name, listOfContainersToString(s.CurrentSpecs[serviceName].Containers), s.DesiredSpecs[serviceName].ReplicaCount)
 	return false
 }
 
@@ -348,8 +348,8 @@ func (s *Manager) CheckforServicesReadiness() {
 		log.Panic(err)
 	}
 
-	for serviceID := range s.CurrentSpecs {
-		if !s.IsServiceReady(serviceID) {
+	for _, spec := range s.CurrentSpecs {
+		if !s.IsServiceReady(spec.Name) {
 			flag = false
 			break
 		}

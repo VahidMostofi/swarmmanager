@@ -10,8 +10,8 @@ type Collector interface {
 	Start() error
 	Stop() error
 	GetResourceUtilization() map[string]*resource.Utilization
-	GetContainerToService() map[string]string    //ContainerID to ServiceID
-	GetServiceToContainers() map[string][]string //ServiceID to ContainerIDs
+	GetContainerToService() map[string]string    //ContainerID to ServiceName
+	GetServiceToContainers() map[string][]string //ServiceName to ContainerIDs
 }
 
 // GetNewCollector is the factory method for constructing a new Collector
