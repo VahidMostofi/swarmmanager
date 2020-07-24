@@ -21,6 +21,9 @@ func GetNewPredefinedSearcher() *PredefinedSearch {
 	return &PredefinedSearch{}
 }
 
+// OnFeedbackCallback ...
+func (c *PredefinedSearch) OnFeedbackCallback(map[string]history.ServiceInfo) error { return nil }
+
 // Configure ...
 // this is not stable! //TODO
 func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, currentSpecs map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {

@@ -8,4 +8,5 @@ import (
 // Configurer ...
 type Configurer interface {
 	Configure(map[string]history.ServiceInfo, map[string]swarm.ServiceSpecs, []string) (map[string]swarm.ServiceSpecs, bool, error)
+	OnFeedbackCallback(map[string]history.ServiceInfo) error
 }

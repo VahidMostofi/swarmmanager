@@ -19,6 +19,11 @@ type ResponseTimeSimpleIncrease struct {
 	Agreements []Agreement
 }
 
+// OnFeedbackCallback ...
+func (c *ResponseTimeSimpleIncrease) OnFeedbackCallback(map[string]history.ServiceInfo) error {
+	return nil
+}
+
 // Configure ...
 // this is not stable! //TODO
 func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {

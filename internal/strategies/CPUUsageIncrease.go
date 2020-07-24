@@ -61,3 +61,6 @@ func (c *CPUUsageIncrease) Configure(values map[string]history.ServiceInfo, curr
 	}
 	return newSpecs, isChanged, nil
 }
+
+// OnFeedbackCallback ...
+func (c *CPUUsageIncrease) OnFeedbackCallback(map[string]history.ServiceInfo) error { return nil }
