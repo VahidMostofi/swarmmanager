@@ -120,13 +120,13 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 		var sub float64
 		if request == "login" {
 			sup = spans["auth_req_login"].Duration
-			sub = spans["auth"].StartTime - spans["auth_connect"].EndTime
+			sub = spans["auth"].EndTime - spans["auth_connect"].EndTime
 		} else if request == "edit_book" {
 			sup = spans["books_edit_book"].Duration
-			sub = spans["books"].StartTime - spans["books_connect"].EndTime
+			sub = spans["books"].EndTime - spans["books_connect"].EndTime
 		} else if request == "get_book" {
 			sup = spans["books_get_book"].Duration
-			sub = spans["books"].StartTime - spans["books_connect"].EndTime
+			sub = spans["books"].EndTime - spans["books_connect"].EndTime
 		} else {
 			continue
 		}

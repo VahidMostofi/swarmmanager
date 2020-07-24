@@ -1,7 +1,7 @@
 #!/bin/bash
 # CPUUsage95Percentile
-# go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_50 CPUUsageIncrease -property CPUUsage95Percentile -threshold 50
-# go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_60 CPUUsageIncrease -property CPUUsage95Percentile -threshold 60
+go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_50 CPUUsageIncrease -property CPUUsage95Percentile -threshold 50
+go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_60 CPUUsageIncrease -property CPUUsage95Percentile -threshold 60
 go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_70 CPUUsageIncrease -property CPUUsage95Percentile -threshold 70
 go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_80 CPUUsageIncrease -property CPUUsage95Percentile -threshold 80
 go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu95_90 CPUUsageIncrease -property CPUUsage95Percentile -threshold 90
@@ -28,3 +28,8 @@ go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu_mean_90 CPUUsageIncrea
 
 # Signle
 # go run cmd/swarm-autoconfigure/main.go 300_45_0.3_10 after_predefined_rtsi_95_350_B Single
+
+
+# Finidng Demands:
+
+# go run cmd/swarm-autoconfigure/main.go 1_360_0.5_1 finding_demands Single

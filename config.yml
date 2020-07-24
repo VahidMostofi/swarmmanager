@@ -1,4 +1,4 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/invalid"
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/cpu_util_rule_based"
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
