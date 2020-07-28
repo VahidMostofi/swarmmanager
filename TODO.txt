@@ -1,2 +1,3 @@
 [ ] force restart other services
 [ ] change the way you list containers of a service
+[ ] first iteration should be controlled by the strategy too

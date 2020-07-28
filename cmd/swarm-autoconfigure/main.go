@@ -175,6 +175,8 @@ func main() {
 		c = GetResponseTimeSimpleIncreaseConfigurer()
 	case "PredefinedSearch":
 		c = strategies.GetNewPredefinedSearcher()
+	case "MOBO":
+		c = strategies.GetnewMOBOConfigurer()
 	case "Single":
 		c = &strategies.SingleRun{}
 	default:

@@ -33,3 +33,7 @@ go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu_mean_90 CPUUsageIncrea
 # Finidng Demands:
 
 # go run cmd/swarm-autoconfigure/main.go 1_360_0.5_1 finding_demands Single
+
+
+# MOBO
+# go run cmd/swarm-autoconfigure/main.go 300_39_0.3_10 test_mobo MOBO
