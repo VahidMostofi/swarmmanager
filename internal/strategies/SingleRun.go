@@ -18,3 +18,7 @@ func (c *SingleRun) OnFeedbackCallback(map[string]history.ServiceInfo) error {
 func (c *SingleRun) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	return nil, false, nil
 }
+
+func (c *SingleRun) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+	return make(map[string]swarm.SimpleSpecs), nil
+}

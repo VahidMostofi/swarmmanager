@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"log"
+
+	"github.com/VahidMostofi/swarmmanager/internal/utils"
 )
 
 // TODO add attempts to this too
@@ -29,7 +31,7 @@ func (s *Manager) RemoveStack(attempt int) error {
 }
 
 // DeployStackWithDockerCompose ....
-func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt int) error {
+func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt int, initialConfig map[string]SimpleSpecs) error {
 	log.Println("deploying stack")
 	cmd := exec.Command("docker", "-H", s.Host, "stack", "deploy", "--compose-file", dockerComposePath, s.StackName)
 	out, err := cmd.CombinedOutput()
@@ -38,20 +40,32 @@ func (s *Manager) DeployStackWithDockerCompose(dockerComposePath string, attempt
 			var waitTime int64 = 5
 			log.Printf("deploying stack, attempt %d failed. Wait %d seconds\n", attempt, waitTime)
 			time.Sleep(time.Duration(waitTime) * time.Second)
-			return s.DeployStackWithDockerCompose(dockerComposePath, attempt+1)
+			return s.DeployStackWithDockerCompose(dockerComposePath, attempt+1, initialConfig)
 		}
 		return fmt.Errorf("deploying stack with docker compose file failed with error: %w; %s", err, string(out))
 	}
+
 	s.StackStateCh <- StackStateWaitForServicesToBeDeployed
 
 	go func(s *Manager) {
 		for {
 			if s.CurrentStackState >= StackStateServicesAreDeployed {
 				s.FillDesiredSpecsCurrentSpecs()
-				return
+				break
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
+		if len(initialConfig) > 0 {
+			for serviceName, ss := range initialConfig {
+				temp := s.DesiredSpecs[serviceName]
+				temp.CPULimits = ss.CPU
+				temp.CPUReservation = ss.CPU
+				temp.ReplicaCount = ss.Replica
+				temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, ss.Worker)
+				s.DesiredSpecs[serviceName] = temp
+			}
+		}
+		s.StackStateCh <- StackStateMustCompare
 	}(s)
 
 	return nil

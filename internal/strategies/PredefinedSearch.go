@@ -3,11 +3,10 @@ package strategies
 import (
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+	"github.com/VahidMostofi/swarmmanager/internal/utils"
 )
 
 // PredefinedSearch ...
@@ -23,6 +22,10 @@ func GetNewPredefinedSearcher() *PredefinedSearch {
 
 // OnFeedbackCallback ...
 func (c *PredefinedSearch) OnFeedbackCallback(map[string]history.ServiceInfo) error { return nil }
+
+func (c *PredefinedSearch) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+	return make(map[string]swarm.SimpleSpecs), nil
+}
 
 // Configure ...
 // this is not stable! //TODO
@@ -44,7 +47,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
 			temp.ReplicaCount = 1
 			currentSpecs[key] = temp
 		}
@@ -62,7 +65,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount*2)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount*2)
 			temp.ReplicaCount = 1
 			currentSpecs[key] = temp
 		}
@@ -80,7 +83,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount)
 			temp.CPULimits = float64(temp.ReplicaCount)
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount+1)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount+1)
 			temp.ReplicaCount = 1
 			currentSpecs[key] = temp
 		}
@@ -101,7 +104,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount / 2)
 			temp.CPULimits = float64(temp.ReplicaCount / 2)
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount/2)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount/2)
 			temp.ReplicaCount = 2
 			currentSpecs[key] = temp
 		}
@@ -125,7 +128,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount / 2)
 			temp.CPULimits = float64(temp.ReplicaCount / 2)
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, 1+temp.ReplicaCount/2)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, 1+temp.ReplicaCount/2)
 			temp.ReplicaCount = 2
 			currentSpecs[key] = temp
 		}
@@ -146,7 +149,7 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 			temp := currentSpecs[key]
 			temp.CPUReservation = float64(temp.ReplicaCount) - 0.5
 			temp.CPULimits = float64(temp.ReplicaCount) - 0.5
-			temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, temp.ReplicaCount)
 			temp.ReplicaCount = 1
 			currentSpecs[key] = temp
 		}
@@ -161,19 +164,6 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 		return currentSpecs, isChanged, nil
 	}
 	return nil, false, fmt.Errorf("PredefinedSearch: it shouldn't be here")
-}
-
-func updateENVWorkerCounts(envs []string, count int) []string {
-	newEnvs := make([]string, len(envs))
-	for i, env := range envs {
-		if strings.Contains(env, "WorkerCount") {
-			newEnv := "WorkerCount=" + strconv.Itoa(count)
-			newEnvs[i] = newEnv
-		} else {
-			newEnvs[i] = envs[i]
-		}
-	}
-	return newEnvs
 }
 
 func clone(m map[string]swarm.ServiceSpecs) map[string]swarm.ServiceSpecs {

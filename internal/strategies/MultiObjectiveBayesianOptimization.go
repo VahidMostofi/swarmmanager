@@ -12,6 +12,7 @@ import (
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+	"github.com/VahidMostofi/swarmmanager/internal/utils"
 )
 
 // PythonPath is the path to python interpretor
@@ -63,6 +64,19 @@ func (c *MultiObjectiveBayesianOptimization) Write(p []byte) (int, error) {
 	}
 	c.configCh <- config
 	return len(p), nil
+}
+
+// GetInitialConfig ...
+func (c *MultiObjectiveBayesianOptimization) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+	config := make(map[string]swarm.SimpleSpecs)
+	for key, coreCount := range map[string]int{"gateway": 2, "auth": 2, "books": 4} {
+		temp := config[key]
+		temp.CPU = 1
+		temp.Replica = coreCount
+		temp.Worker = 1
+		config[key] = temp
+	}
+	return config, nil
 }
 
 // Configure ...
@@ -132,7 +146,7 @@ func (c *MultiObjectiveBayesianOptimization) Configure(values map[string]history
 		temp.CPULimits = config[specs.Name].CPUAmount
 		temp.CPUReservation = config[specs.Name].CPUAmount
 		temp.ReplicaCount = config[specs.Name].ContainerCount
-		temp.EnvironmentVariables = updateENVWorkerCounts(temp.EnvironmentVariables, config[specs.Name].WorkerCount)
+		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, config[specs.Name].WorkerCount)
 		newSpecs[key] = temp
 		isChanged = true
 	}

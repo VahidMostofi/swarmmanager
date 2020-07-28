@@ -15,6 +15,12 @@ import (
 	"github.com/docker/docker/client"
 )
 
+type SimpleSpecs struct {
+	CPU     float64
+	Worker  int
+	Replica int
+}
+
 // ServiceSpecs ...
 type ServiceSpecs struct {
 	ID                   string   `yaml:"-"`

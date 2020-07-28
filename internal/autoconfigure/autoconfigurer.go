@@ -108,7 +108,13 @@ func (a *AutoConfigurer) Start(name string) {
 	// Deploy the stack with basic configuration
 	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml"
 	dockerComposePath := swarmmanager.GetConfig().DockerComposeFile
-	err = a.SwarmManager.DeployStackWithDockerCompose(dockerComposePath, 1)
+
+	initialConfig, err := a.ConfigurerAgent.GetInitialConfig()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = a.SwarmManager.DeployStackWithDockerCompose(dockerComposePath, 1, initialConfig)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -17,6 +17,10 @@ type CPUUsageIncrease struct {
 	ValueToConsider string // CPUUsageMean,CPUUsage90Percentile 70-95, 99
 }
 
+func (c *CPUUsageIncrease) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+	return make(map[string]swarm.SimpleSpecs), nil
+}
+
 // Configure ....
 func (c *CPUUsageIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false

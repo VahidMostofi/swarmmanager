@@ -24,6 +24,10 @@ func (c *ResponseTimeSimpleIncrease) OnFeedbackCallback(map[string]history.Servi
 	return nil
 }
 
+func (c *ResponseTimeSimpleIncrease) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+	return make(map[string]swarm.SimpleSpecs), nil
+}
+
 // Configure ...
 // this is not stable! //TODO
 func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
