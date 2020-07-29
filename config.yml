@@ -1,4 +1,4 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/test"
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/mobo"
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
@@ -9,6 +9,6 @@ host: "tcp://136.159.209.204:2375"
 jaeger-host: "http://136.159.209.204:16686"
 k6-script: "/home/vahid/Desktop/type8.js"
 version: "v1"
-test-duration: 20
-wait-after-load-test: 10
+test-duration: 60
+wait-after-load-test: 30
 available-cpu-count: 24

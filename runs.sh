@@ -37,3 +37,4 @@ go run cmd/swarm-autoconfigure/main.go 300_180_0.3_10 cpu_mean_90 CPUUsageIncrea
 
 # MOBO
 # go run cmd/swarm-autoconfigure/main.go 300_39_0.3_10 test_mobo MOBO
+# go run cmd/swarm-autoconfigure/main.go 300_80_0.3_10 mobo_224 MOBO

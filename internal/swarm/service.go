@@ -172,6 +172,9 @@ func (s *Manager) monitorSpecs() {
 			if !comparision {
 				s.UpdateServices()
 			}
+			if comparision {
+				s.StackStateCh <- StackStateServicesAreDeployed
+			}
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
 	}

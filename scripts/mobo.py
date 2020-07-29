@@ -15,6 +15,9 @@ keys = [
     'books_container_count',
     'books_worker_per_core',    
 ]
+
+cache = {}
+
 import time
 def objective(x):
     
@@ -36,11 +39,17 @@ def objective(x):
         },
     }
 
+    key = json.dumps(config, sort_keys=True)
+    if key in cache:
+        return cache[key]
+
     print(json.dumps(config), flush=True)
     for line in sys.stdin:
         data = json.loads(line.strip())
         break
     
+    cache[key] = np.array(data['feedbacks'])
+
     return np.array(data['feedbacks'])
 
 
