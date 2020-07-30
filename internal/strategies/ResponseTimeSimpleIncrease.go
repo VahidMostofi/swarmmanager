@@ -10,7 +10,7 @@ import (
 
 // Agreement ...
 type Agreement struct {
-	PropertyToConsider string // ResponseTimesMean,ResponseTimes90Percentile,ResponseTimes95Percentile,ResponseTimes99Percentile
+	PropertyToConsider string // ResponseTimesMean,ResponseTimes90Percentile,ResponseTimes95Percentile,ResponseTimes99Percentile,RTToleranceIntervalUBoundc90p95
 	Value              float64
 }
 
@@ -24,16 +24,21 @@ func (c *ResponseTimeSimpleIncrease) OnFeedbackCallback(map[string]history.Servi
 	return nil
 }
 
+// GetInitialConfig ...
 func (c *ResponseTimeSimpleIncrease) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
 	return make(map[string]swarm.SimpleSpecs), nil
 }
 
 // Configure ...
-// this is not stable! //TODO
-func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (c *ResponseTimeSimpleIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 
-	initialReplicaCounts := make(map[string]int)
+	newSpecs := make(map[string]swarm.ServiceSpecs)
+	for key, value := range currentState {
+		newSpecs[key] = value
+	}
+
+	initialReplicaCounts := make(map[string]int) // I'm keeping this, but we can use currentSpecs as it is not chaning
 	for key := range currentState {
 		initialReplicaCounts[key] = currentState[key].ReplicaCount
 	}
@@ -46,11 +51,11 @@ func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.Servi
 				break
 			}
 		}
-		if !doMonitor {
+		if !doMonitor || currentState[service].Name == "gateway" { //TODO second part of the condition
 			continue
 		}
 		isServiceChanged := false
-		for _, ag := range rti.Agreements {
+		for _, ag := range c.Agreements {
 			if isServiceChanged {
 				break
 			}
@@ -64,6 +69,8 @@ func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.Servi
 				whatToCompareTo = values[currentState[service].Name].ResponseTimes95Percentile
 			} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
 				whatToCompareTo = values[currentState[service].Name].ResponseTimes99Percentile
+			} else if ag.PropertyToConsider == "RTToleranceIntervalUBoundc90p95" {
+				whatToCompareTo = values[currentState[service].Name].RTToleranceIntervalUBoundc90p95
 			} else {
 				return nil, false, fmt.Errorf("ResponseTimeSimpleIncrease: the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
 			}
@@ -73,18 +80,12 @@ func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.Servi
 
 				temp := currentState[service]
 				temp.ReplicaCount++
-				currentState[service] = temp
+				newSpecs[service] = temp
 
-				var gatewayID string
-				for _, value := range currentState {
-					if value.Name == "gateway" {
-						gatewayID = value.ID
-					}
-				}
-				log.Println("Configurer Agent:", currentState[gatewayID].Name, "change replica count from", currentState[service].ReplicaCount, "to", currentState[service].ReplicaCount+1)
-				temp = currentState[gatewayID]
+				log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change replica count from", newSpecs[service].ReplicaCount, "to", newSpecs[service].ReplicaCount+1)
+				temp = newSpecs["gateway"]
 				temp.ReplicaCount++
-				currentState[gatewayID] = temp
+				newSpecs["gateway"] = temp
 
 				isServiceChanged = true
 				isChanged = true
@@ -93,14 +94,14 @@ func (rti *ResponseTimeSimpleIncrease) Configure(values map[string]history.Servi
 
 	}
 
-	for key := range currentState {
-		if currentState[key].ReplicaCount-initialReplicaCounts[key] > 1 {
-			log.Println("Configurer Agent:", currentState[key].Name, "replica count has increased", currentState[key].ReplicaCount-initialReplicaCounts[key], "changing the increase to 1")
-			temp := currentState[key]
+	for key := range newSpecs {
+		if newSpecs[key].ReplicaCount-initialReplicaCounts[key] > 1 {
+			log.Println("Configurer Agent:", newSpecs[key].Name, "replica count has increased", newSpecs[key].ReplicaCount-initialReplicaCounts[key], "changing the increase to 1")
+			temp := newSpecs[key]
 			temp.ReplicaCount = initialReplicaCounts[key] + 1
-			currentState[key] = temp
+			newSpecs[key] = temp
 		}
 	}
 
-	return currentState, isChanged, nil
+	return newSpecs, isChanged, nil
 }

@@ -1,4 +1,4 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/400_80_0.5_10/cpu_util_rule_based"
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/500_80_0.65_10/ResponseTimeSimpleIncrease"
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
@@ -10,5 +10,6 @@ jaeger-host: "http://136.159.209.204:16686"
 k6-script: "/home/vahid/Desktop/type8.js"
 version: "v1"
 test-duration: 60
-wait-after-load-test: 30
+wait-after-load-test: 30 
 available-cpu-count: 24
+services-to-monitor: auth,books,gateway

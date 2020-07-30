@@ -136,7 +136,7 @@ func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 
 // GetSwarmManager ...
 func GetSwarmManager() *swarm.Manager {
-	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": swarmmanager.GetConfig().StackName, "host": swarmmanager.GetConfig().Host, "services": "auth,gateway,books"})
+	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": swarmmanager.GetConfig().StackName, "host": swarmmanager.GetConfig().Host, "services": swarmmanager.GetConfig().ServicesToMonitor})
 	if err != nil {
 		log.Panic(err)
 	}

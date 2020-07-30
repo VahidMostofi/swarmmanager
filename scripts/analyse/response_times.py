@@ -1,7 +1,7 @@
 
 import sys
 import yaml
-dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/400_80_0.5_10/cpu_util_rule_based"
+dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/500_80_0.65_10/cpu_util_rule_based"
 auth_sla = 350
 books_sla = 350
 key_name = "rt_ti_u_bound_c90_p95"

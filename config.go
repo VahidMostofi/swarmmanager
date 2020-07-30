@@ -29,6 +29,7 @@ type config struct {
 	TestDuration           int     `yaml:"test-duration"`
 	AvailabeCPUCount       float64 `yaml:"available-cpu-count"`
 	WaitAfterLoadGenerator int     `yaml:"wait-after-load-test"`
+	ServicesToMonitor      string  `yaml:"services-to-monitor"`
 }
 
 var c *config
