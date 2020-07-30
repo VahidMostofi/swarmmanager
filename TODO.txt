@@ -1,3 +1,5 @@
-[ ] force restart other services
+[X] force restart other services
 [ ] change the way you list containers of a service
-[ ] first iteration should be controlled by the strategy too
+[X] first iteration should be controlled by the strategy too
+[ ] create a tool to visualize and search for configs in cache
+[ ] add load generator configs to config.yml

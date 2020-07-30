@@ -23,8 +23,17 @@ func GetNewPredefinedSearcher() *PredefinedSearch {
 // OnFeedbackCallback ...
 func (c *PredefinedSearch) OnFeedbackCallback(map[string]history.ServiceInfo) error { return nil }
 
+// GetInitialConfig ...
 func (c *PredefinedSearch) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
-	return make(map[string]swarm.SimpleSpecs), nil
+	config := make(map[string]swarm.SimpleSpecs)
+	for key, coreCount := range map[string]int{"gateway": 2, "auth": 2, "books": 4} {
+		temp := config[key]
+		temp.CPU = 1
+		temp.Replica = coreCount
+		temp.Worker = 1
+		config[key] = temp
+	}
+	return config, nil
 }
 
 // Configure ...
@@ -95,9 +104,6 @@ func (c *PredefinedSearch) Configure(values map[string]history.ServiceInfo, curr
 		currentSpecs = clone(c.PreviousSpecs[0])
 		for key := range currentSpecs {
 			if !contains(servicesToMonitor, currentSpecs[key].Name) {
-				continue
-			}
-			if currentSpecs[key].ReplicaCount%2 != 0 {
 				continue
 			}
 			isChanged = true

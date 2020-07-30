@@ -172,7 +172,7 @@ func (s *Manager) monitorSpecs() {
 			if !comparision {
 				s.UpdateServices()
 			}
-			if comparision {
+			if comparision && s.CurrentStackState == StackStateMustCompare { // the second part of the condition, im not sure about it
 				s.StackStateCh <- StackStateServicesAreDeployed
 			}
 		}
