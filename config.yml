@@ -1,4 +1,4 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/500_80_0.65_10/ResponseTimeSimpleIncrease"
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$WORKLOAD/mobo" #TODO change this auto, also create folders auto
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"

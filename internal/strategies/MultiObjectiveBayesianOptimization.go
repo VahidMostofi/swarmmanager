@@ -25,6 +25,7 @@ var wg sync.WaitGroup
 
 // MultiObjectiveBayesianOptimization ...
 type MultiObjectiveBayesianOptimization struct {
+	InitialConfig    map[string]int
 	ServicesToReport []string //TODO
 	PropertyToReport []string //TODO
 	index            int
@@ -44,8 +45,11 @@ type dataToSend struct {
 }
 
 // GetnewMOBOConfigurer ...
-func GetnewMOBOConfigurer() Configurer {
-	return &MultiObjectiveBayesianOptimization{}
+func GetnewMOBOConfigurer(initialConfig map[string]int) Configurer {
+	log.Println("MOBO: creating a MOBO configurer with: ", initialConfig)
+	return &MultiObjectiveBayesianOptimization{
+		InitialConfig: initialConfig,
+	}
 }
 
 func (c *MultiObjectiveBayesianOptimization) Write(p []byte) (int, error) {
@@ -69,7 +73,7 @@ func (c *MultiObjectiveBayesianOptimization) Write(p []byte) (int, error) {
 // GetInitialConfig ...
 func (c *MultiObjectiveBayesianOptimization) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
 	config := make(map[string]swarm.SimpleSpecs)
-	for key, coreCount := range map[string]int{"gateway": 2, "auth": 2, "books": 4} {
+	for key, coreCount := range c.InitialConfig {
 		temp := config[key]
 		temp.CPU = 1
 		temp.Replica = coreCount

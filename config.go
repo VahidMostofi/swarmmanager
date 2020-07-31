@@ -1,7 +1,6 @@
 package swarmmanager
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -36,16 +35,16 @@ var c *config
 
 func (c *config) check() {
 	c.ResultsDirectoryPath = strings.Trim(c.ResultsDirectoryPath, " ")
-	fi, err := os.Stat(c.ResultsDirectoryPath)
-	if err != nil {
-		panic(err)
-	}
-	if !fi.Mode().IsDir() {
-		panic(fmt.Errorf("the path is not a directory: %s", c.ResultsDirectoryPath))
-	}
-	if c.ResultsDirectoryPath[len(c.ResultsDirectoryPath)-1] != '/' {
-		c.ResultsDirectoryPath += "/"
-	}
+	// fi, err := os.Stat(c.ResultsDirectoryPath)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// if !fi.Mode().IsDir() {
+	// 	panic(fmt.Errorf("the path is not a directory: %s", c.ResultsDirectoryPath))
+	// }
+	// if c.ResultsDirectoryPath[len(c.ResultsDirectoryPath)-1] != '/' {
+	// 	c.ResultsDirectoryPath += "/"
+	// }
 	log.Println("Config: ResultPath is", c.ResultsDirectoryPath)
 }
 

@@ -76,6 +76,21 @@ func GetJaegerCollector() *jaeger.JaegerAggregator {
 	return j
 }
 
+// GetMOBOConfigurer ...
+func GetMOBOConfigurer() strategies.Configurer {
+	config := make(map[string]int)
+	for i := 0; i < len(os.Args[beforeConfigArgCount:])/2; i++ {
+		serviceName := strings.Trim(os.Args[beforeConfigArgCount+2*i], " ")
+		count, err := strconv.Atoi(strings.Trim(os.Args[beforeConfigArgCount+2*i+1], " "))
+		if err != nil {
+			log.Panic("GetMOBOConfigurer: invalid input as count: %w", err)
+		}
+		config[serviceName] = count
+	}
+
+	return strategies.GetnewMOBOConfigurer(config)
+}
+
 // GetCPUIncreaseConfigurer ...
 func GetCPUIncreaseConfigurer() strategies.Configurer {
 	cpuOnlyCmd := flag.NewFlagSet("CPUUsageIncrease", flag.ExitOnError)
@@ -153,13 +168,19 @@ func GetNewDatabase() caching.Database {
 }
 
 func main() {
-	var ruc = GetTheResourceUsageCollector()
-	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
-	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
 	workloadStr := os.Args[1]
 	if !strings.Contains(workloadStr, "_") {
 		log.Panic("the first argument must be the workload")
 	}
+
+	if strings.Contains(swarmmanager.GetConfig().ResultsDirectoryPath, "$WORKLOAD") {
+		swarmmanager.GetConfig().ResultsDirectoryPath = strings.Replace(swarmmanager.GetConfig().ResultsDirectoryPath, "$WORKLOAD", workloadStr, 1)
+		log.Println("Updating result path to", swarmmanager.GetConfig().ResultsDirectoryPath)
+	}
+
+	var ruc = GetTheResourceUsageCollector()
+	var rtc workload.ResponseTimeCollector = GetJaegerCollector()
+	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
 	var lg = GetTheLoadGenerator(workloadStr)
 
 	if len(os.Args) < beforeConfigArgCount {
@@ -176,7 +197,7 @@ func main() {
 	case "PredefinedSearch":
 		c = strategies.GetNewPredefinedSearcher()
 	case "MOBO":
-		c = strategies.GetnewMOBOConfigurer()
+		c = GetMOBOConfigurer()
 	case "Single":
 		c = &strategies.SingleRun{}
 	default:
