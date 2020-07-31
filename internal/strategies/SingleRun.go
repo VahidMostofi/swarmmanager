@@ -19,6 +19,23 @@ func (c *SingleRun) Configure(values map[string]history.ServiceInfo, currentStat
 	return nil, false, nil
 }
 
+// GetInitialConfig ...
 func (c *SingleRun) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
-	return make(map[string]swarm.SimpleSpecs), nil
+	config := make(map[string]swarm.SimpleSpecs)
+	config["auth"] = swarm.SimpleSpecs{
+		CPU:     1,
+		Replica: 5,
+		Worker:  1,
+	}
+	config["books"] = swarm.SimpleSpecs{
+		CPU:     1,
+		Replica: 3,
+		Worker:  1,
+	}
+	config["gateway"] = swarm.SimpleSpecs{
+		CPU:     1,
+		Replica: 2,
+		Worker:  1,
+	}
+	return config, nil
 }

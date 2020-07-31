@@ -118,6 +118,37 @@ func GetCPUIncreaseConfigurer() strategies.Configurer {
 	}
 }
 
+// GetCPUUtilRTHybridConfigurer ... //TODO add input values for CPU util to this too
+func GetCPUUtilRTHybridConfigurer() strategies.Configurer {
+	rtsiCmd := flag.NewFlagSet("CPUUtil_RT_Hybrid", flag.ExitOnError)
+	rtsiValueName := rtsiCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	rtsiThreshold := rtsiCmd.Float64("value", 0, "what is the threshold")
+	rtsiCmd.Parse(os.Args[beforeConfigArgCount:])
+	rtsiCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[beforeConfigArgCount-1])
+		rtsiCmd.PrintDefaults()
+	}
+
+	if *rtsiValueName == "" {
+		rtsiCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *rtsiThreshold == 0 {
+		rtsiCmd.Usage()
+		os.Exit(1)
+	}
+	log.Println("Configuring CPUUtil_RT_Hybrid with Value:", *rtsiThreshold, "and property of", *rtsiValueName)
+	return &strategies.HybridCPUUtilResponseTimeSimpleIncrease{ //TODO add input values for CPU util to this too
+		Agreements: []strategies.Agreement{
+			{
+				PropertyToConsider: *rtsiValueName,
+				Value:              *rtsiThreshold,
+			},
+		},
+	}
+}
+
 // GetResponseTimeSimpleIncreaseConfigurer ...
 func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 	rtsiCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
@@ -194,6 +225,8 @@ func main() {
 		c = GetCPUIncreaseConfigurer()
 	case "ResponseTimeSimpleIncrease":
 		c = GetResponseTimeSimpleIncreaseConfigurer()
+	case "CPUUtil_RT_Hybrid":
+		c = GetCPUUtilRTHybridConfigurer()
 	case "PredefinedSearch":
 		c = strategies.GetNewPredefinedSearcher()
 	case "MOBO":
