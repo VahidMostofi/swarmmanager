@@ -110,5 +110,13 @@ func (c *HybridCPUUtilResponseTimeSimpleIncrease) Configure(values map[string]hi
 		}
 	}
 
+	isChanged = false
+	for key := range newSpecs {
+		if newSpecs[key].ReplicaCount != currentState[key].ReplicaCount {
+			isChanged = true
+			break
+		}
+	}
+
 	return newSpecs, isChanged, nil
 }

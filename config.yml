@@ -2,8 +2,8 @@ resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$WORKLOAD/$STR
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
-docker-compose-file: "/home/vahid/Desktop/docker-compose-nodb.yml"
-service-count: 4
+docker-compose-file: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-nodb.yml"
+service-count: 5
 stack-name: "bookstore"
 host: "tcp://136.159.209.204:2375"
 jaeger-host: "http://136.159.209.204:16686"

@@ -36,7 +36,6 @@ func (m *Manager) UpdateServices() {
 				continue
 			}
 		}
-
 		serviceReplicaCount := uint64(m.DesiredSpecs[key].ReplicaCount)
 		onlineService, _, err := m.Client.ServiceInspectWithRaw(m.Ctx, serviceID)
 		if err != nil {
