@@ -58,4 +58,6 @@ type ServiceInfo struct {
 	RTToleranceIntervalUBoundc99p90 float64 `yaml:"rt_ti_u_bound_c99_p90"`
 	RTToleranceIntervalUBoundc99p95 float64 `yaml:"rt_ti_u_bound_c99_p95"`
 	RTToleranceIntervalUBoundc99p99 float64 `yaml:"rt_ti_u_bound_c99_p99"`
+
+	SubTracesRTToleranceIntervalc90p95 map[string]float64 `yaml:"sub_rt_ti_u_bound_c90_p95,omitempty"`
 }

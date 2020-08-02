@@ -29,6 +29,7 @@ type config struct {
 	AvailabeCPUCount       float64 `yaml:"available-cpu-count"`
 	WaitAfterLoadGenerator int     `yaml:"wait-after-load-test"`
 	ServicesToMonitor      string  `yaml:"services-to-monitor"`
+	JaegerRootService      string  `yaml:"jaeger-root-service"`
 }
 
 var c *config

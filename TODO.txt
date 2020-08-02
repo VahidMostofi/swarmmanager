@@ -3,3 +3,4 @@
 [X] first iteration should be controlled by the strategy too
 [ ] create a tool to visualize and search for configs in cache
 [ ] add load generator configs to config.yml
+[ ] Run R automatically

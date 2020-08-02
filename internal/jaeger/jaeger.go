@@ -95,7 +95,7 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 
 		spans := make(map[string]*span)
 		for _, span := range trace.Spans {
-			if len(trace.Spans) < 6 {
+			if len(trace.Spans) < 8 {
 				log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
 				continue
 			} //TODO implement retry
@@ -119,13 +119,13 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 		var sup float64
 		var sub float64
 		if request == "login" {
-			sup = spans["auth_req_login"].Duration
+			sup = spans["backend"].Duration
 			sub = spans["auth"].EndTime - spans["auth_connect"].EndTime
 		} else if request == "edit_book" {
-			sup = spans["books_edit_book"].Duration
+			sup = spans["backend"].Duration
 			sub = spans["books"].EndTime - spans["books_connect"].EndTime
 		} else if request == "get_book" {
-			sup = spans["books_get_book"].Duration
+			sup = spans["backend"].Duration
 			sub = spans["books"].EndTime - spans["books_connect"].EndTime
 		} else {
 			continue

@@ -24,17 +24,17 @@ func (c *SingleRun) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
 	config := make(map[string]swarm.SimpleSpecs)
 	config["auth"] = swarm.SimpleSpecs{
 		CPU:     1,
-		Replica: 5,
+		Replica: 1,
 		Worker:  1,
 	}
 	config["books"] = swarm.SimpleSpecs{
 		CPU:     1,
-		Replica: 3,
+		Replica: 1,
 		Worker:  1,
 	}
 	config["gateway"] = swarm.SimpleSpecs{
 		CPU:     1,
-		Replica: 2,
+		Replica: 1,
 		Worker:  1,
 	}
 	return config, nil

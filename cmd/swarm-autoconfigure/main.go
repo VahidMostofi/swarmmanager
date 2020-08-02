@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -207,6 +208,16 @@ func main() {
 	if strings.Contains(swarmmanager.GetConfig().ResultsDirectoryPath, "$WORKLOAD") {
 		swarmmanager.GetConfig().ResultsDirectoryPath = strings.Replace(swarmmanager.GetConfig().ResultsDirectoryPath, "$WORKLOAD", workloadStr, 1)
 		log.Println("Updating result path to", swarmmanager.GetConfig().ResultsDirectoryPath)
+	}
+
+	if strings.Contains(swarmmanager.GetConfig().ResultsDirectoryPath, "$STRATEGY") {
+		swarmmanager.GetConfig().ResultsDirectoryPath = strings.Replace(swarmmanager.GetConfig().ResultsDirectoryPath, "$STRATEGY", os.Args[beforeConfigArgCount-1], 1)
+		log.Println("Updating result path to", swarmmanager.GetConfig().ResultsDirectoryPath)
+	}
+
+	// creating directories for ResultDirectoryPath
+	if err := os.MkdirAll(filepath.Dir(swarmmanager.GetConfig().ResultsDirectoryPath), 0770); err != nil {
+		log.Panic(err)
 	}
 
 	var ruc = GetTheResourceUsageCollector()

@@ -1,4 +1,4 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$WORKLOAD/single/" #TODO change this auto, also create folders auto
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$WORKLOAD/$STRATEGY/" #TODO change this auto, also create folders auto
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
@@ -7,6 +7,7 @@ service-count: 4
 stack-name: "bookstore"
 host: "tcp://136.159.209.204:2375"
 jaeger-host: "http://136.159.209.204:16686"
+jaeger-root-service: "nginx"
 k6-script: "/home/vahid/Desktop/type8.js"
 version: "v1"
 test-duration: 60

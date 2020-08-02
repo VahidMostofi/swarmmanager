@@ -235,7 +235,7 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 // GatherInfo ...
 func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
-	a.RequestCountCollector.(*jaeger.JaegerAggregator).GetTraces(start, end, "gateway") //TODO this is hardcoded!
+	a.RequestCountCollector.(*jaeger.JaegerAggregator).GetTraces(start, end, swarmmanager.GetConfig().JaegerRootService) //TODO this is hardcoded!
 	info := make(map[string]history.ServiceInfo)
 	for key := range a.SwarmManager.CurrentSpecs {
 		serviceName := a.SwarmManager.CurrentSpecs[key].Name
@@ -334,6 +334,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 			serviceInfo.SubTracesResponseTimes90Percentile = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes95Percentile = make(map[string]float64)
 			serviceInfo.SubTracesResponseTimes99Percentile = make(map[string]float64)
+			serviceInfo.SubTracesRTToleranceIntervalc90p95 = make(map[string]float64)
 			// sub response times
 			for _, sub := range []string{"_total", "_gateway", "_sub"} {
 				subName := serviceName + sub
@@ -346,7 +347,11 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 				serviceInfo.SubTracesResponseTimes90Percentile[subName] = m2
 				serviceInfo.SubTracesResponseTimes95Percentile[subName] = m3
 				serviceInfo.SubTracesResponseTimes99Percentile[subName] = m4
-
+				_, uti, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
+				if err != nil {
+					panic(err)
+				}
+				serviceInfo.SubTracesRTToleranceIntervalc90p95[subName] = uti
 			}
 		}
 
