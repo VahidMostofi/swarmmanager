@@ -10,7 +10,7 @@ jaeger-host: "http://136.159.209.204:16686"
 jaeger-root-service: "nginx"
 k6-script: "/home/vahid/Desktop/type8.js"
 version: "v1"
-test-duration: 60
+test-duration: 300
 wait-after-load-test: 30 
 available-cpu-count: 24
 services-to-monitor: auth,books,gateway

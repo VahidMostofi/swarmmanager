@@ -3,7 +3,7 @@ import yaml
 from itertools import groupby
 import pandas as pd
 
-dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/WORKLOAD/cpu_util_rule_based"
+dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/WORKLOAD/CPUUsageIncrease"
 auth_sla = 350
 books_sla = 350
 key_name = "rt_ti_u_bound_c90_p95"
@@ -35,8 +35,8 @@ for workload in workloads:
                     break
 
 intersection = set(rules)
-for workload in workloads:
-    intersection = intersection.intersection(set([x[0] for x in workload_to_valid_rules[workload]]))
+# for workload in workloads:
+#     intersection = intersection.intersection(set([x[0] for x in workload_to_valid_rules[workload]]))
 
 valid_rules = list(intersection)
 valid_rules = sorted(valid_rules)

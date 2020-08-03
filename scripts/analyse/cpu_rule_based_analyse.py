@@ -2,7 +2,7 @@ import sys
 import yaml
 from itertools import groupby
 
-dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/WORKLOAD/cpu_util_rule_based"
+dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/WORKLOAD/CPUUsageIncrease"
 auth_sla = 350
 books_sla = 350
 # key_name = "rt_ti_u_bound_c90_p95"

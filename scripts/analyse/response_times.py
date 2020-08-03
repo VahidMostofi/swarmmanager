@@ -1,7 +1,7 @@
 
 import sys
 import yaml
-dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/500_80_0.65_10/cpu_util_rule_based"
+dir_path = "/home/vahid/Dropbox/data/swarm-manager-data/results/300_80_0.3_10/CPUUsageIncrease"
 auth_sla = 350
 books_sla = 350
 key_name = "rt_ti_u_bound_c90_p95"
@@ -13,10 +13,10 @@ def print_something_with_cores(path):
         data = yaml.load(f)
     print('name: {:s}'.format(data['name']))
     print("based on:",key_name,'and total replica count meet')
-    print('# {:^10} {:^10} {:^27} {:^11}'.format('auth','books','configs','count'))
-    print('   {:^21} {:^8}'.format('','ar,ac,aw,br,bc,bw,gr,gc,gw'))
+    print('# {:^11} {:^11} {:^27} {:^11}'.format('auth','books','configs','count'))
+    print('   {:^22} {:^10}'.format('',' ar,ac,aw,br,bc,bw,gr,gc,gw'))
     for idx, config in enumerate(data['configs']):
-        print('{:2d} {:7.2f}({:s}) {:7.2f}({:s}) {:2d},{:2d},{:2d}:{:2d},{:2d},{:2d}:{:2d},{:2d},{:2d}:{:2d} {:5d} {:1s} {:8s}'.format(
+        print('{:2d} {:8.2f}({:s}) {:8.2f}({:s}) {:2d},{:2d},{:2d}:{:2d},{:2d},{:2d}:{:2d},{:2d},{:2d}:{:2d} {:5d} {:1s} {:8s}'.format(
             idx+1,
             config['info']['auth'][key_name], 'Y' if config['info']['auth'][key_name] <= auth_sla else 'N',
             config['info']['books'][key_name], 'Y' if config['info']['books'][key_name] <= books_sla else 'N', 
