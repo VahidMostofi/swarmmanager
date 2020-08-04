@@ -37,8 +37,8 @@
 
 # Signle
 # go run cmd/swarm-autoconfigure/main.go 300_45_0.3_10 after_predefined_rtsi_95_350_B Single
-
-go run cmd/swarm-autoconfigure/main.go 500_80_0.65_10 test_532 Single
+# go run cmd/swarm-autoconfigure/main.go 20_49_0.5_1 test Single
+# go run cmd/swarm-autoconfigure/main.go 500_80_0.65_10 test_532 Single
 
 
 # Finidng Demands:

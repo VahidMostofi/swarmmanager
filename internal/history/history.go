@@ -1,12 +1,17 @@
 package history
 
-import "github.com/VahidMostofi/swarmmanager/internal/swarm"
+import (
+	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+)
 
-// StackHistory ...
-type StackHistory struct {
-	Name     string        `yaml:"name"`
-	Workload interface{}   `yaml:"workload"`
-	History  []Information `yaml:"configs"`
+// ExecutionDetails ...
+type ExecutionDetails struct {
+	Name     string               `yaml:"name"`
+	Workload interface{}          `yaml:"workload"`
+	History  []Information        `yaml:"steps"`
+	Command  string               `yaml:"command"` //shows the command that executed the program
+	Config   *swarmmanager.Config `yaml:"config"`
 }
 
 // Information ...
@@ -16,6 +21,26 @@ type Information struct {
 	JaegerFile   string                        `yaml:"jaegerFile"`
 	Workload     string                        `yaml:"workload"`
 	HashCode     string                        `yaml:"hash"`
+}
+
+// ResponseTimeStats ...
+type ResponseTimeStats struct {
+	ResponseTimesMean         *float64 `yaml:"responseTimesMean,omitempty"`
+	ResponseTimes90Percentile *float64 `yaml:"responseTimes90th,omitempty"`
+	ResponseTimes95Percentile *float64 `yaml:"responseTimes95th,omitempty"`
+	ResponseTimes99Percentile *float64 `yaml:"responseTimes99th,omitempty"`
+
+	RTToleranceIntervalUBoundConfidence90p90 *float64 `yaml:"rt_ti_u_bound_c90_p90,omitempty"`
+	RTToleranceIntervalUBoundConfidence90p95 *float64 `yaml:"rt_ti_u_bound_c90_p95,omitempty"`
+	RTToleranceIntervalUBoundConfidence90p99 *float64 `yaml:"rt_ti_u_bound_c90_p99,omitempty"`
+
+	RTToleranceIntervalUBoundConfidence95p90 *float64 `yaml:"rt_ti_u_bound_c95_p90,omitempty"`
+	RTToleranceIntervalUBoundConfidence95p95 *float64 `yaml:"rt_ti_u_bound_c95_p95,omitempty"`
+	RTToleranceIntervalUBoundConfidence95p99 *float64 `yaml:"rt_ti_u_bound_c95_p99,omitempty"`
+
+	RTToleranceIntervalUBoundConfidence99p90 *float64 `yaml:"rt_ti_u_bound_c99_p90,omitempty"`
+	RTToleranceIntervalUBoundConfidence99p95 *float64 `yaml:"rt_ti_u_bound_c99_p95,omitempty"`
+	RTToleranceIntervalUBoundConfidence99p99 *float64 `yaml:"rt_ti_u_bound_c99_p99,omitempty"`
 }
 
 // ServiceInfo ...
@@ -37,27 +62,5 @@ type ServiceInfo struct {
 	RequestCount    int   `yaml:"requestCount,omitempty"`
 	SubTracesCounts []int `yaml:"subTracesCount,omitempty"`
 
-	ResponseTimesMean         float64 `yaml:"responseTimesMean,omitempty"`
-	ResponseTimes90Percentile float64 `yaml:"responseTimes90th,omitempty"`
-	ResponseTimes95Percentile float64 `yaml:"responseTimes95th,omitempty"`
-	ResponseTimes99Percentile float64 `yaml:"responseTimes99th,omitempty"`
-
-	SubTracesResponseTimeMean          map[string]float64 `yaml:"subTracesResponseTimeMean,omitempty"`
-	SubTracesResponseTimes90Percentile map[string]float64 `yaml:"subTracesResponseTime90th,omitempty"`
-	SubTracesResponseTimes95Percentile map[string]float64 `yaml:"subTracesResponseTime95th,omitempty"`
-	SubTracesResponseTimes99Percentile map[string]float64 `yaml:"subTracesResponseTime99th,omitempty"`
-
-	RTToleranceIntervalUBoundc90p90 float64 `yaml:"rt_ti_u_bound_c90_p90"`
-	RTToleranceIntervalUBoundc90p95 float64 `yaml:"rt_ti_u_bound_c90_p95"`
-	RTToleranceIntervalUBoundc90p99 float64 `yaml:"rt_ti_u_bound_c90_p99"`
-
-	RTToleranceIntervalUBoundc95p90 float64 `yaml:"rt_ti_u_bound_c95_p90"`
-	RTToleranceIntervalUBoundc95p95 float64 `yaml:"rt_ti_u_bound_c95_p95"`
-	RTToleranceIntervalUBoundc95p99 float64 `yaml:"rt_ti_u_bound_c95_p99"`
-
-	RTToleranceIntervalUBoundc99p90 float64 `yaml:"rt_ti_u_bound_c99_p90"`
-	RTToleranceIntervalUBoundc99p95 float64 `yaml:"rt_ti_u_bound_c99_p95"`
-	RTToleranceIntervalUBoundc99p99 float64 `yaml:"rt_ti_u_bound_c99_p99"`
-
-	SubTracesRTToleranceIntervalc90p95 map[string]float64 `yaml:"sub_rt_ti_u_bound_c90_p95,omitempty"`
+	ResponseTimes map[string]ResponseTimeStats `yaml:"responseTimes,omitempty"`
 }

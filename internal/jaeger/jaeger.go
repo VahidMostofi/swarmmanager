@@ -8,37 +8,61 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/VahidMostofi/swarmmanager"
 	uuid "github.com/nu7hatch/gouuid"
+	"gopkg.in/yaml.v2"
 )
 
-type JaegerAggregator struct {
-	Host           string
-	Keys           []string // important spans that we want to consider
-	Spans          map[string][]float64
-	StorePath      string
-	LastStoredFile string
+type valueFormula struct {
+	RequestName string `yaml:"request_name"`
+	ValueName   string `yaml:"value_name"`
+	Formula     string `yaml:"formula"`
 }
 
-// NewJaegerAggregator is the constructor for JaegerAggregator
-func NewJaegerAggregator(host string, keys []string) *JaegerAggregator {
-	j := &JaegerAggregator{
-		Host:      host,
-		Keys:      keys,
-		Spans:     make(map[string][]float64),
-		StorePath: swarmmanager.GetConfig().JaegerStorePath,
+type jaegerServiceDetail struct {
+	ServiceName         string `yaml:"service_name"`
+	RequestName         string `yaml:"request_name"`
+	MinNumberOfSpans    int    `yaml:"min_number_of_spans"`
+	UniqueOperationName string `yaml:"unique_operation_name"`
+}
+
+// Aggregator ...
+type Aggregator struct {
+	Host           string
+	Values         map[string][]float64
+	StorePath      string
+	LastStoredFile string
+	ServiceDetails map[string]jaegerServiceDetail `yaml:"service_details"` //if changed, change NewAggregator
+	Formulas       []valueFormula                 `yaml:"formula"`         //if changed, change NewAggregator
+}
+
+// NewAggregator is the constructor for Aggregator
+func NewAggregator() *Aggregator {
+	temp := &struct {
+		ServiceDetails map[string]jaegerServiceDetail `yaml:"service_details"`
+		Formulas       []valueFormula                 `yaml:"formulas"`
+	}{}
+
+	b, err := ioutil.ReadFile(swarmmanager.GetConfig().JaegerDetailsFilePath)
+	if err != nil {
+		log.Panic(err)
+	}
+	yaml.Unmarshal(b, temp)
+	j := &Aggregator{
+		Host:           swarmmanager.GetConfig().JaegerHost,
+		Values:         make(map[string][]float64),
+		StorePath:      swarmmanager.GetConfig().JaegerStorePath,
+		ServiceDetails: temp.ServiceDetails,
+		Formulas:       temp.Formulas,
 	}
 
-	for _, key := range j.Keys {
-		j.Spans[key] = make([]float64, 0)
-	}
 	return j
 }
 
-// GetTraces retrieves traces form Jaeger instance
-func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
+func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, error) {
 	body := make([]byte, 0)
 	for len(body) < 100 { //TODO WTF with 100?!?!?!?
 		url := fmt.Sprintf("%s/api/traces?end=%d&limit=100000&service=%s&start=%d", j.Host, end, service, start)
@@ -85,97 +109,95 @@ func (j *JaegerAggregator) GetTraces(start, end int64, service string) {
 	}{}
 	json.Unmarshal(body, &data)
 
-	for _, key := range j.Keys {
-		j.Spans[key] = make([]float64, 0)
+	return data.Data, nil
+}
+
+func (j *Aggregator) parseTraces(Data []*trace) error {
+
+	for _, formula := range j.Formulas {
+		j.Values[formula.ValueName] = make([]float64, 0)
 	}
 
-	for _, trace := range data.Data {
+	for _, trace := range Data {
 		var service string
 		var request string
+		var key string
 
-		spans := make(map[string]*span)
+		spans := make(map[string]*span) //TODO this should be a map to an array of span if we want to support a calling same operations multiple times
 		for _, span := range trace.Spans {
-			if len(trace.Spans) < 8 {
-				log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
-				continue
-			} //TODO implement retry
+			span.StartTime /= 1000
+			span.Duration /= 1000
 			span.EndTime = span.StartTime + span.Duration
 			spans[span.OperationName] = span
 
-			if span.OperationName == "auth_req_login" {
-				service = "auth"
-				request = "login"
-			}
-			if span.OperationName == "books_get_book" {
-				service = "books"
-				request = "get_book"
-			}
-			if span.OperationName == "books_edit_book" {
-				service = "books"
-				request = "edit_book"
+			for k, details := range j.ServiceDetails {
+				if span.OperationName == details.UniqueOperationName {
+					service = details.ServiceName
+					request = details.RequestName
+					key = k
+					break
+				}
 			}
 		}
 
-		var sup float64
-		var sub float64
-		if request == "login" {
-			sup = spans["backend"].Duration
-			sub = spans["auth"].EndTime - spans["auth_connect"].EndTime
-		} else if request == "edit_book" {
-			sup = spans["backend"].Duration
-			sub = spans["books"].EndTime - spans["books_connect"].EndTime
-		} else if request == "get_book" {
-			sup = spans["backend"].Duration
-			sub = spans["books"].EndTime - spans["books_connect"].EndTime
-		} else {
+		if len(trace.Spans) < j.ServiceDetails[key].MinNumberOfSpans {
+			log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
 			continue
+		} //TODO implement retry
+
+		for _, formula := range j.Formulas {
+			if request == formula.RequestName || (strings.HasPrefix(formula.RequestName, "@service:") && formula.RequestName == "@service:"+service) || formula.RequestName == "@any:" {
+				value, err := evaluateJaegerFormula(formula.Formula, spans)
+				if err != nil {
+					panic(err)
+				}
+				j.Values[formula.ValueName] = append(j.Values[formula.ValueName], value)
+			}
 		}
-		sub /= 1000
-		sup /= 1000
-		if service == "auth" {
-			j.Spans["auth"] = append(j.Spans["auth"], sup)
-			j.Spans["auth_total"] = append(j.Spans["auth_total"], sup)
-			j.Spans["auth_gateway"] = append(j.Spans["auth_gateway"], sup-sub)
-			j.Spans["auth_sub"] = append(j.Spans["auth_sub"], sub)
-		} else {
-			j.Spans["books"] = append(j.Spans["books"], sup)
-			j.Spans["books_total"] = append(j.Spans["books_total"], sup)
-			j.Spans["books_gateway"] = append(j.Spans["books_gateway"], sup-sub)
-			j.Spans["books_sub"] = append(j.Spans["books_sub"], sub)
-		}
-		j.Spans["gateway"] = append(j.Spans["gateway"], sup)
 	}
-	fmt.Println("these are the keys")
-	for key := range j.Spans {
-		fmt.Println(key)
+	return nil
+}
+
+// GetTraces retrieves traces form Jaeger instance
+func (j *Aggregator) GetTraces(start, end int64, service string) {
+
+	Data, err := j.getTraces(start, end, service)
+	if err != nil {
+		panic(err)
 	}
+
+	err = j.parseTraces(Data)
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 // GetRequestCount is to we comply with ResponseTimeCollector
-func (j *JaegerAggregator) GetRequestCount(name string) (int, error) {
+func (j *Aggregator) GetRequestCount(name string) (map[string]int, error) {
 	log.Println("GetRequestCount:", "called with", name)
-	if _, ok := j.Spans[name]; ok {
-		return len(j.Spans[name]), nil
+	res := make(map[string]int)
+	for valueName, values := range j.Values {
+		if strings.HasPrefix(valueName, name) {
+			res[valueName] = len(values)
+		}
 	}
-	return 0, fmt.Errorf("No such key found: %s", name)
+	log.Println("GetRequestCount:", "called with", name, "found", len(res), "values")
+	return res, nil
 }
 
 // GetResponseTimes is to we comply with RequestCountCollector
-func (j *JaegerAggregator) GetResponseTimes(name string) ([]float64, error) {
+func (j *Aggregator) GetResponseTimes(name string) (map[string][]float64, error) {
 	log.Println("GetResponseTimes:", "called with", name)
-	if _, ok := j.Spans[name]; ok {
-		return j.Spans[name], nil
-	}
-	return nil, fmt.Errorf("No such key found: %s", name)
-}
 
-func (j *JaegerAggregator) isSpanKey(s *span) bool {
-	for _, key := range j.Keys {
-		if key == s.OperationName {
-			return true
+	res := make(map[string][]float64)
+	for valueName, values := range j.Values {
+		if strings.HasPrefix(valueName, name) {
+			res[valueName] = values
 		}
 	}
-	return false
+	log.Println("GetResponseTimes:", "called with", name, "found", len(res), "values")
+	return res, nil
 }
 
 // Trace struct contains a group of spans

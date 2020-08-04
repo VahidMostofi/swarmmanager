@@ -71,9 +71,8 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 }
 
 // GetJaegerCollector ...
-func GetJaegerCollector() *jaeger.JaegerAggregator {
-	//TODO these are hardcoded!
-	j := jaeger.NewJaegerAggregator(swarmmanager.GetConfig().JaegerHost, []string{"gateway", "auth", "books", "gateway", "auth_total", "auth_gateway", "auth_sub", "books_total", "books_gateway", "books_sub"})
+func GetJaegerCollector() *jaeger.Aggregator {
+	j := jaeger.NewAggregator()
 	return j
 }
 
@@ -213,6 +212,12 @@ func main() {
 	if strings.Contains(swarmmanager.GetConfig().ResultsDirectoryPath, "$STRATEGY") {
 		swarmmanager.GetConfig().ResultsDirectoryPath = strings.Replace(swarmmanager.GetConfig().ResultsDirectoryPath, "$STRATEGY", os.Args[beforeConfigArgCount-1], 1)
 		log.Println("Updating result path to", swarmmanager.GetConfig().ResultsDirectoryPath)
+
+	}
+
+	if strings.Contains(swarmmanager.GetConfig().ResultsDirectoryPath, "$SYSTEM_NAME") {
+		swarmmanager.GetConfig().ResultsDirectoryPath = strings.Replace(swarmmanager.GetConfig().ResultsDirectoryPath, "$SYSTEM_NAME", swarmmanager.GetConfig().SystemName, 1)
+		log.Println("Updating result path to", swarmmanager.GetConfig().ResultsDirectoryPath)
 	}
 
 	// creating directories for ResultDirectoryPath
@@ -253,5 +258,5 @@ func main() {
 	db := GetNewDatabase()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, c, m, workloadStr, db)
 	log.Println("name of the test is:", os.Args[beforeConfigArgCount-2])
-	a.Start(os.Args[beforeConfigArgCount-2])
+	a.Start(os.Args[beforeConfigArgCount-2], strings.Join(os.Args, " "))
 }

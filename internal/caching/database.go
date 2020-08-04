@@ -82,6 +82,7 @@ func (md *DropboxDatabase) Retrieve(workload string, configs map[string]swarm.Se
 func (md *DropboxDatabase) hash(workload string, configs map[string]swarm.ServiceSpecs) string {
 	bytes := make([]byte, 0)
 	bytes = append(bytes, []byte(swarmmanager.GetConfig().Version)...)
+	bytes = append(bytes, []byte(swarmmanager.GetConfig().SystemName)...)
 	bytes = append(bytes, []byte(workload)...)
 
 	var keys []string

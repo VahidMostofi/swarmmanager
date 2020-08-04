@@ -61,16 +61,16 @@ func (c *ResponseTimeSimpleIncrease) Configure(values map[string]history.Service
 			}
 
 			var whatToCompareTo float64
-			if ag.PropertyToConsider == "ResponseTimesMean" {
-				whatToCompareTo = values[currentState[service].Name].ResponseTimesMean
+			if ag.PropertyToConsider == "ResponseTimesMean" { //TODO all conditions need to be checked
+				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimesMean)
 			} else if ag.PropertyToConsider == "ResponseTimes90Percentile" {
-				whatToCompareTo = values[currentState[service].Name].ResponseTimes90Percentile
+				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes90Percentile)
 			} else if ag.PropertyToConsider == "ResponseTimes95Percentile" {
-				whatToCompareTo = values[currentState[service].Name].ResponseTimes95Percentile
+				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes95Percentile)
 			} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
-				whatToCompareTo = values[currentState[service].Name].ResponseTimes99Percentile
+				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes99Percentile)
 			} else if ag.PropertyToConsider == "RTToleranceIntervalUBoundc90p95" {
-				whatToCompareTo = values[currentState[service].Name].RTToleranceIntervalUBoundc90p95
+				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95)
 			} else {
 				return nil, false, fmt.Errorf("ResponseTimeSimpleIncrease: the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
 			}

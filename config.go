@@ -11,8 +11,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// config ...
-type config struct {
+// Config ...
+type Config struct {
 	ResultsDirectoryPath   string  `yaml:"resultsPath"`
 	LogDirectory           string  `yaml:"logDirectory"`
 	JaegerStorePath        string  `yaml:"jaegerStorePath"`
@@ -30,11 +30,13 @@ type config struct {
 	WaitAfterLoadGenerator int     `yaml:"wait-after-load-test"`
 	ServicesToMonitor      string  `yaml:"services-to-monitor"`
 	JaegerRootService      string  `yaml:"jaeger-root-service"`
+	SystemName             string  `yaml:"system-name"`
+	JaegerDetailsFilePath  string  `yaml:"jaeger-details-file-path"`
 }
 
-var c *config
+var c *Config
 
-func (c *config) check() {
+func (c *Config) check() {
 	c.ResultsDirectoryPath = strings.Trim(c.ResultsDirectoryPath, " ")
 	// fi, err := os.Stat(c.ResultsDirectoryPath)
 	// if err != nil {
@@ -50,10 +52,10 @@ func (c *config) check() {
 }
 
 // GetConfig ...
-func GetConfig() *config {
+func GetConfig() *Config {
 	if c == nil {
-		c = &config{}
-		b, e := ioutil.ReadFile("config.yml")
+		c = &Config{}
+		b, e := ioutil.ReadFile("/home/vahid/Desktop/projects/swarmmanager/config.yml")
 		if e != nil {
 			panic(e)
 		}

@@ -105,7 +105,9 @@ func (c *MultiObjectiveBayesianOptimization) Configure(values map[string]history
 			panic(err)
 		}
 	} else {
-		feedbacks := &dataToSend{Feedbacks: []float64{values["auth"].RTToleranceIntervalUBoundc90p95, values["books"].RTToleranceIntervalUBoundc90p95}}
+		feedbacks := &dataToSend{Feedbacks: []float64{
+			*values["auth"].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95,
+			*values["books"].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95}}
 		b, err := json.Marshal(feedbacks)
 		if err != nil {
 			panic(err)

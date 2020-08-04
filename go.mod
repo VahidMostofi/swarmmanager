@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/PaesslerAG/gval v1.0.1
 	github.com/davecheney/junk v0.0.0-20170418064243-155060ce6d56 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
@@ -15,7 +16,7 @@ require (
 	github.com/montanaflynn/stats v0.6.3
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.10.0 // indirect
 	github.com/senseyeio/roger v0.0.0-20191009211040-43e330bee47f
 	github.com/spf13/cobra v1.0.0 // indirect

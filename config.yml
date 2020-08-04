@@ -1,16 +1,22 @@
-resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$WORKLOAD/$STRATEGY/" #TODO change this auto, also create folders auto
+version: "v2"
+
+system-name: "nodejs_bookstore"
+resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/" #TODO change this auto, also create folders auto
 logDirectory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
-jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+
 dropbox-path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
 docker-compose-file: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-nodb.yml"
 service-count: 5
 stack-name: "bookstore"
 host: "tcp://136.159.209.204:2375"
+
 jaeger-host: "http://136.159.209.204:16686"
 jaeger-root-service: "nginx"
+jaeger-details-file-path: "/home/vahid/Desktop/projects/swarmmanager/formulas/nodejs_bookstore.yaml"
+jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+
 k6-script: "/home/vahid/Desktop/type8.js"
-version: "v1"
-test-duration: 300
+test-duration: 60
 wait-after-load-test: 30 
 available-cpu-count: 24
 services-to-monitor: auth,books,gateway

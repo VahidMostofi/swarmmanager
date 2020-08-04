@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"log"
@@ -21,6 +22,7 @@ import (
 	"github.com/VahidMostofi/swarmmanager/internal/statutils"
 	"github.com/VahidMostofi/swarmmanager/internal/strategies"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+	"github.com/VahidMostofi/swarmmanager/internal/utils"
 	"github.com/VahidMostofi/swarmmanager/internal/workload"
 	"github.com/montanaflynn/stats"
 
@@ -91,12 +93,14 @@ func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
 }
 
 // Start ...
-func (a *AutoConfigurer) Start(name string) {
+func (a *AutoConfigurer) Start(name string, command string) {
 
-	stackHistory := &history.StackHistory{
+	stackHistory := &history.ExecutionDetails{
 		Name:     name,
 		Workload: a.Workload,
 		History:  make([]history.Information, 0),
+		Command:  command,
+		Config:   swarmmanager.GetConfig(),
 	}
 
 	// Remove the current Stack
@@ -179,7 +183,7 @@ func (a *AutoConfigurer) Start(name string) {
 			info = history.Information{
 				ServicesInfo: servicesInfo,
 				Specs:        a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
-				JaegerFile:   a.ResponseTimeCollector.(*jaeger.JaegerAggregator).LastStoredFile,
+				JaegerFile:   a.ResponseTimeCollector.(*jaeger.Aggregator).LastStoredFile,
 				Workload:     a.Workload,
 			}
 			hash, err := a.Database.Store(a.Workload, a.SwarmManager.DesiredSpecs, info)
@@ -212,7 +216,7 @@ func (a *AutoConfigurer) Start(name string) {
 	fmt.Println("final results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
 }
 
-func saveHistory(stackHistory *history.StackHistory) {
+func saveHistory(stackHistory *history.ExecutionDetails) {
 	b, err := yaml.Marshal(stackHistory)
 	if err != nil {
 		log.Panic(err)
@@ -235,13 +239,13 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 // GatherInfo ...
 func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
-	a.RequestCountCollector.(*jaeger.JaegerAggregator).GetTraces(start, end, swarmmanager.GetConfig().JaegerRootService) //TODO this is hardcoded!
+	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, swarmmanager.GetConfig().JaegerRootService) //TODO this is hardcoded!
 	info := make(map[string]history.ServiceInfo)
 	for key := range a.SwarmManager.CurrentSpecs {
 		serviceName := a.SwarmManager.CurrentSpecs[key].Name
-		if !(serviceName == "books" || serviceName == "auth" || serviceName == "gateway") {
+		if !utils.ContainsString(a.SwarmManager.ServicesToManage, serviceName) {
 			continue
-		} //TODO
+		}
 		serviceInfo := history.ServiceInfo{
 			Start:        start,
 			End:          end,
@@ -310,75 +314,39 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 		if e != nil {
 			log.Panic(e)
 		}
-		serviceInfo.RequestCount = c
-
-		responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(serviceName)
+		serviceInfo.RequestCount = c[serviceName+"_total"]
+		//--------------------------------------------------
+		// Response Times
+		valueNameToResponseTimes, e := a.ResponseTimeCollector.GetResponseTimes(serviceName)
 		if e != nil {
 			log.Panic(e)
 		}
 
-		m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
-		serviceInfo.ResponseTimesMean = m1
-		serviceInfo.ResponseTimes90Percentile = m2
-		serviceInfo.ResponseTimes95Percentile = m3
-		serviceInfo.ResponseTimes99Percentile = m4
+		serviceInfo.ResponseTimes = make(map[string]history.ResponseTimeStats)
+		for valueName, responseTimes := range valueNameToResponseTimes {
 
-		if serviceName != "gateway" {
-			c90p95, c95p95, c99p95 := getDifferentToleranceIntervals(responseTimes)
+			mean, p90, p95, p99 := getDifferentResponseTimes(responseTimes)
 
-			serviceInfo.RTToleranceIntervalUBoundc90p95 = c90p95
-			serviceInfo.RTToleranceIntervalUBoundc95p95 = c95p95
-			serviceInfo.RTToleranceIntervalUBoundc99p95 = c99p95
-
-			serviceInfo.SubTracesResponseTimeMean = make(map[string]float64)
-			serviceInfo.SubTracesResponseTimes90Percentile = make(map[string]float64)
-			serviceInfo.SubTracesResponseTimes95Percentile = make(map[string]float64)
-			serviceInfo.SubTracesResponseTimes99Percentile = make(map[string]float64)
-			serviceInfo.SubTracesRTToleranceIntervalc90p95 = make(map[string]float64)
-			// sub response times
-			for _, sub := range []string{"_total", "_gateway", "_sub"} {
-				subName := serviceName + sub
-				responseTimes, e := a.ResponseTimeCollector.GetResponseTimes(subName)
-				if e != nil {
-					log.Panic(e)
-				}
-				m1, m2, m3, m4 := getDifferentResponseTimes(responseTimes)
-				serviceInfo.SubTracesResponseTimeMean[subName] = m1
-				serviceInfo.SubTracesResponseTimes90Percentile[subName] = m2
-				serviceInfo.SubTracesResponseTimes95Percentile[subName] = m3
-				serviceInfo.SubTracesResponseTimes99Percentile[subName] = m4
-				_, uti, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
-				if err != nil {
-					panic(err)
-				}
-				serviceInfo.SubTracesRTToleranceIntervalc90p95[subName] = uti
+			responseTimesStats := history.ResponseTimeStats{
+				ResponseTimesMean:         &mean,
+				ResponseTimes90Percentile: &p90,
+				ResponseTimes95Percentile: &p95,
+				ResponseTimes99Percentile: &p99,
 			}
+
+			//TODO the 90 and 95 values and the fact that which values should be computed should come form config file
+			_, uti, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
+			if err != nil {
+				log.Panic(err)
+			}
+			responseTimesStats.RTToleranceIntervalUBoundConfidence90p95 = &uti
+			serviceInfo.ResponseTimes[strings.Split(valueName, "_")[1]] = responseTimesStats
+
 		}
 
 		info[serviceName] = serviceInfo
 	}
 	return info
-}
-
-func getDifferentToleranceIntervals(responseTimes []float64) (float64, float64, float64) {
-	// because we want the upper bound for the first 95% of the population, we need to look at 90% of the population
-	// _, c90p90, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.90)
-
-	_, c90p95, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
-	if err != nil {
-		panic(err)
-	}
-	// _, c90p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.99)
-
-	// _, c95p90, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.90)
-	_, c95p95, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.95)
-	// _, c95p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.95, 0.99)
-
-	// _, c99p90, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.90)
-	_, c99p95, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.95)
-	// _, c99p99, _ := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.99, 0.99)
-
-	return c90p95, c95p95, c99p95
 }
 
 func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64) {

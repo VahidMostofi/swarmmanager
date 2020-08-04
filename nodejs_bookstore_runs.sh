@@ -1,7 +1,8 @@
 #!/bin/bash
 SLA=350
 #workloads=(300_80_0.3_10 400_80_0.5_10 420_80_0.7_10 500_80_0.65_10 )
-workloads=( 600_80_0.1_10 )
+workloads=(300_80_0.3_10 )
+go run cmd/swarm-autoconfigure/main.go 1_360_0.5_1 finding_demands Single
 for WORKLOAD in "${workloads[@]}"
 do
     echo "working on ${WORKLOAD}" 
