@@ -173,6 +173,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			start = time.Now().UnixNano() / 1e3
 			time.Sleep(a.IterationDuration * time.Second)
 			end = time.Now().UnixNano() / 1e3
+			log.Println("finished the test")
 			a.LoadGenerator.Stop(make(map[string]string))
 			time.Sleep(a.WaitAfterLoadGeneratorStopped * time.Second)
 			err = a.ResourceUsageCollector.Stop()
@@ -337,6 +338,7 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 			//TODO the 90 and 95 values and the fact that which values should be computed should come form config file
 			_, uti, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
 			if err != nil {
+				log.Println("response times:", responseTimes)
 				log.Panic(err)
 			}
 			responseTimesStats.RTToleranceIntervalUBoundConfidence90p95 = &uti

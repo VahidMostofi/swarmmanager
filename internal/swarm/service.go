@@ -250,7 +250,7 @@ func (s *Manager) UpdateServicesSpecs() error {
 		return fmt.Errorf("error while retrieving tasks: %w", err)
 	}
 	for _, t := range tasks {
-		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 10 {
+		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 60 {
 			key := ""
 			for k, specs := range s.CurrentSpecs {
 				if specs.ID == t.ServiceID {

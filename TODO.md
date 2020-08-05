@@ -1,0 +1,11 @@
+- [X] force restart other services
+- [ ] change the way you list containers of a service
+- [X] first iteration should be controlled by the strategy too
+- [ ] create a tool to visualize and search for configs in cache
+- [ ] add load generator configs to config.yml
+- [ ] Run R automatically
+- [ ] make sure we are always on pressure
+- [ ] factory method for load generator
+- [ ] move to multi host
+- [ ] use a well-known collector to gather system utilization
+- [ ] clean main

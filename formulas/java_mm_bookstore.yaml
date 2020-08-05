@@ -1,0 +1,51 @@
+service_details:
+  auth_login:
+    service_name: auth
+    request_name: login
+    min_number_of_spans: 7
+    unique_operation_name: login
+  books_edit:
+    service_name: books
+    request_name: edit_book
+    min_number_of_spans: 7
+    unique_operation_name: editbook
+  books_get:
+    service_name: books
+    request_name: get_book
+    min_number_of_spans: 7
+    unique_operation_name: getbook
+
+formulas:
+- request_name: login
+  value_name: auth_total
+  formula: backend.Duration
+- request_name: login
+  value_name: auth_gateway
+  formula: backend.Duration - (auth_interceptor.EndTime - gateway_out_service_call.StartTime)
+- request_name: login
+  value_name: auth_service
+  formula: auth_interceptor.EndTime - gateway_out_service_call.StartTime
+#########################################################
+- request_name: edit_book
+  value_name: books_total
+  formula: backend.Duration
+- request_name: edit_book
+  value_name: books_gateway
+  formula: backend.Duration - (books_interceptor.EndTime - gateway_out_service_call.StartTime)
+- request_name: edit_book
+  value_name: books_service
+  formula: books_interceptor.EndTime - gateway_out_service_call.StartTime
+#########################################################
+- request_name: get_book
+  value_name: books_total
+  formula: backend.Duration
+- request_name: get_book
+  value_name: books_gateway
+  formula: backend.Duration - (books_interceptor.EndTime - gateway_out_service_call.StartTime)
+- request_name: get_book
+  value_name: books_service
+  formula: books_interceptor.EndTime - gateway_out_service_call.StartTime
+#########################################################
+- request_name: '@any:'
+  value_name: gateway_total
+  formula: backend.Duration

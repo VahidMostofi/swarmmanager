@@ -117,7 +117,7 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 	for _, formula := range j.Formulas {
 		j.Values[formula.ValueName] = make([]float64, 0)
 	}
-
+	incompleteTraceCount := 0
 	for _, trace := range Data {
 		var service string
 		var request string
@@ -128,6 +128,7 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 			span.StartTime /= 1000
 			span.Duration /= 1000
 			span.EndTime = span.StartTime + span.Duration
+			span.OperationName = strings.ReplaceAll(span.OperationName, "-", "_")
 			spans[span.OperationName] = span
 
 			for k, details := range j.ServiceDetails {
@@ -141,7 +142,7 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 		}
 
 		if len(trace.Spans) < j.ServiceDetails[key].MinNumberOfSpans {
-			log.Println("warning", "len(trace.Spans) is", len(trace.Spans))
+			incompleteTraceCount++
 			continue
 		} //TODO implement retry
 
@@ -155,6 +156,7 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 			}
 		}
 	}
+	log.Println("warning", "incomplete Trace Count", incompleteTraceCount)
 	return nil
 }
 

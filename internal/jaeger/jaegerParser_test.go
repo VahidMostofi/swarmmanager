@@ -13,15 +13,19 @@ import (
 
 func TestJaegerParser(t *testing.T) {
 	// TODO this is hardcoded
-	formulasPath := "/home/vahid/Desktop/projects/swarmmanager/formulas/nodejs_bookstore.yaml"
+	formulasPath := "/home/vahid/Desktop/projects/swarmmanager/formulas/java_mm_bookstore.yaml"
 	temp := &struct {
 		ServiceDetails map[string]jaegerServiceDetail `yaml:"service_details"`
 		Formulas       []valueFormula                 `yaml:"formulas"`
 	}{}
 	b, err := ioutil.ReadFile(formulasPath)
 	yaml.Unmarshal(b, temp)
+	if err != nil {
+		t.Error(err)
+	}
+
 	// TODO this is hardcoded
-	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/e6f732ea-7a6d-497a-46fc-1b83f8c920f4.zip"
+	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/994226b9-10c1-4e20-5d2c-d53e7ea6b7ff.zip"
 	r, err := zip.OpenReader(jaegerDataFilePath)
 	if err != nil {
 		t.Error(err)
