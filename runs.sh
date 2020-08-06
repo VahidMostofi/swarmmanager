@@ -59,3 +59,10 @@
 # go run cmd/swarm-autoconfigure/main.go 500_80_0.65_10 mobo_535 MOBO auth 5 books 3 gateway 5
 # go run cmd/swarm-autoconfigure/main.go 500_80_0.65_10 mobo_434 MOBO auth 4 books 3 gateway 4
 
+
+
+# go run cmd/swarm-autoconfigure/main.go 300_80_0.3_10 rtsi_95_350 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 350 -amount 0.5
+
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 proportional_to_deman_95_350 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 350 -amount 1
+
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 proportional_to_utilizations_95_350 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 350 -amount 1

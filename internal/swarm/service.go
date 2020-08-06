@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -250,7 +251,7 @@ func (s *Manager) UpdateServicesSpecs() error {
 		return fmt.Errorf("error while retrieving tasks: %w", err)
 	}
 	for _, t := range tasks {
-		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 60 {
+		if t.Status.State == "running" && (time.Now().UnixNano()-t.Status.Timestamp.UnixNano())/1e9 > 15 {
 			key := ""
 			for k, specs := range s.CurrentSpecs {
 				if specs.ID == t.ServiceID {
@@ -267,34 +268,35 @@ func (s *Manager) UpdateServicesSpecs() error {
 
 // comapeServiceSpecs ... returns true if they are equal
 func (s *Manager) comapeServiceSpecs(serviceName string) (bool, []string) {
+	const float64EqualityThreshold = 1e-5
 	changes := []string{}
 	if s.CurrentSpecs[serviceName].ImageName != s.DesiredSpecs[serviceName].ImageName {
-		log.Println("CompareSpecs: ImageName is changed")
+		log.Println("CompareSpecs:", serviceName, "ImageName is changed")
 		changes = append(changes, "ImageName")
 	}
 	if s.CurrentSpecs[serviceName].ReplicaCount != s.DesiredSpecs[serviceName].ReplicaCount {
-		log.Println("CompareSpecs: ReplicaCount is changed")
+		log.Println("CompareSpecs:", serviceName, "ReplicaCount is changed")
 		changes = append(changes, "ReplicaCount")
 	}
-	if s.CurrentSpecs[serviceName].CPULimits != s.DesiredSpecs[serviceName].CPULimits {
-		log.Println("CompareSpecs: CPULimits is changed")
+	if math.Abs(s.CurrentSpecs[serviceName].CPULimits-s.DesiredSpecs[serviceName].CPULimits) > float64EqualityThreshold {
+		log.Println("CompareSpecs:", serviceName, "CPULimits is changed", s.CurrentSpecs[serviceName].CPULimits, s.DesiredSpecs[serviceName].CPULimits)
 		changes = append(changes, "CPULimits")
 	}
-	if s.CurrentSpecs[serviceName].CPUReservation != s.DesiredSpecs[serviceName].CPUReservation {
-		log.Println("CompareSpecs: CPUReservation is changed")
+	if math.Abs(s.CurrentSpecs[serviceName].CPUReservation-s.DesiredSpecs[serviceName].CPUReservation) > float64EqualityThreshold {
+		log.Println("CompareSpecs:", serviceName, "CPUReservation is changed", s.CurrentSpecs[serviceName].CPUReservation, s.DesiredSpecs[serviceName].CPUReservation)
 		changes = append(changes, "CPUReservation")
 	}
 	if s.CurrentSpecs[serviceName].MemoryLimits != s.DesiredSpecs[serviceName].MemoryLimits {
-		log.Println("CompareSpecs: MemoryLimits is changed")
+		log.Println("CompareSpecs:", serviceName, "MemoryLimits is changed")
 		changes = append(changes, "MemoryLimits")
 	}
 	if s.CurrentSpecs[serviceName].MemoryReservations != s.DesiredSpecs[serviceName].MemoryReservations {
-		log.Println("CompareSpecs: MemoryReservations is changed")
+		log.Println("CompareSpecs:", serviceName, "MemoryReservations is changed")
 		changes = append(changes, "MemoryReservations")
 	}
 
 	if !Equal(s.CurrentSpecs[serviceName].EnvironmentVariables, s.DesiredSpecs[serviceName].EnvironmentVariables) {
-		log.Println("CompareSpecs: EnvironmentVariables is changed")
+		log.Println("CompareSpecs:", serviceName, "EnvironmentVariables is changed")
 		changes = append(changes, "EnvironmentVariables")
 	}
 	return len(changes) == 0, changes

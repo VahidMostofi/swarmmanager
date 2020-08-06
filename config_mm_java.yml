@@ -1,5 +1,5 @@
 # micromuck-java
-version: "v2"
+version: "v3"
 
 system-name: "java-mm-bookstore"
 resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/" #TODO change this auto, also create folders auto

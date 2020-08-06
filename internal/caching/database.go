@@ -88,14 +88,15 @@ func (md *DropboxDatabase) hash(workload string, configs map[string]swarm.Servic
 	var keys []string
 	var tempConfigs = make(map[string]swarm.ServiceSpecs)
 	for _, value := range configs {
-		tempConfigs[value.ImageName] = value
-		keys = append(keys, value.ImageName)
+		tempConfigs[value.Name] = value
+		keys = append(keys, value.Name)
 	}
 
 	sort.Strings(keys)
 	for _, key := range keys {
+		fmt.Println("hash with", tempConfigs[key])
 		bytes = append(bytes, tempConfigs[key].GetBytes()...)
 	}
-
+	fmt.Println("hash with", swarmmanager.GetConfig().Version, swarmmanager.GetConfig().SystemName, workload)
 	return fmt.Sprintf("%x", md5.Sum(bytes))
 }

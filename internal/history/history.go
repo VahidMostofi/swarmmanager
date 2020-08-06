@@ -26,6 +26,7 @@ type Information struct {
 // ResponseTimeStats ...
 type ResponseTimeStats struct {
 	ResponseTimesMean         *float64 `yaml:"responseTimesMean,omitempty"`
+	ResponseTimesSTD          *float64 `yaml:"responseTimesSTD,omitempty"`
 	ResponseTimes90Percentile *float64 `yaml:"responseTimes90th,omitempty"`
 	ResponseTimes95Percentile *float64 `yaml:"responseTimes95th,omitempty"`
 	ResponseTimes99Percentile *float64 `yaml:"responseTimes99th,omitempty"`

@@ -180,6 +180,41 @@ func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 	}
 }
 
+// GetAddFractionalCPUcoresConfigurer ...
+func GetAddFractionalCPUcoresConfigurer() strategies.Configurer {
+	afccCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
+	afccValueName := afccCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	afccThreshold := afccCmd.Float64("value", 0, "what is the threshold")
+	afccAmount := afccCmd.Float64("amount", 1, "how much core to add at each step")
+
+	afccCmd.Parse(os.Args[beforeConfigArgCount:])
+	afccCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[beforeConfigArgCount-1])
+		afccCmd.PrintDefaults()
+	}
+
+	if *afccValueName == "" {
+		afccCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *afccThreshold == 0 {
+		afccCmd.Usage()
+		os.Exit(1)
+	}
+
+	log.Println("Configuring AddFractionalCPUcores with Value:", *afccThreshold, "and property of", *afccValueName, " and core amount of", *afccAmount)
+	return &strategies.AddFractionalCPUcores{
+		EachStepIncrease: *afccAmount,
+		Agreements: []strategies.Agreement{
+			{
+				PropertyToConsider: *afccValueName,
+				Value:              *afccThreshold,
+			},
+		},
+	}
+}
+
 // GetSwarmManager ...
 func GetSwarmManager() *swarm.Manager {
 	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": swarmmanager.GetConfig().StackName, "host": swarmmanager.GetConfig().Host, "services": swarmmanager.GetConfig().ServicesToMonitor})
@@ -247,6 +282,8 @@ func main() {
 		c = strategies.GetNewPredefinedSearcher()
 	case "MOBO":
 		c = GetMOBOConfigurer()
+	case "AddFractionalCPUcores":
+		c = GetAddFractionalCPUcoresConfigurer()
 	case "Single":
 		c = &strategies.SingleRun{}
 	default:

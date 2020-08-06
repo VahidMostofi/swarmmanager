@@ -55,7 +55,7 @@ func (c *Config) check() {
 func GetConfig() *Config {
 	if c == nil {
 		c = &Config{}
-		b, e := ioutil.ReadFile("/home/vahid/Desktop/projects/swarmmanager/config_mm_java.yml")
+		b, e := ioutil.ReadFile("/home/vahid/Desktop/projects/swarmmanager/config_nodejs_bookstore.yml")
 		if e != nil {
 			panic(e)
 		}

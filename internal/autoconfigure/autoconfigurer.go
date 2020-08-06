@@ -326,10 +326,11 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 		serviceInfo.ResponseTimes = make(map[string]history.ResponseTimeStats)
 		for valueName, responseTimes := range valueNameToResponseTimes {
 
-			mean, p90, p95, p99 := getDifferentResponseTimes(responseTimes)
+			mean, std, p90, p95, p99 := getDifferentResponseTimes(responseTimes)
 
 			responseTimesStats := history.ResponseTimeStats{
 				ResponseTimesMean:         &mean,
+				ResponseTimesSTD:          &std,
 				ResponseTimes90Percentile: &p90,
 				ResponseTimes95Percentile: &p95,
 				ResponseTimes99Percentile: &p99,
@@ -351,31 +352,37 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 	return info
 }
 
-func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64) {
+func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64, float64) {
 	if len(responseTimes) == 0 {
 		responseTimes = append(responseTimes, 0)
 	}
-	m1, err := stats.Mean(responseTimes)
+	mean, err := stats.Mean(responseTimes)
 	if err != nil {
 		log.Panic(err)
 	}
 	//--------------------------------------------------
-	m2, err := stats.Percentile(responseTimes, 90)
+	p90, err := stats.Percentile(responseTimes, 90)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	//--------------------------------------------------
-	m3, err := stats.Percentile(responseTimes, 95)
+	p95, err := stats.Percentile(responseTimes, 95)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	//--------------------------------------------------
-	m4, err := stats.Percentile(responseTimes, 99)
+	p99, err := stats.Percentile(responseTimes, 99)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	return m1, m2, m3, m4
+	//--------------------------------------------------
+	std, err := stats.StandardDeviation(responseTimes)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return mean, std, p90, p95, p99
 }

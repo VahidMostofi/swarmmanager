@@ -74,6 +74,11 @@ func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, erro
 			panic(fmt.Errorf("error while getting traces: %w", err))
 		}
 		res, err := client.Do(req)
+		if err != nil {
+			fmt.Println(fmt.Errorf("error getting traces with http request: %w", err))
+			time.Sleep(3 * time.Second)
+			continue
+		}
 		body, err = ioutil.ReadAll(res.Body)
 		fmt.Println("len(body)", len(body))
 		fmt.Println(url)
@@ -156,7 +161,9 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 			}
 		}
 	}
-	log.Println("warning", "incomplete Trace Count", incompleteTraceCount)
+	if incompleteTraceCount > 0 {
+		log.Println("warning", "incomplete Trace Count", incompleteTraceCount)
+	}
 	return nil
 }
 
