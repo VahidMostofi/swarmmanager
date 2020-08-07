@@ -180,12 +180,67 @@ func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 	}
 }
 
+// GetAddDifferentFractionalCPUcores ...
+func GetAddDifferentFractionalCPUcores(workload string) strategies.Configurer {
+	adfccCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
+	adfccValueName := adfccCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	adfccThreshold := adfccCmd.Float64("value", 0, "what is the threshold")
+	adfccAmount := adfccCmd.Float64("amount", -1, "how much core to add at each step")
+	adfccIndicator := adfccCmd.String("indicator", "", "what is the indicator? Demand/Utilization")
+
+	adfccCmd.Parse(os.Args[beforeConfigArgCount:])
+	adfccCmd.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[beforeConfigArgCount-1])
+		adfccCmd.PrintDefaults()
+	}
+
+	if *adfccValueName == "" {
+		adfccCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *adfccThreshold == 0 {
+		adfccCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *adfccAmount < 0 {
+		adfccCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *adfccIndicator == "" {
+		adfccCmd.Usage()
+		os.Exit(1)
+	}
+
+	values, maxIncrease, err := strategies.GetFractionalCPUIncreaseValues(workload, *adfccIndicator, *adfccAmount)
+	if err != nil {
+		log.Panic(err)
+		os.Exit(1)
+	}
+	log.Println("values for Fractional Increase:", values)
+	log.Println("values for Max Increase:", maxIncrease)
+
+	log.Println("Configuring AddFractionalCPUcores with Value:", *adfccThreshold, "and property of", *adfccValueName, " and core amount of", *adfccAmount, "and indicator=", *adfccIndicator)
+	return &strategies.AddDifferentFractionalCPUcores{
+		ServiceToAmount:   values,
+		MaxServiceIncease: maxIncrease,
+		Agreements: []strategies.Agreement{
+			{
+				PropertyToConsider: *adfccValueName,
+				Value:              *adfccThreshold,
+			},
+		},
+	}
+}
+
 // GetAddFractionalCPUcoresConfigurer ...
 func GetAddFractionalCPUcoresConfigurer() strategies.Configurer {
 	afccCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
 	afccValueName := afccCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
 	afccThreshold := afccCmd.Float64("value", 0, "what is the threshold")
-	afccAmount := afccCmd.Float64("amount", 1, "how much core to add at each step")
+	afccAmount := afccCmd.Float64("amount", -1, "how much core to add at each step")
 
 	afccCmd.Parse(os.Args[beforeConfigArgCount:])
 	afccCmd.Usage = func() {
@@ -199,6 +254,11 @@ func GetAddFractionalCPUcoresConfigurer() strategies.Configurer {
 	}
 
 	if *afccThreshold == 0 {
+		afccCmd.Usage()
+		os.Exit(1)
+	}
+
+	if *afccAmount < 0 {
 		afccCmd.Usage()
 		os.Exit(1)
 	}
@@ -286,6 +346,8 @@ func main() {
 		c = GetAddFractionalCPUcoresConfigurer()
 	case "Single":
 		c = &strategies.SingleRun{}
+	case "AddDifferentFractionalCPUcores":
+		c = GetAddDifferentFractionalCPUcores(workloadStr)
 	default:
 		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands but got", os.Args[beforeConfigArgCount-1])
 		os.Exit(1)

@@ -1,5 +1,5 @@
 #!/bin/bash
-SLA=350
+SLA=
 workloads=(300_120_0.3_10 400_120_0.5_10 420_120_0.7_10 500_120_0.65_10 )
 
 for WORKLOAD in "${workloads[@]}"
@@ -31,4 +31,10 @@ do
     go run cmd/swarm-autoconfigure/main.go $WORKLOAD cpu_mean_70 CPUUsageIncrease -property CPUUsageMean -threshold 70
     go run cmd/swarm-autoconfigure/main.go $WORKLOAD cpu_mean_80 CPUUsageIncrease -property CPUUsageMean -threshold 80
     go run cmd/swarm-autoconfigure/main.go $WORKLOAD cpu_mean_90 CPUUsageIncrease -property CPUUsageMean -threshold 90
+
+    # Fractional CPU incrase, amount=0.5
+    go run cmd/swarm-autoconfigure/main.go $WORKLOAD "afc_0.5_95_${SLA}" AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -amount 0.5
+
+    # Fractional CPU incrase, amount=1.0
+    go run cmd/swarm-autoconfigure/main.go $WORKLOAD "afc_1_95_${SLA}" AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -amount 1
 done

@@ -74,51 +74,51 @@ func (c *AddFractionalCPUcores) Configure(values map[string]history.ServiceInfo,
 			log.Println("Configurer Agent:", currentState[service].Name, ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
 			if ag.Value < whatToCompareTo {
 				// Actually you need to use these codes, up to isChanged = true
-				// log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.EachStepIncrease)
+				log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.EachStepIncrease)
 
-				// temp := currentState[service]
-				// temp.CPULimits++
-				// temp.CPUReservation++
-				// newSpecs[service] = temp
+				temp := currentState[service]
+				temp.CPULimits += c.EachStepIncrease
+				temp.CPUReservation += c.EachStepIncrease
+				newSpecs[service] = temp
 
-				// log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.EachStepIncrease)
-				// temp = newSpecs["gateway"]
-				// temp.CPULimits++
-				// temp.CPUReservation++
-				// newSpecs["gateway"] = temp
+				log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.EachStepIncrease)
+				temp = newSpecs["gateway"]
+				temp.CPULimits += c.EachStepIncrease
+				temp.CPUReservation += c.EachStepIncrease
+				newSpecs["gateway"] = temp
 
-				// isServiceChanged = true
-				// isChanged = true
-
-				if currentState[service].Name == "books" {
-					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+0.47)
-					temp := currentState[service]
-					temp.CPULimits += 0.47
-					temp.CPUReservation += 0.47
-					newSpecs[service] = temp
-
-					log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+0.29)
-					temp = newSpecs["gateway"]
-					temp.CPULimits += 0.29
-					temp.CPUReservation += 0.29
-					newSpecs["gateway"] = temp
-				}
-
-				if currentState[service].Name == "auth" {
-					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+0.24)
-					temp := currentState[service]
-					temp.CPULimits += 0.24
-					temp.CPUReservation += 0.24
-					newSpecs[service] = temp
-
-					log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+0.47)
-					temp = newSpecs["gateway"]
-					temp.CPULimits += 0.47
-					temp.CPUReservation += 0.47
-					newSpecs["gateway"] = temp
-				}
 				isServiceChanged = true
 				isChanged = true
+
+				// if currentState[service].Name == "books" {
+				// 	log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+0.47)
+				// 	temp := currentState[service]
+				// 	temp.CPULimits += 0.47
+				// 	temp.CPUReservation += 0.47
+				// 	newSpecs[service] = temp
+
+				// 	log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+0.29)
+				// 	temp = newSpecs["gateway"]
+				// 	temp.CPULimits += 0.29
+				// 	temp.CPUReservation += 0.29
+				// 	newSpecs["gateway"] = temp
+				// }
+
+				// if currentState[service].Name == "auth" {
+				// 	log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+0.24)
+				// 	temp := currentState[service]
+				// 	temp.CPULimits += 0.24
+				// 	temp.CPUReservation += 0.24
+				// 	newSpecs[service] = temp
+
+				// 	log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+0.47)
+				// 	temp = newSpecs["gateway"]
+				// 	temp.CPULimits += 0.47
+				// 	temp.CPUReservation += 0.47
+				// 	newSpecs["gateway"] = temp
+				// }
+				// isServiceChanged = true
+				// isChanged = true
 
 			}
 		}
@@ -137,9 +137,9 @@ func (c *AddFractionalCPUcores) Configure(values map[string]history.ServiceInfo,
 
 	for key := range newSpecs {
 		temp := newSpecs[key]
-		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Round(newSpecs[key].CPULimits)))
+		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Ceil(newSpecs[key].CPULimits)))
 		newSpecs[key] = temp
-		log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Round(newSpecs[key].CPULimits)))
+		log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Ceil(newSpecs[key].CPULimits)))
 	}
 
 	return newSpecs, isChanged, nil

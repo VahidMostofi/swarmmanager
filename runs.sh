@@ -66,3 +66,29 @@
 # go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 proportional_to_deman_95_350 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 350 -amount 1
 
 # go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 proportional_to_utilizations_95_350 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 350 -amount 1
+
+
+
+#go run cmd/swarm-autoconfigure/main.go 1_120_1_0.001 auth_only_111 Single
+
+
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 afc_0.5_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 0.5
+# go run cmd/swarm-autoconfigure/main.go 400_120_0.5_10 afc_0.5_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 0.5
+# go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 afc_0.5_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 0.5
+# go run cmd/swarm-autoconfigure/main.go 500_120_0.65_10 afc_0.5_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 0.5
+
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 afc_1_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1
+# go run cmd/swarm-autoconfigure/main.go 400_120_0.5_10 afc_1_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1
+# go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 afc_1_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1
+# go run cmd/swarm-autoconfigure/main.go 500_120_0.65_10 afc_1_95_500 AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1
+
+# AddDifferentFractionalCPUcores
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 adfc_demand_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator demand
+go run cmd/swarm-autoconfigure/main.go 400_120_0.5_10 adfc_demand_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator demand
+go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 adfc_demand_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator demand
+go run cmd/swarm-autoconfigure/main.go 500_120_0.65_10 adfc_demand_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator demand
+
+# go run cmd/swarm-autoconfigure/main.go 300_120_0.3_10 adfc_utilization_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator utilization
+go run cmd/swarm-autoconfigure/main.go 400_120_0.5_10 adfc_utilization_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator utilization
+go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 adfc_utilization_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator utilization
+go run cmd/swarm-autoconfigure/main.go 500_120_0.65_10 adfc_utilization_95_500 AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value 500 -amount 1 -indicator utilization

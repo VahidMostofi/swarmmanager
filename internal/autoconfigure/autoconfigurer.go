@@ -325,7 +325,9 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 
 		serviceInfo.ResponseTimes = make(map[string]history.ResponseTimeStats)
 		for valueName, responseTimes := range valueNameToResponseTimes {
-
+			if len(responseTimes) == 0 {
+				continue
+			}
 			mean, std, p90, p95, p99 := getDifferentResponseTimes(responseTimes)
 
 			responseTimesStats := history.ResponseTimeStats{
