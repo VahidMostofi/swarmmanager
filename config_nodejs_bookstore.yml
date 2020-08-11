@@ -1,5 +1,5 @@
 # nodejs_bookstore
-version: "v3"
+version: "v4"
 
 system-name: "nodejs_bookstore"
 resultsPath: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/" #TODO change this auto, also create folders auto

@@ -182,11 +182,12 @@ func GetResponseTimeSimpleIncreaseConfigurer() strategies.Configurer {
 
 // GetAddDifferentFractionalCPUcores ...
 func GetAddDifferentFractionalCPUcores(workload string) strategies.Configurer {
-	adfccCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
+	adfccCmd := flag.NewFlagSet("AddDifferentFractionalCPUcores", flag.ExitOnError)
 	adfccValueName := adfccCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
 	adfccThreshold := adfccCmd.Float64("value", 0, "what is the threshold")
 	adfccAmount := adfccCmd.Float64("amount", -1, "how much core to add at each step")
 	adfccIndicator := adfccCmd.String("indicator", "", "what is the indicator? Demand/Utilization")
+	adfccContainerStrategy := adfccCmd.Bool("mc", false, "run it with multiple containers")
 
 	adfccCmd.Parse(os.Args[beforeConfigArgCount:])
 	adfccCmd.Usage = func() {
@@ -232,12 +233,13 @@ func GetAddDifferentFractionalCPUcores(workload string) strategies.Configurer {
 				Value:              *adfccThreshold,
 			},
 		},
+		MultiContainer: *adfccContainerStrategy,
 	}
 }
 
 // GetAddFractionalCPUcoresConfigurer ...
 func GetAddFractionalCPUcoresConfigurer() strategies.Configurer {
-	afccCmd := flag.NewFlagSet("ResponseTimeSimpleIncrease", flag.ExitOnError)
+	afccCmd := flag.NewFlagSet("AddFractionalCPUcoresConfigurer", flag.ExitOnError)
 	afccValueName := afccCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
 	afccThreshold := afccCmd.Float64("value", 0, "what is the threshold")
 	afccAmount := afccCmd.Float64("amount", -1, "how much core to add at each step")

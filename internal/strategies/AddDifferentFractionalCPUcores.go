@@ -17,6 +17,7 @@ type AddDifferentFractionalCPUcores struct {
 	ServiceToAmount   map[string]float64
 	MaxServiceIncease map[string]float64
 	Agreements        []Agreement
+	MultiContainer    bool
 }
 
 // GetInitialConfig ...
@@ -34,11 +35,10 @@ func (c *AddDifferentFractionalCPUcores) Configure(values map[string]history.Ser
 	}
 
 	initialCPUCount := make(map[string]float64)
+	newCPUCount := make(map[string]float64)
 	for key := range currentState {
-		initialCPUCount[key] = currentState[key].CPULimits
-		if currentState[key].CPULimits != currentState[key].CPUReservation {
-			panic(fmt.Errorf("these two musth be equal"))
-		}
+		initialCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
+		newCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
 	}
 
 	for service := range currentState {
@@ -74,19 +74,28 @@ func (c *AddDifferentFractionalCPUcores) Configure(values map[string]history.Ser
 			}
 			log.Println("Configurer Agent:", currentState[service].Name, ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
 			if ag.Value < whatToCompareTo {
-				// Actually you need to use these codes, up to isChanged = true
-				log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.ServiceToAmount[service+".service"])
 
-				temp := currentState[service]
-				temp.CPULimits += c.ServiceToAmount[service+".service"]
-				temp.CPUReservation += c.ServiceToAmount[service+".service"]
-				newSpecs[service] = temp
+				if !c.MultiContainer {
+					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.ServiceToAmount[service+".service"])
 
-				log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.ServiceToAmount[service+".gateway"])
-				temp = newSpecs["gateway"]
-				temp.CPULimits += c.ServiceToAmount[service+".gateway"]
-				temp.CPUReservation += c.ServiceToAmount[service+".gateway"]
-				newSpecs["gateway"] = temp
+					temp := currentState[service]
+					temp.CPULimits += c.ServiceToAmount[service+".service"]
+					temp.CPUReservation += c.ServiceToAmount[service+".service"]
+					newSpecs[service] = temp
+
+					log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.ServiceToAmount[service+".gateway"])
+					temp = newSpecs["gateway"]
+					temp.CPULimits += c.ServiceToAmount[service+".gateway"]
+					temp.CPUReservation += c.ServiceToAmount[service+".gateway"]
+					newSpecs["gateway"] = temp
+				} else {
+					newCPUCount[service] += c.ServiceToAmount[service+".service"]
+					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", initialCPUCount[service], "to", newCPUCount[service])
+
+					newCPUCount["gateway"] += c.ServiceToAmount[service+".gateway"]
+					log.Println(c.ServiceToAmount[service+".gateway"])
+					log.Println("Configurer Agent:", currentState["gateway"].Name, "change CPU count from", initialCPUCount["gateway"], "to", newCPUCount["gateway"])
+				}
 
 				isServiceChanged = true
 				isChanged = true
@@ -95,20 +104,39 @@ func (c *AddDifferentFractionalCPUcores) Configure(values map[string]history.Ser
 	}
 
 	for key := range newSpecs {
-		if newSpecs[key].CPULimits-initialCPUCount[key] > c.MaxServiceIncease[key] {
-			log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newSpecs[key].CPULimits-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
-			temp := newSpecs[key]
-			temp.CPULimits = initialCPUCount[key] + c.MaxServiceIncease[key]
-			temp.CPUReservation = initialCPUCount[key] + c.MaxServiceIncease[key]
-			newSpecs[key] = temp
+		if !c.MultiContainer {
+			if newSpecs[key].CPULimits-initialCPUCount[key] > c.MaxServiceIncease[key] {
+				log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newSpecs[key].CPULimits-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
+				temp := newSpecs[key]
+				temp.CPULimits = initialCPUCount[key] + c.MaxServiceIncease[key]
+				temp.CPUReservation = initialCPUCount[key] + c.MaxServiceIncease[key]
+				newSpecs[key] = temp
+			}
+		} else {
+			if newCPUCount[key]-initialCPUCount[key] > c.MaxServiceIncease[key] {
+				log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newCPUCount[key]-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
+				newCPUCount[key] = initialCPUCount[key] + c.MaxServiceIncease[key]
+			}
 		}
 	}
 
-	for key := range newSpecs {
-		temp := newSpecs[key]
-		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Ceil(newSpecs[key].CPULimits)))
-		newSpecs[key] = temp
-		log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Ceil(newSpecs[key].CPULimits)))
+	if !c.MultiContainer {
+		for key := range newSpecs {
+			temp := newSpecs[key]
+			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Ceil(newSpecs[key].CPULimits)))
+			newSpecs[key] = temp
+			log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Ceil(newSpecs[key].CPULimits)))
+		}
+	} else {
+		for key := range newSpecs {
+			replicaCount := int(math.Ceil(newCPUCount[key]))
+			temp := newSpecs[key]
+			temp.CPULimits = float64(newCPUCount[key] / float64(replicaCount))
+			temp.CPUReservation = float64(newCPUCount[key] / float64(replicaCount))
+			temp.ReplicaCount = replicaCount
+			newSpecs[key] = temp
+			log.Println("Configurer Agent:", newSpecs[key].Name, "is going to use", newCPUCount[key], "CPU cores, which is", replicaCount, "containers each with", newSpecs[key].CPULimits, "cores")
+		}
 	}
 
 	return newSpecs, isChanged, nil
@@ -148,10 +176,10 @@ func GetFractionalCPUIncreaseValues(workload, indicator string, amount float64) 
 
 	X := vus / sleepTime
 	demands := map[string]float64{
-		"auth.service":  96,
-		"auth.gateway":  45,
-		"books.service": 112,
-		"books.gateway": 32,
+		"auth.service":  74,
+		"auth.gateway":  8,
+		"books.service": 62,
+		"books.gateway": 42,
 	}
 	values := make(map[string]float64)
 	maxIncrease := make(map[string]float64)
