@@ -96,3 +96,5 @@
 
 #go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 something Single
 # go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 something_else Single
+
+# go run cmd/swarm-autoconfigure/main.go 400_120_0.1_10 mc_ppeus_ti_equal_steps_950_250 PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value 250 -step 1

@@ -11,6 +11,42 @@ import (
 	"strings"
 )
 
+// Workload ...
+type Workload struct {
+	PathProportion map[string]float64
+	Throughput     float64
+}
+
+// WorkloadFromString ...
+func WorkloadFromString(str string) (*Workload, error) {
+	vus, err := strconv.ParseFloat(strings.Split(str, "_")[0], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse number of VUS in workload: %s", strings.Split(str, "_")[0])
+	}
+	sleepTime, err := strconv.ParseFloat(strings.Split(str, "_")[3], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse number of sleepTime in workload: %s", strings.Split(str, "_")[3])
+	}
+	authProb, err := strconv.ParseFloat(strings.Split(str, "_")[2], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse number of authProb in workload: %s", strings.Split(str, "_")[2])
+	}
+	if authProb >= 1 {
+		return nil, fmt.Errorf("authProb can't be more than 1, its: %f", authProb)
+	}
+	booksProb := 1 - authProb
+
+	X := vus / sleepTime
+	w := &Workload{
+		PathProportion: map[string]float64{
+			"auth":  authProb,
+			"books": booksProb,
+		},
+		Throughput: X,
+	}
+	return w, nil
+}
+
 // K6 connector to work with a K6 Wrapper
 type K6 struct {
 	Host string

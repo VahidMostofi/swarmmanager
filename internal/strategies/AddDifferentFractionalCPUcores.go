@@ -213,6 +213,6 @@ func GetFractionalCPUIncreaseValues(workload, indicator string, amount float64) 
 		values["books.gateway"] = maxIncrease["gateway"]
 		return roundMap(values), roundMap(maxIncrease), nil
 	} else {
-		return nil, nil, fmt.Errorf("Unknown type of indicator: %s possible values are: demand,utilization")
+		return nil, nil, fmt.Errorf("Unknown type of indicator: %s possible values are: demand,utilization", indicator)
 	}
 }

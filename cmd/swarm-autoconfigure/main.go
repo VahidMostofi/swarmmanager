@@ -24,6 +24,58 @@ import (
 
 const beforeConfigArgCount = 4
 
+// GetPerPathEUBasedScaling ...
+func GetPerPathEUBasedScaling(workloadStr string) strategies.Configurer {
+	workload, err := loadgenerator.WorkloadFromString(workloadStr)
+	if err != nil {
+		log.Panic("error while parsing workload", workloadStr, err)
+	}
+	ppeusCmd := flag.NewFlagSet("PerPathEUBasedScaling", flag.ExitOnError)
+	ppeusValueName := ppeusCmd.String("property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
+	ppeusThreshold := ppeusCmd.Float64("value", 0, "what is the threshold")
+	ppeusStepSize := ppeusCmd.Float64("step", -1, "how much core to add at each step to each path")
+	ppeusContainerStrategy := ppeusCmd.Bool("mc", false, "run it with multiple containers or not")
+	ppeusCmd.Parse(os.Args[beforeConfigArgCount:])
+	if *ppeusStepSize < 0 {
+		log.Panic("invalid value for stepSize")
+		os.Exit(1)
+	}
+
+	c := &strategies.PerPathEUBasedScaling{ //todo this is hardcoded!
+		Path2Service2EUtilization: map[string]map[string]float64{
+			"auth": map[string]float64{
+				"gateway": workload.Throughput * 8 * workload.PathProportion["auth"] / 1000.0,
+				"auth":    workload.Throughput * 74 * workload.PathProportion["auth"] / 1000.0,
+			},
+			"books": map[string]float64{
+				"gateway": workload.Throughput * 42 * workload.PathProportion["books"] / 1000.0,
+				"books":   workload.Throughput * 62 * workload.PathProportion["books"] / 1000.0,
+			},
+		},
+		NormalizedPath2Service2EUtilization: map[string]map[string]float64{
+			"auth": map[string]float64{
+				"gateway": 0.10,
+				"auth":    0.90,
+			},
+			"books": map[string]float64{
+				"gateway": 0.40,
+				"books":   0.60,
+			},
+		},
+		MultiContainer: *ppeusContainerStrategy,
+		StepSize:       *ppeusStepSize,
+		Agreements:     []strategies.Agreement{strategies.Agreement{PropertyToConsider: *ppeusValueName, Value: *ppeusThreshold}},
+	}
+
+	err = c.Init()
+	if err != nil {
+		panic(err)
+		os.Exit(1)
+	}
+
+	return c
+}
+
 // GetTheResourceUsageCollector ...
 func GetTheResourceUsageCollector() resource.Collector {
 	stackName := swarmmanager.GetConfig().StackName
@@ -350,6 +402,8 @@ func main() {
 		c = &strategies.SingleRun{}
 	case "AddDifferentFractionalCPUcores":
 		c = GetAddDifferentFractionalCPUcores(workloadStr)
+	case "PerPathEUBasedScaling":
+		c = GetPerPathEUBasedScaling(workloadStr)
 	default:
 		log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands but got", os.Args[beforeConfigArgCount-1])
 		os.Exit(1)
