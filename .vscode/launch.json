@@ -6,6 +6,7 @@
     "configurations": [
 
 
+
         {
             "name": "Attach to Process",
             "type": "go",
@@ -21,7 +22,7 @@
             "mode": "auto",
             "program": "/home/vahid/Desktop/projects/swarmmanager/cmd/swarm-autoconfigure/main.go",
             "env": {},
-            "args": ["300_80_0.3_10", "cpu95_80","CPUUsageIncrease","-property","CPUUsage95Percentile","-threshold", "80"]
+            "args": ["400_120_0.5_10", "mobo_CPU_split_mc", "MOBO", "auth", "1", "books", "1", "gateway", "1"]
         }
     ]
 }

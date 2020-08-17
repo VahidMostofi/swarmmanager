@@ -3,6 +3,7 @@ package strategies
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -19,7 +20,7 @@ import (
 const PythonPath = "/home/vahid/envs/data/bin/python"
 
 // ScriptPath is the path to python script
-const ScriptPath = "/home/vahid/Desktop/projects/swarmmanager/scripts/mobo.py"
+const ScriptPath = "/home/vahid/Desktop/projects/swarmmanager/scripts/mobo_CPU_split_mc.py"
 
 var wg sync.WaitGroup
 
@@ -73,10 +74,10 @@ func (c *MultiObjectiveBayesianOptimization) Write(p []byte) (int, error) {
 // GetInitialConfig ...
 func (c *MultiObjectiveBayesianOptimization) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
 	config := make(map[string]swarm.SimpleSpecs)
-	for key, coreCount := range c.InitialConfig {
+	for key := range c.InitialConfig {
 		temp := config[key]
 		temp.CPU = 1
-		temp.Replica = coreCount
+		temp.Replica = 1
 		temp.Worker = 1
 		config[key] = temp
 	}
@@ -90,7 +91,7 @@ func (c *MultiObjectiveBayesianOptimization) Configure(values map[string]history
 		c.configCh = make(chan map[string]serviceConfig)
 		log.Println("MOBO: first iteration of configurer")
 		ctx, _ := context.WithCancel(context.Background())
-		c.cmd = exec.CommandContext(ctx, PythonPath, ScriptPath)
+		c.cmd = exec.CommandContext(ctx, PythonPath, "-W", "ignore", ScriptPath)
 		stdin, err := c.cmd.StdinPipe()
 		if err != nil {
 			panic(err)
@@ -110,8 +111,9 @@ func (c *MultiObjectiveBayesianOptimization) Configure(values map[string]history
 			*values["books"].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95}}
 		b, err := json.Marshal(feedbacks)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("error while converting feedbacks to json: %w", err))
 		}
+		log.Println("MOBO: sending feedback:", string(b)+"\n")
 		io.WriteString(c.stdin, string(b)+"\n")
 		log.Println("MOBO: sent feedback:", string(b))
 	}

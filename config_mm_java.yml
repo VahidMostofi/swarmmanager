@@ -18,6 +18,6 @@ jaegerStorePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 
 k6-script: "/home/vahid/Desktop/projects/micromuck-java/load-generator/booksotre-system/scripts/type1.js"
 test-duration: 60
-wait-after-load-test: 30 
+wait-after-load-test: 45 
 available-cpu-count: 24
 services-to-monitor: auth,books,gateway

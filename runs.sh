@@ -98,3 +98,7 @@
 # go run cmd/swarm-autoconfigure/main.go 420_120_0.7_10 something_else Single
 
 # go run cmd/swarm-autoconfigure/main.go 400_120_0.1_10 mc_ppeus_ti_equal_steps_950_250 PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value 250 -step 1
+
+
+# # the values for auth, books and gateway are not being used! they are here for backward compatiblity
+# go run cmd/swarm-autoconfigure/main.go 400_120_0.5_10 mobo_CPU_split_mc MOBO auth 1 books 1 gateway 1
