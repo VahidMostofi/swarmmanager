@@ -3,14 +3,13 @@ import json
 import mobopt as mo
 import numpy as np
 import sys
-core_count = 22
+core_count = 20
 cache = {}
 
 import time
 def objective(x):
 
     s = sum(x)
-    
     g = core_count * (x[0] / s)
     a = core_count * (x[1] / s)
     b = core_count * (x[2] / s)
@@ -43,8 +42,8 @@ def objective(x):
     for line in sys.stdin:
         data = json.loads(line.strip())
         break
-    with open("/home/vahid/Desktop/log.python", "w+") as f:
-        f.write("out of loop:" + line)
+    with open("/home/vahid/Desktop/log.python.mobo", "w+") as f:
+        f.write(str(x))
     f.close()
     res = [data['feedbacks'][0],data['feedbacks'][1],a+b+g]
     cache[key] = np.array(res)
@@ -52,10 +51,10 @@ def objective(x):
     return np.array(np.array(res))
 
 PB = np.asarray([
-    [0.0365, 1],
-    [0.0365, 1],
-    [0.0365, 1],
-    [0.000, 1]
+    [0.06, 0.94],
+    [0.06, 0.94],
+    [0.06, 0.94],
+    [0.06, 0.94]
 ])
 NParam = PB.shape[0]
 
@@ -66,7 +65,7 @@ Optimizer = mo.MOBayesianOpt(target=objective,
                              max_or_min='min',
                              RandomSeed=10)
 Optimizer.initialize(init_points=5)
-front, pop = Optimizer.maximize(n_iter=40,
+front, pop = Optimizer.maximize(n_iter=35,
                                 prob=0.1,
                                 ReduceProb=False,
                                 q=0.5)

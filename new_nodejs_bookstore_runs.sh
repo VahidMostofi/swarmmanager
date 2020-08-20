@@ -16,15 +16,16 @@ do
     # # Fractional CPU increase, based on initial (estimated) CPU utilization, trying to mee ToleranceInterval, multiple containers
     # go run cmd/swarm-autoconfigure/main.go $WORKLOAD "mc_adfc_utilization_ti_95_${SLA}" AddDifferentFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -amount 1 -indicator utilization -mc
 
-    # RUN THESE 2 AGAIN
-    # Consider each path in the graph of routes separately, also use Estimated CPU Utilization as the initial configuration, use ToleranceInterval, single fat container, with step size of 1
-    go run cmd/swarm-autoconfigure/main.go $WORKLOAD "ppeus_ti_equal_steps_950_${SLA}" PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -step 1
+    # # RUN THESE 2 AGAIN
+    # # Consider each path in the graph of routes separately, also use Estimated CPU Utilization as the initial configuration, use ToleranceInterval, single fat container, with step size of 1
+    # go run cmd/swarm-autoconfigure/main.go $WORKLOAD "ppeus_ti_equal_steps_950_${SLA}" PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -step 1
 
-    # Consider each path in the graph of routes separately, also use Estimated CPU Utilization as the initial configuration, use ToleranceInterval, mutli container, with step size of 1
-    go run cmd/swarm-autoconfigure/main.go $WORKLOAD "mc_ppeus_ti_equal_steps_950_${SLA}" PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -step 1 -mc
+    # # Consider each path in the graph of routes separately, also use Estimated CPU Utilization as the initial configuration, use ToleranceInterval, mutli container, with step size of 1
+    # go run cmd/swarm-autoconfigure/main.go $WORKLOAD "mc_ppeus_ti_equal_steps_950_${SLA}" PerPathEUBasedScaling -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -step 1 -mc
 
     # # Fractional CPU incrase, amount=0.33, tolerance interval, (its like sharing 1 core between three services equaly) with tolerance interval
     # go run cmd/swarm-autoconfigure/main.go $WORKLOAD "afc_0.33_ti_95_${SLA}" AddFractionalCPUcores -property RTToleranceIntervalUBoundc90p95 -value ${SLA} -amount 0.33
 
+    go run cmd/swarm-autoconfigure/main.go $WORKLOAD mobo_CPU_split_mc MOBO auth 1 books 1 gateway 1
 
 done
