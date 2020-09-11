@@ -1,0 +1,41 @@
+# nodejs_bookstore
+version: "v4"
+
+results:
+    path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
+
+testBed:
+    dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-nodb.yml"
+    serviceCount: 5
+    stackName: "bookstore"
+    servicesToConfigure: 
+        - auth
+        - books
+        - gateway
+
+host:
+    availableCpuCount: 24
+    host: "tcp://136.159.209.204:2375"
+
+jaeger:
+    host: "http://136.159.209.204:16686"
+    rootService: "nginx"
+    detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/formulas/nodejs_bookstore.yaml"
+    storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+
+cache:
+    type: 'dropbox'
+    details:
+        - path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
+
+log:
+    directory: "/home/vahid/Desktop/projects/swarm-manager-data/logs" 
+
+loadGenerator:
+    type: "k6"
+    details:
+        - script: "/home/vahid/Desktop/type8.js"
+
+test:
+    duration: 60
+    waitAfterLoadGeneratorDone: 30 
