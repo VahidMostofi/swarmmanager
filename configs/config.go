@@ -48,8 +48,8 @@ type LogConfigurations struct {
 
 // HostConfigurations ...
 type HostConfigurations struct {
-	AvailabeCPUCount float64
-	Host             string
+	AvailableCPUCount float64
+	Host              string
 }
 
 // TestBedConfigurations ...
@@ -68,7 +68,7 @@ type ResultsConfigurations struct {
 // JaegerConfigurations ...
 type JaegerConfigurations struct {
 	Host            string
-	RootServicer    string
+	RootService     string
 	DetailsFilePath string
 	StorePath       string
 }

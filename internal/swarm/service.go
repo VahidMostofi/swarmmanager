@@ -128,8 +128,8 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 		return nil, fmt.Errorf("no stackname is provided in the values map")
 	}
 
-	if _, ok := values["services"]; !ok {
-		return nil, fmt.Errorf("no 'services' field is provided in the value map")
+	if len(configs.GetConfig().TestBed.ServicesToConfigure) < 1 {
+		return nil, fmt.Errorf("no 'servicesToConfigure' is specified in the TestBedConfiguration section")
 	}
 
 	servicesToMonitor := configs.GetConfig().TestBed.ServicesToConfigure

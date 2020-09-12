@@ -21,6 +21,10 @@ Rserve(args="--no-save")
 ```
 for more info refer to [R Serve docs](https://www.rforge.net/Rserve/doc.html).
 
+## How to add new configure agent?
+1. Add the corresponding command line handler to ```cmd/autoconfigstrategies```
+2. Add the command line handler object to ```cmd/autoconfig.go```
+
 
 ## How to configure for a new Host
 1. Update these values in config.yml

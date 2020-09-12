@@ -94,9 +94,9 @@ func (md *DropboxDatabase) hash(workload string, specs map[string]swarm.ServiceS
 
 	sort.Strings(keys)
 	for _, key := range keys {
-		fmt.Println("hash with", tempConfigs[key])
+		// fmt.Println("hash with", tempConfigs[key])
 		bytes = append(bytes, tempConfigs[key].GetBytes()...)
 	}
-	fmt.Println("hash with", configs.GetConfig().Version, configs.GetConfig().AppName, workload)
+	// fmt.Println("hash with", configs.GetConfig().Version, configs.GetConfig().AppName, workload)
 	return fmt.Sprintf("%x", md5.Sum(bytes))
 }

@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var valueName string
-var valueTreshold float64
-var stepSize float64
-var indicator string
-var isMultiContainer bool
+var adfcSlaAgreementPropertyName string
+var adfcSlaAgreementPropertyValue float64
+var adfcStepSize float64
+var adfcIndicator string
+var adfcIsMultiContainer bool
 
 // ADFCCmd represents the ADFC command
 var ADFCCmd = &cobra.Command{
@@ -22,7 +22,7 @@ var ADFCCmd = &cobra.Command{
 	Short: "Add Diffrent Fractional CPU",
 	Long:  `Add Diffrent Fractional CPU proportional to Estimated CPU Utilizations which are normalized over the whole system`,
 	Run: func(cmd *cobra.Command, args []string) {
-		values, maxIncrease, err := strategies.GetFractionalCPUIncreaseValues(viper.GetString("workloadStr"), indicator, stepSize)
+		values, maxIncrease, err := strategies.GetFractionalCPUIncreaseValues(viper.GetString("workloadStr"), adfcIndicator, adfcStepSize)
 		if err != nil {
 			log.Panic(err)
 			os.Exit(1)
@@ -35,11 +35,11 @@ var ADFCCmd = &cobra.Command{
 			MaxServiceIncease: maxIncrease,
 			Agreements: []strategies.Agreement{
 				{
-					PropertyToConsider: valueName,
-					Value:              valueTreshold,
+					PropertyToConsider: adfcSlaAgreementPropertyName,
+					Value:              adfcSlaAgreementPropertyValue,
 				},
 			},
-			MultiContainer: isMultiContainer,
+			MultiContainer: adfcIsMultiContainer,
 		}
 
 		initializer.StartAutoconfig(strategy, "adfc")
@@ -48,11 +48,11 @@ var ADFCCmd = &cobra.Command{
 
 func init() {
 
-	ADFCCmd.Flags().StringVar(&valueName, "property", "", "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
-	ADFCCmd.Flags().Float64Var(&valueTreshold, "value", 0, "Which property of a run to consider? CPUUsageMean,CPUUsage90Percentile 70-95, 99")
-	ADFCCmd.Flags().Float64Var(&stepSize, "stepsize", -1, "how much core to add at each step")
-	indicator = "Utilization" // previously this could also be demand
-	ADFCCmd.Flags().BoolVar(&isMultiContainer, "mc", true, "run it with multiple containers or one fat container")
+	ADFCCmd.Flags().StringVar(&adfcSlaAgreementPropertyName, "property", "", "Which property of a run to consider for SLA? ResponseTimesMean, ResponseTimes90Percentile (95,99), ResponseTimes90Percentile")
+	ADFCCmd.Flags().Float64Var(&adfcSlaAgreementPropertyValue, "value", 0, "The desired value related to SLA")
+	ADFCCmd.Flags().Float64Var(&adfcStepSize, "stepsize", -1, "how much core to add at each step")
+	adfcIndicator = "Utilization" // previously this could also be demand
+	ADFCCmd.Flags().BoolVar(&adfcIsMultiContainer, "mc", true, "run it with multiple containers or one fat container")
 	cobra.MarkFlagRequired(ADFCCmd.Flags(), "property")
 	cobra.MarkFlagRequired(ADFCCmd.Flags(), "value")
 	cobra.MarkFlagRequired(ADFCCmd.Flags(), "stepsize")
