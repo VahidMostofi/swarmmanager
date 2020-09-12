@@ -1,17 +1,17 @@
 package history
 
 import (
-	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
 // ExecutionDetails ...
 type ExecutionDetails struct {
-	Name     string               `yaml:"name"`
-	Workload interface{}          `yaml:"workload"`
-	History  []Information        `yaml:"steps"`
-	Command  string               `yaml:"command"` //shows the command that executed the program
-	Config   *swarmmanager.Config `yaml:"config"`
+	Name     string                  `yaml:"name"`
+	Workload interface{}             `yaml:"workload"`
+	History  []Information           `yaml:"steps"`
+	Command  string                  `yaml:"command"` //shows the command that executed the program
+	Config   *configs.Configurations `yaml:"config"`
 }
 
 // Information ...

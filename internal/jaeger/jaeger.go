@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/configs"
 	uuid "github.com/nu7hatch/gouuid"
 	"gopkg.in/yaml.v2"
 )
@@ -46,15 +46,15 @@ func NewAggregator() *Aggregator {
 		Formulas       []valueFormula                 `yaml:"formulas"`
 	}{}
 
-	b, err := ioutil.ReadFile(swarmmanager.GetConfig().JaegerDetailsFilePath)
+	b, err := ioutil.ReadFile(configs.GetConfig().Jaeger.DetailsFilePath)
 	if err != nil {
 		log.Panic(err)
 	}
 	yaml.Unmarshal(b, temp)
 	j := &Aggregator{
-		Host:           swarmmanager.GetConfig().JaegerHost,
+		Host:           configs.GetConfig().Jaeger.Host,
 		Values:         make(map[string][]float64),
-		StorePath:      swarmmanager.GetConfig().JaegerStorePath,
+		StorePath:      configs.GetConfig().Jaeger.StorePath,
 		ServiceDetails: temp.ServiceDetails,
 		Formulas:       temp.Formulas,
 	}

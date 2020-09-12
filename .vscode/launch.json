@@ -5,14 +5,12 @@
     "version": "0.2.0",
     "configurations": [
 
-
-
         {
             "name": "Attach to Process",
             "type": "go",
             "request": "attach",
             "mode": "local",
-            "processId": 89530
+            "processId": 1005945
         },
         
         {
@@ -20,9 +18,9 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/home/vahid/Desktop/projects/swarmmanager/cmd/swarm-autoconfigure/main.go",
+            "program": "main.go",
             "env": {},
-            "args": ["400_120_0.5_10", "mobo_CPU_split_mc", "MOBO", "auth", "1", "books", "1", "gateway", "1"]
+            "args": ["autoconfig", "--appname", "bookstore_nodejs", "--config", "configurations/bookstore_nodejs.yaml", "--workload","250_80_0.5_10", "--testName", "cui-350-mean-60", "cui", "--cpuStat", "CPUUsageMean", "--cpuThreshold", "60"]
         }
     ]
 }

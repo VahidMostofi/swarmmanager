@@ -10,7 +10,7 @@ import (
 
 	"log"
 
-	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/docker/docker/api/types"
 	dockerswarm "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
@@ -128,11 +128,11 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 		return nil, fmt.Errorf("no stackname is provided in the values map")
 	}
 
-	if _, ok := values["services"]; !ok {
-		return nil, fmt.Errorf("no 'services' field is provided in the value map")
+	if len(configs.GetConfig().TestBed.ServicesToConfigure) < 1 {
+		return nil, fmt.Errorf("no 'servicesToConfigure' is specified in the TestBedConfiguration section")
 	}
 
-	servicesToMonitor := strings.Split(values["services"], ",")
+	servicesToMonitor := configs.GetConfig().TestBed.ServicesToConfigure
 	for i, s := range servicesToMonitor {
 		servicesToMonitor[i] = strings.Trim(s, " ")
 	}
@@ -186,7 +186,7 @@ func (s *Manager) manageState() {
 		if s.CurrentStackState == StackStateEmpty {
 			//
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeDeployed {
-			s.CheckServicedDeployment(swarmmanager.GetConfig().ServiceCount)
+			s.CheckServicedDeployment(configs.GetConfig().TestBed.ServiceCount)
 		} else if s.CurrentStackState <= StackStateWaitForServicesToBeReady {
 			s.CheckforServicesReadiness()
 		}
