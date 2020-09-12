@@ -13,6 +13,7 @@ import (
 var cfgFile string
 var appName string
 var workloadStr string
+var testName string
 
 // autoconfigCmd represents the autoconfig command
 var autoconfigCmd = &cobra.Command{
@@ -32,12 +33,19 @@ func init() {
 
 	autoconfigCmd.PersistentFlags().StringVar(&appName, "appname", "", "the name of the application we want to auto-configure")
 	viper.BindPFlag("appname", autoconfigCmd.PersistentFlags().Lookup("appname"))
+	cobra.MarkFlagRequired(autoconfigCmd.PersistentFlags(), "appname")
 
 	autoconfigCmd.PersistentFlags().StringVar(&workloadStr, "workload", "", "the key specifying workload for load-generator")
 	viper.BindPFlag("workloadStr", autoconfigCmd.PersistentFlags().Lookup("workload"))
+	cobra.MarkFlagRequired(autoconfigCmd.PersistentFlags(), "workloadStr")
+
+	autoconfigCmd.PersistentFlags().StringVar(&testName, "testName", "", "name of the test")
+	viper.BindPFlag("testName", autoconfigCmd.PersistentFlags().Lookup("testName"))
+	cobra.MarkFlagRequired(autoconfigCmd.PersistentFlags(), "testName")
 
 	autoconfigCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/configs/{appname}.yaml)")
 
+	// Every new strategy must be added here
 	autoconfigCmd.AddCommand(strategiesCmd.ADFCCmd)
 }
 

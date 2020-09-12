@@ -16,16 +16,17 @@ var c *Configurations
 
 // Configurations ...
 type Configurations struct {
-	Version       string
-	AppName       string
-	Jaeger        JaegerConfigurations
-	Cache         CacheConfigurations
-	Results       ResultsConfigurations
-	TestBed       TestBedConfigurations
-	Host          HostConfigurations
-	Log           LogConfigurations
-	LoadGenerator LoadGeneratorConfigurations
-	Test          TestConfigurations
+	Version        string
+	AppName        string
+	Jaeger         JaegerConfigurations
+	Cache          CacheConfigurations
+	Results        ResultsConfigurations
+	TestBed        TestBedConfigurations
+	Host           HostConfigurations
+	Log            LogConfigurations
+	LoadGenerator  LoadGeneratorConfigurations
+	Test           TestConfigurations
+	UsageCollector UsageCollectorConfigurations
 }
 
 // TestConfigurations ...
@@ -47,7 +48,7 @@ type LogConfigurations struct {
 
 // HostConfigurations ...
 type HostConfigurations struct {
-	AvailabeCPUCount int
+	AvailabeCPUCount float64
 	Host             string
 }
 
@@ -74,6 +75,12 @@ type JaegerConfigurations struct {
 
 // CacheConfigurations ...
 type CacheConfigurations struct {
+	Type    string
+	Details map[string]string
+}
+
+// UsageCollectorConfigurations ...
+type UsageCollectorConfigurations struct {
 	Type    string
 	Details map[string]string
 }

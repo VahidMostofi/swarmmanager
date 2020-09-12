@@ -1,6 +1,9 @@
 package collector
 
 import (
+	"log"
+
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/resource"
 )
 
@@ -20,4 +23,16 @@ func GetNewCollector(kind string) Collector {
 		return &SingleCollector{}
 	}
 	return nil
+}
+
+// GetTheResourceUsageCollector ...
+func GetTheResourceUsageCollector() Collector {
+	stackName := configs.GetConfig().TestBed.StackName
+	c := GetNewCollector(configs.GetConfig().UsageCollector.Type)
+	err := c.Configure(map[string]string{"host": configs.GetConfig().UsageCollector.Details["host"], "stackname": stackName})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return c
 }

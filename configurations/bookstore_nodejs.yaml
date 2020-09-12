@@ -20,7 +20,7 @@ host:
 jaeger:
     host: "http://136.159.209.204:16686"
     rootService: "nginx"
-    detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/formulas/nodejs_bookstore.yaml"
+    detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/bookstore_nodejs.yaml"
     storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 
 cache:
@@ -39,3 +39,8 @@ loadGenerator:
 test:
     duration: 60
     waitAfterLoadGeneratorDone: 30 
+
+usageCollector:
+    type: "SingleCollector"
+    details:
+        - host: "tcp://136.159.209.204:2375"

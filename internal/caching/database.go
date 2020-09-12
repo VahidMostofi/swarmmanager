@@ -8,7 +8,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 	"gopkg.in/yaml.v3"
@@ -46,8 +46,8 @@ func (md *DropboxDatabase) GetNotFoundError() error {
 }
 
 // Store ...
-func (md *DropboxDatabase) Store(workload string, configs map[string]swarm.ServiceSpecs, info history.Information) (string, error) {
-	hash := md.hash(workload, configs)
+func (md *DropboxDatabase) Store(workload string, specs map[string]swarm.ServiceSpecs, info history.Information) (string, error) {
+	hash := md.hash(workload, specs)
 	info.HashCode = hash
 	log.Println("DropboxCache: hash for this configuration and workload:", hash)
 	b, err := yaml.Marshal(info)
@@ -63,8 +63,8 @@ func (md *DropboxDatabase) Store(workload string, configs map[string]swarm.Servi
 }
 
 // Retrieve ...
-func (md *DropboxDatabase) Retrieve(workload string, configs map[string]swarm.ServiceSpecs) (history.Information, error) {
-	hash := md.hash(workload, configs)
+func (md *DropboxDatabase) Retrieve(workload string, specs map[string]swarm.ServiceSpecs) (history.Information, error) {
+	hash := md.hash(workload, specs)
 	log.Println("DropboxCache: hash for this configuration and workload:", hash)
 	h := history.Information{}
 	if _, err := os.Stat(md.Path + "/" + hash + "/info.yml"); os.IsNotExist(err) {
@@ -79,15 +79,15 @@ func (md *DropboxDatabase) Retrieve(workload string, configs map[string]swarm.Se
 	return h, nil
 }
 
-func (md *DropboxDatabase) hash(workload string, configs map[string]swarm.ServiceSpecs) string {
+func (md *DropboxDatabase) hash(workload string, specs map[string]swarm.ServiceSpecs) string {
 	bytes := make([]byte, 0)
-	bytes = append(bytes, []byte(swarmmanager.GetConfig().Version)...)
-	bytes = append(bytes, []byte(swarmmanager.GetConfig().SystemName)...)
+	bytes = append(bytes, []byte(configs.GetConfig().Version)...)
+	bytes = append(bytes, []byte(configs.GetConfig().AppName)...)
 	bytes = append(bytes, []byte(workload)...)
 
 	var keys []string
 	var tempConfigs = make(map[string]swarm.ServiceSpecs)
-	for _, value := range configs {
+	for _, value := range specs {
 		tempConfigs[value.Name] = value
 		keys = append(keys, value.Name)
 	}
@@ -97,6 +97,6 @@ func (md *DropboxDatabase) hash(workload string, configs map[string]swarm.Servic
 		fmt.Println("hash with", tempConfigs[key])
 		bytes = append(bytes, tempConfigs[key].GetBytes()...)
 	}
-	fmt.Println("hash with", swarmmanager.GetConfig().Version, swarmmanager.GetConfig().SystemName, workload)
+	fmt.Println("hash with", configs.GetConfig().Version, configs.GetConfig().AppName, workload)
 	return fmt.Sprintf("%x", md5.Sum(bytes))
 }

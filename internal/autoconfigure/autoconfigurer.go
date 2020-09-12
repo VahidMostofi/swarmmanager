@@ -1,7 +1,5 @@
 package autoconfigure
 
-//TODO I NEED TO REstart every single container
-//TODO check validity of a configuration
 import (
 	"fmt"
 	"io/ioutil"
@@ -12,7 +10,7 @@ import (
 
 	"log"
 
-	"github.com/VahidMostofi/swarmmanager"
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/caching"
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
@@ -49,19 +47,6 @@ type AutoConfigurer struct {
 	TimingConfigs
 }
 
-// GetTheResourceUsageCollector ...
-func GetTheResourceUsageCollector() resource.Collector {
-	//TODO SERVICE COUNT IS HARDCODED!!!!!!!!
-	stackName := swarmmanager.GetConfig().StackName
-	c := resource.GetNewCollector("SingleCollector")
-	err := c.Configure(map[string]string{"host": swarmmanager.GetConfig().Host, "stackname": stackName})
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return c
-}
-
 // NewAutoConfigurer ...
 func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeCollector, rcc workload.RequestCountCollector, ruc resource.Collector, c strategies.Configurer, m *swarm.Manager, workload string, database caching.Database) *AutoConfigurer {
 	a := &AutoConfigurer{
@@ -72,9 +57,9 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		ConfigurerAgent:        c,
 		SwarmManager:           m,
 		TimingConfigs: TimingConfigs{
-			IterationDuration:                 time.Duration(swarmmanager.GetConfig().TestDuration),
+			IterationDuration:                 time.Duration(configs.GetConfig().Test.Duration),
 			WaitAfterServicesAreReadyDuration: 7,
-			WaitAfterLoadGeneratorStopped:     time.Duration(swarmmanager.GetConfig().WaitAfterLoadGenerator),
+			WaitAfterLoadGeneratorStopped:     time.Duration(configs.GetConfig().Test.WaitAfterLoadGeneratorDone),
 		},
 		Workload: workload,
 		Database: database,
@@ -89,7 +74,7 @@ func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
 		sum += (float64(config[key].ReplicaCount) * config[key].CPULimits)
 	}
 	log.Println("there are", sum, "cores required!")
-	return sum, sum <= swarmmanager.GetConfig().AvailabeCPUCount
+	return sum, sum <= configs.GetConfig().Host.AvailabeCPUCount
 }
 
 // Start ...
@@ -100,7 +85,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 		Workload: a.Workload,
 		History:  make([]history.Information, 0),
 		Command:  command,
-		Config:   swarmmanager.GetConfig(),
+		Config:   configs.GetConfig(),
 	}
 
 	// Remove the current Stack
@@ -111,7 +96,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 
 	// Deploy the stack with basic configuration
 	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml"
-	dockerComposePath := swarmmanager.GetConfig().DockerComposeFile
+	dockerComposePath := configs.GetConfig().TestBed.DockerComposeFile
 
 	initialConfig, err := a.ConfigurerAgent.GetInitialConfig()
 	if err != nil {
@@ -146,25 +131,12 @@ func (a *AutoConfigurer) Start(name string, command string) {
 		info, err := a.Database.Retrieve(string(a.Workload), a.SwarmManager.DesiredSpecs)
 		if err == nil {
 			log.Println("Autoconfigurer: information is found for this configuration/workload")
-			// a.SwarmManager.CurrentSpecs = make(map[string]swarm.ServiceSpecs)
-
-			// services, err := a.SwarmManager.Client.ServiceList(a.SwarmManager.Ctx, types.ServiceListOptions{})
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// for _, srv := range services {
-			// 	serviceName := strings.Split(srv.Spec.Name, "_")[1]
-			// 	temp := info.Specs[serviceName]
-			// 	temp.Name = serviceName
-			// 	temp.ID = srv.ID
-			// 	a.SwarmManager.CurrentSpecs[serviceName] = temp
-			// }
 		} else {
 			time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
 			go a.LoadGenerator.Start(make(map[string]string))
 			log.Println("load generator started")
 			time.Sleep(30 * time.Second)
-			a.ResourceUsageCollector = GetTheResourceUsageCollector()
+			a.ResourceUsageCollector = resource.GetTheResourceUsageCollector()
 			err = a.ResourceUsageCollector.Start()
 			if err != nil {
 				log.Panic(err)
@@ -211,10 +183,10 @@ func (a *AutoConfigurer) Start(name string, command string) {
 		}
 		time.Sleep(5 * time.Second)
 		saveHistory(stackHistory)
-		fmt.Println("partial results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
+		fmt.Println("partial results at:", configs.GetConfig().Results.Path+stackHistory.Name+".yml")
 	}
 	saveHistory(stackHistory)
-	fmt.Println("final results at:", swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml")
+	fmt.Println("final results at:", configs.GetConfig().Results.Path+stackHistory.Name+".yml")
 }
 
 func saveHistory(stackHistory *history.ExecutionDetails) {
@@ -222,7 +194,7 @@ func saveHistory(stackHistory *history.ExecutionDetails) {
 	if err != nil {
 		log.Panic(err)
 	}
-	ioutil.WriteFile(swarmmanager.GetConfig().ResultsDirectoryPath+stackHistory.Name+".yml", b, os.FileMode(int(0777)))
+	ioutil.WriteFile(configs.GetConfig().Results.Path+stackHistory.Name+".yml", b, os.FileMode(int(0777)))
 }
 
 func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
@@ -240,7 +212,7 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 // GatherInfo ...
 func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
-	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, swarmmanager.GetConfig().JaegerRootService) //TODO this is hardcoded!
+	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, configs.GetConfig().Jaeger.RootServicer)
 	info := make(map[string]history.ServiceInfo)
 	for key := range a.SwarmManager.CurrentSpecs {
 		serviceName := a.SwarmManager.CurrentSpecs[key].Name

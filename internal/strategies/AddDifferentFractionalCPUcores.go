@@ -156,7 +156,7 @@ func roundMap(values map[string]float64) map[string]float64 {
 }
 
 // GetFractionalCPUIncreaseValues ...
-func GetFractionalCPUIncreaseValues(workload, indicator string, amount float64) (map[string]float64, map[string]float64, error) {
+func GetFractionalCPUIncreaseValues(workload, indicator string, stepSize float64) (map[string]float64, map[string]float64, error) {
 	vus, err := strconv.ParseFloat(strings.Split(workload, "_")[0], 64)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Cant parse number of VUS in workload: %s", strings.Split(workload, "_")[0])
@@ -190,7 +190,7 @@ func GetFractionalCPUIncreaseValues(workload, indicator string, amount float64) 
 			sumAll += value
 		}
 		for key, demand := range demands {
-			values[key] = (demand / sumAll) * amount
+			values[key] = (demand / sumAll) * stepSize
 		}
 
 		maxIncrease["auth"] = values["auth.service"]
@@ -203,9 +203,9 @@ func GetFractionalCPUIncreaseValues(workload, indicator string, amount float64) 
 		maxIncrease["gateway"] = X * (demands["auth.gateway"]*authProb + demands["books.gateway"]*booksProb)
 		sumAll := maxIncrease["auth"] + maxIncrease["books"] + maxIncrease["gateway"]
 
-		maxIncrease["auth"] = amount * (maxIncrease["auth"] / sumAll)
-		maxIncrease["books"] = amount * (maxIncrease["books"] / sumAll)
-		maxIncrease["gateway"] = amount * (maxIncrease["gateway"] / sumAll)
+		maxIncrease["auth"] = stepSize * (maxIncrease["auth"] / sumAll)
+		maxIncrease["books"] = stepSize * (maxIncrease["books"] / sumAll)
+		maxIncrease["gateway"] = stepSize * (maxIncrease["gateway"] / sumAll)
 
 		values["auth.service"] = maxIncrease["auth"]
 		values["auth.gateway"] = maxIncrease["gateway"]
