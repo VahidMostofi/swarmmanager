@@ -2,7 +2,6 @@ package jaeger
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -12,59 +11,59 @@ import (
 
 // import ("github.com/PaesslerAG/gval")
 
-func evaluateJaegerFormula(formula string, spans map[string]*span) (float64, error) {
-	// gval.Evaluable
-	operationNames := make([]string, 0)
-	for operationName := range spans {
-		operationNames = append(operationNames, operationName)
+func getValue(token string, t *trace) (float64, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) < 3 {
+		fmt.Println(parts, token)
+	}
+	serviceName := parts[0]
+	operationName := parts[1]
+	indicator := parts[2]
+
+	var matchingSpan *span
+	for _, s := range t.Spans {
+		if s.ServiceName == serviceName && s.OperationName == operationName {
+			matchingSpan = s
+			break
+		}
+	}
+	if matchingSpan == nil {
+		if operationName == "call" {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("matchingSpan is nil for %s %s", serviceName, operationName)
+	}
+	if indicator == "StartTime" {
+		return matchingSpan.StartTime / 1000, nil
+	} else if indicator == "EndTime" {
+		return matchingSpan.EndTime / 1000, nil
+	} else if indicator == "Duration" {
+		return matchingSpan.Duration / 1000, nil
+	} else {
+		return 0, fmt.Errorf("no indicator for %s", indicator)
+	}
+}
+
+func evaluateJaegerFormula(formula string, t *trace) (float64, error) {
+	// serviceName.operationName.[StartTime|Duration|EndTime]
+
+	for strings.Contains(formula, "  ") {
+		formula = strings.ReplaceAll(formula, "  ", " ")
+	}
+	formulaWithNumbers := ""
+
+	for _, token := range strings.Split(formula, " ") {
+		if token == "(" || token == ")" || token == "+" || token == "-" {
+			formulaWithNumbers += token
+		} else {
+			value, err := getValue(token, t)
+			if err != nil {
+				return 0, err
+			}
+			formulaWithNumbers += strconv.FormatFloat(value, 'f', 6, 64)
+		}
 	}
 
-	sort.Slice(operationNames, func(i, j int) bool {
-		return len(operationNames[i]) > len(operationNames[j])
-	})
-	for strings.Contains(formula, " ") {
-		formula = strings.Replace(formula, " ", "", 1)
-	}
-	token := ""
-	formulaWithNumbers := ""
-	for i := 0; i < len(formula); i++ {
-		if formula[i] == '+' || formula[i] == '-' || formula[i] == '(' || formula[i] == ')' {
-			if len(token) > 0 {
-				opName := strings.Split(token, ".")[0]
-				field := strings.Split(token, ".")[1]
-				var value float64
-				if field == "StartTime" {
-					value = spans[opName].StartTime
-				} else if field == "EndTime" {
-					value = spans[opName].EndTime
-				} else if field == "Duration" {
-					value = spans[opName].Duration
-				} else {
-					return 0, fmt.Errorf("the filed %s is undefined", field)
-				}
-				formulaWithNumbers += strconv.FormatFloat(value, 'f', 6, 64)
-			}
-			token = ""
-			formulaWithNumbers += string(formula[i])
-		} else {
-			token += string(formula[i])
-		}
-	}
-	if len(token) > 0 {
-		opName := strings.Split(token, ".")[0]
-		field := strings.Split(token, ".")[1]
-		var value float64
-		if field == "StartTime" {
-			value = spans[opName].StartTime
-		} else if field == "EndTime" {
-			value = spans[opName].EndTime
-		} else if field == "Duration" {
-			value = spans[opName].Duration
-		} else {
-			return 0, fmt.Errorf("the filed %s is undefined", field)
-		}
-		formulaWithNumbers += strconv.FormatFloat(value, 'f', 6, 64)
-	}
 	res, err := gval.Evaluate(formulaWithNumbers, map[string]interface{}{})
 	if err != nil {
 		return 0, errors.Wrap(err, "couldn't evaluate expression: "+formulaWithNumbers)

@@ -1,0 +1,110 @@
+requests:
+    req1: 
+        name: req1
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req1_
+            -
+                key: http.request.method
+                value: GET
+    req2: 
+        name: req2
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req2_
+            -
+                key: http.request.method
+                value: GET
+    req3: 
+        name: req3
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req3_
+            -
+                key: http.request.method
+                value: GET
+    req4:
+        name: req4
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req4_
+            -
+                key: http.request.method
+                value: GET
+    req5:
+        name: req5
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req5_
+            -
+                key: http.request.method
+                value: GET
+services:
+    servicea:
+        name: servicea
+        formulas: []
+
+    serviceb:
+        name: serviceb
+        formulas:
+            - 
+                name: service_time
+                value: serviceb.main.Duration - serviceb.call.Duration
+    servicec:
+        name: servicec
+        formulas:
+            - 
+                name: service_time
+                value: servicec.main.Duration - servicec.call.Duration                
+    serviced:
+        name: serviced
+        formulas:
+            - 
+                name: service_time
+                value: serviced.main.Duration - serviced.call.Duration                
+    servicee:
+        name: servicee
+        formulas:
+            - 
+                name: service_time
+                value: servicee.main.Duration - servicee.call.Duration                
+    servicef:
+        name: servicef
+        formulas:
+            - 
+                name: service_time
+                value: servicef.main.Duration - servicef.call.Duration                
+    serviceg:
+        name: serviceg
+        formulas:
+            - 
+                name: service_time
+                value: serviceg.main.Duration - serviceg.call.Duration                
+    serviceh:
+        name: serviceh
+        formulas:
+            - 
+                name: service_time
+                value: serviceh.main.Duration - serviceh.call.Duration                
+    servicei:
+        name: servicei
+        formulas:
+            - 
+                name: service_time
+                value: servicei.main.Duration - servicei.call.Duration                
+    servicej:
+        name: servicej
+        formulas:
+            - 
+                name: service_time
+                value: servicej.main.Duration - servicej.call.Duration

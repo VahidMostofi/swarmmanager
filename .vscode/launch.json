@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "name": "Attach to Process",
             "type": "go",
@@ -18,9 +19,9 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "main.go",
+            "program": "test",
             "env": {},
-            "args": ["autoconfig", "--appname", "bookstore_nodejs", "--config", "configurations/bookstore_nodejs.yaml", "--workload","250_80_0.5_10", "--testName", "cui-350-mean-60", "cui", "--cpuStat", "CPUUsageMean", "--cpuThreshold", "60"]
+            "args": []
         }
     ]
 }

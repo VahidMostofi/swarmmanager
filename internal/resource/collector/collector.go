@@ -5,6 +5,8 @@ import (
 
 	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/resource"
+	"github.com/VahidMostofi/swarmmanager/internal/resource/collector/multi"
+	"github.com/VahidMostofi/swarmmanager/internal/resource/collector/single"
 )
 
 // Collector is the interface of any collection of tools and techniques which collect and aggregate resource utilization
@@ -20,16 +22,17 @@ type Collector interface {
 // GetNewCollector is the factory method for constructing a new Collector
 func GetNewCollector(kind string) Collector {
 	if kind == "SingleCollector" {
-		return &SingleCollector{}
+		return &single.Collector{}
+	} else if kind == "MultiHostCollector" {
+		return &multi.Collector{}
 	}
 	return nil
 }
 
 // GetTheResourceUsageCollector ...
 func GetTheResourceUsageCollector() Collector {
-	stackName := configs.GetConfig().TestBed.StackName
 	c := GetNewCollector(configs.GetConfig().UsageCollector.Type)
-	err := c.Configure(map[string]string{"host": configs.GetConfig().UsageCollector.Details["host"], "stackname": stackName})
+	err := c.Configure(map[string]string{})
 	if err != nil {
 		log.Panic(err)
 	}

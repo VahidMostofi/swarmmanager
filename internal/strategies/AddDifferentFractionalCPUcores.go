@@ -2,14 +2,12 @@ package strategies
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
-	"github.com/VahidMostofi/swarmmanager/internal/utils"
 )
 
 // AddDifferentFractionalCPUcores ...
@@ -26,120 +24,121 @@ func (c *AddDifferentFractionalCPUcores) GetInitialConfig() (map[string]swarm.Si
 }
 
 // Configure ....
-func (c *AddDifferentFractionalCPUcores) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
-	isChanged := false
+func (c *AddDifferentFractionalCPUcores) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+	// isChanged := false
 
-	newSpecs := make(map[string]swarm.ServiceSpecs)
-	for key, value := range currentState {
-		newSpecs[key] = value
-	}
+	// newSpecs := make(map[string]swarm.ServiceSpecs)
+	// for key, value := range currentState {
+	// 	newSpecs[key] = value
+	// }
 
-	initialCPUCount := make(map[string]float64)
-	newCPUCount := make(map[string]float64)
-	for key := range currentState {
-		initialCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
-		newCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
-	}
+	// initialCPUCount := make(map[string]float64)
+	// newCPUCount := make(map[string]float64)
+	// for key := range currentState {
+	// 	initialCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
+	// 	newCPUCount[key] = currentState[key].CPULimits * float64(currentState[key].ReplicaCount)
+	// }
 
-	for service := range currentState {
-		doMonitor := false
-		for _, srv := range servicesToMonitor {
-			if srv == currentState[service].Name {
-				doMonitor = true
-				break
-			}
-		}
-		if !doMonitor || currentState[service].Name == "gateway" { //TODO second part of the condition
-			continue
-		}
-		isServiceChanged := false
-		for _, ag := range c.Agreements {
-			if isServiceChanged {
-				break
-			}
+	// for service := range currentState {
+	// 	doMonitor := false
+	// 	for _, srv := range servicesToMonitor {
+	// 		if srv == currentState[service].Name {
+	// 			doMonitor = true
+	// 			break
+	// 		}
+	// 	}
+	// 	if !doMonitor || currentState[service].Name == "gateway" { //TODO second part of the condition
+	// 		continue
+	// 	}
+	// 	isServiceChanged := false
+	// 	for _, ag := range c.Agreements {
+	// 		if isServiceChanged {
+	// 			break
+	// 		}
 
-			var whatToCompareTo float64
-			if ag.PropertyToConsider == "ResponseTimesMean" {
-				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimesMean)
-			} else if ag.PropertyToConsider == "ResponseTimes90Percentile" {
-				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes90Percentile)
-			} else if ag.PropertyToConsider == "ResponseTimes95Percentile" {
-				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes95Percentile)
-			} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
-				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes99Percentile)
-			} else if ag.PropertyToConsider == "RTToleranceIntervalUBoundc90p95" {
-				whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95)
-			} else {
-				return nil, false, fmt.Errorf("Configurer Agent: the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
-			}
-			log.Println("Configurer Agent:", currentState[service].Name, ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
-			if ag.Value < whatToCompareTo {
+	// 		var whatToCompareTo float64
+	// 		if ag.PropertyToConsider == "ResponseTimesMean" {
+	// 			whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimesMean)
+	// 		} else if ag.PropertyToConsider == "ResponseTimes90Percentile" {
+	// 			whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes90Percentile)
+	// 		} else if ag.PropertyToConsider == "ResponseTimes95Percentile" {
+	// 			whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes95Percentile)
+	// 		} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
+	// 			whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].ResponseTimes99Percentile)
+	// 		} else if ag.PropertyToConsider == "RTToleranceIntervalUBoundc90p95" {
+	// 			whatToCompareTo = *(values[currentState[service].Name].ResponseTimes["total"].RTToleranceIntervalUBoundConfidence90p95)
+	// 		} else {
+	// 			return nil, false, fmt.Errorf("Configurer Agent: the PropertyToConsider is unknown: %s", ag.PropertyToConsider)
+	// 		}
+	// 		log.Println("Configurer Agent:", currentState[service].Name, ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
+	// 		if ag.Value < whatToCompareTo {
 
-				if !c.MultiContainer {
-					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.ServiceToAmount[service+".service"])
+	// 			if !c.MultiContainer {
+	// 				log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", currentState[service].CPULimits, "to", currentState[service].CPULimits+c.ServiceToAmount[service+".service"])
 
-					temp := currentState[service]
-					temp.CPULimits += c.ServiceToAmount[service+".service"]
-					temp.CPUReservation += c.ServiceToAmount[service+".service"]
-					newSpecs[service] = temp
+	// 				temp := currentState[service]
+	// 				temp.CPULimits += c.ServiceToAmount[service+".service"]
+	// 				temp.CPUReservation += c.ServiceToAmount[service+".service"]
+	// 				newSpecs[service] = temp
 
-					log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.ServiceToAmount[service+".gateway"])
-					temp = newSpecs["gateway"]
-					temp.CPULimits += c.ServiceToAmount[service+".gateway"]
-					temp.CPUReservation += c.ServiceToAmount[service+".gateway"]
-					newSpecs["gateway"] = temp
-				} else {
-					newCPUCount[service] += c.ServiceToAmount[service+".service"]
-					log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", initialCPUCount[service], "to", newCPUCount[service])
+	// 				log.Println("Configurer Agent:", newSpecs["gateway"].Name, "change CPU count from", newSpecs["gateway"].CPULimits, "to", newSpecs["gateway"].CPULimits+c.ServiceToAmount[service+".gateway"])
+	// 				temp = newSpecs["gateway"]
+	// 				temp.CPULimits += c.ServiceToAmount[service+".gateway"]
+	// 				temp.CPUReservation += c.ServiceToAmount[service+".gateway"]
+	// 				newSpecs["gateway"] = temp
+	// 			} else {
+	// 				newCPUCount[service] += c.ServiceToAmount[service+".service"]
+	// 				log.Println("Configurer Agent:", currentState[service].Name, "change CPU count from", initialCPUCount[service], "to", newCPUCount[service])
 
-					newCPUCount["gateway"] += c.ServiceToAmount[service+".gateway"]
-					log.Println(c.ServiceToAmount[service+".gateway"])
-					log.Println("Configurer Agent:", currentState["gateway"].Name, "change CPU count from", initialCPUCount["gateway"], "to", newCPUCount["gateway"])
-				}
+	// 				newCPUCount["gateway"] += c.ServiceToAmount[service+".gateway"]
+	// 				log.Println(c.ServiceToAmount[service+".gateway"])
+	// 				log.Println("Configurer Agent:", currentState["gateway"].Name, "change CPU count from", initialCPUCount["gateway"], "to", newCPUCount["gateway"])
+	// 			}
 
-				isServiceChanged = true
-				isChanged = true
-			}
-		}
-	}
+	// 			isServiceChanged = true
+	// 			isChanged = true
+	// 		}
+	// 	}
+	// }
 
-	for key := range newSpecs {
-		if !c.MultiContainer {
-			if newSpecs[key].CPULimits-initialCPUCount[key] > c.MaxServiceIncease[key] {
-				log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newSpecs[key].CPULimits-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
-				temp := newSpecs[key]
-				temp.CPULimits = initialCPUCount[key] + c.MaxServiceIncease[key]
-				temp.CPUReservation = initialCPUCount[key] + c.MaxServiceIncease[key]
-				newSpecs[key] = temp
-			}
-		} else {
-			if newCPUCount[key]-initialCPUCount[key] > c.MaxServiceIncease[key] {
-				log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newCPUCount[key]-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
-				newCPUCount[key] = initialCPUCount[key] + c.MaxServiceIncease[key]
-			}
-		}
-	}
+	// for key := range newSpecs {
+	// 	if !c.MultiContainer {
+	// 		if newSpecs[key].CPULimits-initialCPUCount[key] > c.MaxServiceIncease[key] {
+	// 			log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newSpecs[key].CPULimits-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
+	// 			temp := newSpecs[key]
+	// 			temp.CPULimits = initialCPUCount[key] + c.MaxServiceIncease[key]
+	// 			temp.CPUReservation = initialCPUCount[key] + c.MaxServiceIncease[key]
+	// 			newSpecs[key] = temp
+	// 		}
+	// 	} else {
+	// 		if newCPUCount[key]-initialCPUCount[key] > c.MaxServiceIncease[key] {
+	// 			log.Println("Configurer Agent:", newSpecs[key].Name, "cpu count has increased", newCPUCount[key]-initialCPUCount[key], "changing the increase to", c.MaxServiceIncease[key])
+	// 			newCPUCount[key] = initialCPUCount[key] + c.MaxServiceIncease[key]
+	// 		}
+	// 	}
+	// }
 
-	if !c.MultiContainer {
-		for key := range newSpecs {
-			temp := newSpecs[key]
-			temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Ceil(newSpecs[key].CPULimits)))
-			newSpecs[key] = temp
-			log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Ceil(newSpecs[key].CPULimits)))
-		}
-	} else {
-		for key := range newSpecs {
-			replicaCount := int(math.Ceil(newCPUCount[key]))
-			temp := newSpecs[key]
-			temp.CPULimits = float64(newCPUCount[key] / float64(replicaCount))
-			temp.CPUReservation = float64(newCPUCount[key] / float64(replicaCount))
-			temp.ReplicaCount = replicaCount
-			newSpecs[key] = temp
-			log.Println("Configurer Agent:", newSpecs[key].Name, "is going to use", newCPUCount[key], "CPU cores, which is", replicaCount, "containers each with", newSpecs[key].CPULimits, "cores")
-		}
-	}
+	// if !c.MultiContainer {
+	// 	for key := range newSpecs {
+	// 		temp := newSpecs[key]
+	// 		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(newSpecs[key].EnvironmentVariables, int(math.Ceil(newSpecs[key].CPULimits)))
+	// 		newSpecs[key] = temp
+	// 		log.Println("Configurer Agent:", newSpecs[key].Name, "has cpu value", newSpecs[key].CPULimits, "change worker count to", int(math.Ceil(newSpecs[key].CPULimits)))
+	// 	}
+	// } else {
+	// 	for key := range newSpecs {
+	// 		replicaCount := int(math.Ceil(newCPUCount[key]))
+	// 		temp := newSpecs[key]
+	// 		temp.CPULimits = float64(newCPUCount[key] / float64(replicaCount))
+	// 		temp.CPUReservation = float64(newCPUCount[key] / float64(replicaCount))
+	// 		temp.ReplicaCount = replicaCount
+	// 		newSpecs[key] = temp
+	// 		log.Println("Configurer Agent:", newSpecs[key].Name, "is going to use", newCPUCount[key], "CPU cores, which is", replicaCount, "containers each with", newSpecs[key].CPULimits, "cores")
+	// 	}
+	// }
 
-	return newSpecs, isChanged, nil
+	// return newSpecs, isChanged, nil
+	return nil, false, nil
 }
 
 // OnFeedbackCallback ...

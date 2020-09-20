@@ -2,10 +2,12 @@ package workload
 
 // ResponseTimeCollector ....
 type ResponseTimeCollector interface {
-	GetResponseTimes(string) (map[string][]float64, error) // works with miliseconds
+	GetRequestResponseTimes(string) ([]float64, error)
+	GetServiceDetails(string) (map[string]map[string][]float64, error) // should be ServiceTimeDetails
 }
 
 // RequestCountCollector ....
 type RequestCountCollector interface {
-	GetRequestCount(string) (map[string]int, error) // works with miliseconds
+	GetRequestCount(string) (int, error)
+	GetRequestNames() []string
 }

@@ -16,15 +16,18 @@ type ExecutionDetails struct {
 
 // Information ...
 type Information struct {
-	ServicesInfo map[string]ServiceInfo        `yaml:"info"`
-	Specs        map[string]swarm.ServiceSpecs `yaml:"specs"`
-	JaegerFile   string                        `yaml:"jaegerFile"`
-	Workload     string                        `yaml:"workload"`
-	HashCode     string                        `yaml:"hash"`
+	ServicesInfo          map[string]ServiceInfo        `yaml:"info"`
+	Specs                 map[string]swarm.ServiceSpecs `yaml:"specs"`
+	RequestResponseTimes  map[string]ResponseTimeStats  `yaml:"requestsResponseTimes"`
+	JaegerFile            string                        `yaml:"jaegerFile"`
+	Workload              string                        `yaml:"workload"`
+	HashCode              string                        `yaml:"hash"`
+	LoadGeneratorFeedback map[string]interface{}        `yaml:"loadGeneratorFeedback"`
 }
 
 // ResponseTimeStats ...
 type ResponseTimeStats struct {
+	Count                     *int     `yaml:"count,omitempty"`
 	ResponseTimesMean         *float64 `yaml:"responseTimesMean,omitempty"`
 	ResponseTimesSTD          *float64 `yaml:"responseTimesSTD,omitempty"`
 	ResponseTimes90Percentile *float64 `yaml:"responseTimes90th,omitempty"`
@@ -63,5 +66,5 @@ type ServiceInfo struct {
 	RequestCount    int   `yaml:"requestCount,omitempty"`
 	SubTracesCounts []int `yaml:"subTracesCount,omitempty"`
 
-	ResponseTimes map[string]ResponseTimeStats `yaml:"responseTimes,omitempty"`
+	TimesDetails map[string]map[string]ResponseTimeStats `yaml:"responseTimes,omitempty"` //Request to valueName to ResponseTimeStats
 }

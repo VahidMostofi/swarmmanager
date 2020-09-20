@@ -1,5 +1,5 @@
 # nodejs_bookstore
-version: "v4"
+version: "v5"
 
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
@@ -37,10 +37,14 @@ loadGenerator:
         - script: "/home/vahid/Desktop/type8.js"
 
 test:
-    duration: 60
+    duration: 15
     waitAfterLoadGeneratorDone: 30 
 
 usageCollector:
-    type: "SingleCollector"
+    # type: "SingleCollector"
+    type: "MultiHostCollector"
     details:
-        - host: "tcp://136.159.209.204:2375"
+        # - host: "tcp://136.159.209.204:2375"
+        - hosts:
+            - "tcp://136.159.209.204:2375"
+            - "tcp://136.159.209.214:2375"

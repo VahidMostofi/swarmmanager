@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,6 +38,7 @@ type TestConfigurations struct {
 type LoadGeneratorConfigurations struct {
 	Type    string
 	Details map[string]string
+	Args    map[string]string
 }
 
 // LogConfigurations ...
@@ -82,7 +82,7 @@ type CacheConfigurations struct {
 // UsageCollectorConfigurations ...
 type UsageCollectorConfigurations struct {
 	Type    string
-	Details map[string]string
+	Details map[string]interface{}
 }
 
 // GetConfig ...
@@ -117,11 +117,6 @@ func Initialize() {
 	if strings.Contains(GetConfig().Results.Path, "$SYSTEM_NAME") {
 		GetConfig().Results.Path = strings.Replace(GetConfig().Results.Path, "$SYSTEM_NAME", GetConfig().AppName, 1)
 		log.Println("Updating result path to", GetConfig().Results.Path)
-	}
-
-	// creating directories for ResultDirectoryPath
-	if err := os.MkdirAll(filepath.Dir(GetConfig().Results.Path), 0777); err != nil {
-		log.Panic(err)
 	}
 
 }

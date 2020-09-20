@@ -9,68 +9,121 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/VahidMostofi/swarmmanager/configs"
+	"github.com/spf13/viper"
 )
 
-// Workload ...
-type Workload struct {
-	PathProportion map[string]float64
-	Throughput     float64
+// K6Workload ...
+type K6Workload struct {
+	CmdStr            string
+	requestProportion map[string]float64
+	SleepTime         float64
+	args              map[string]string
+	VirtualUsersCount float64
+	Duration          float64
+	BaseURL           string
+	Architecture      string
 }
 
-// WorkloadFromString ...
-func WorkloadFromString(str string) (*Workload, error) {
-	vus, err := strconv.ParseFloat(strings.Split(str, "_")[0], 64)
-	if err != nil {
-		return nil, fmt.Errorf("Cant parse number of VUS in workload: %s", strings.Split(str, "_")[0])
-	}
-	sleepTime, err := strconv.ParseFloat(strings.Split(str, "_")[3], 64)
-	if err != nil {
-		return nil, fmt.Errorf("Cant parse number of sleepTime in workload: %s", strings.Split(str, "_")[3])
-	}
-	authProb, err := strconv.ParseFloat(strings.Split(str, "_")[2], 64)
-	if err != nil {
-		return nil, fmt.Errorf("Cant parse number of authProb in workload: %s", strings.Split(str, "_")[2])
-	}
-	if authProb >= 1 {
-		return nil, fmt.Errorf("authProb can't be more than 1, its: %f", authProb)
-	}
-	booksProb := 1 - authProb
+// GetRequestProportion ...
+func (k *K6Workload) GetRequestProportion() map[string]float64 {
+	return k.requestProportion
+}
 
-	X := vus / sleepTime
-	w := &Workload{
-		PathProportion: map[string]float64{
-			"auth":  authProb,
-			"books": booksProb,
-		},
-		Throughput: X,
-	}
-	return w, nil
+// GetThroughput ...
+func (k *K6Workload) GetThroughput() float64 {
+	return k.VirtualUsersCount / k.SleepTime
 }
 
 // K6 connector to work with a K6 Wrapper
 type K6 struct {
-	Host string
+	Host     string
+	Workload *K6Workload
+	Script   string
 }
 
 // NewK6LoadGenerator is constructor
-func NewK6LoadGenerator(host string) *K6 {
-	return &K6{
-		Host: host,
+func newK6LoadGenerator() (*K6, error) {
+	w := &K6Workload{
+		CmdStr: viper.GetString("workloadStr"),
+		args:   make(map[string]string),
 	}
+
+	// VUS
+	vus, err := strconv.ParseFloat(strings.Split(w.CmdStr, "_")[0], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse number of VUS in workload: %s", strings.Split(strings.Split(w.CmdStr, "_")[0], "_")[0])
+	}
+	w.VirtualUsersCount = vus
+	w.args["ARG_VUS"] = strings.Split(w.CmdStr, "_")[0]
+	// -------------------------------------------------------------------
+
+	// DURATION
+	duration, err := strconv.ParseFloat(strings.Split(w.CmdStr, "_")[1], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse Duration in workload: %s", strings.Split(strings.Split(w.CmdStr, "_")[1], "_")[0])
+	}
+	if duration < float64(configs.GetConfig().Test.Duration) {
+		panic("for now these two values should be equal or duration should be more than TestDuration!")
+	}
+	w.Duration = duration
+	w.args["ARG_DURATION"] = strings.Split(w.CmdStr, "_")[1]
+	// -------------------------------------------------------------------
+
+	// SLEEP DURATION
+	sleepTime, err := strconv.ParseFloat(configs.GetConfig().LoadGenerator.Args["ARG_SLEEP_DURATION"], 64)
+	if err != nil {
+		return nil, fmt.Errorf("Cant parse SleepDuration in workload: %s", strings.Split(configs.GetConfig().LoadGenerator.Args["ARG_SLEEP_DURATION"], "_")[3])
+	}
+	w.SleepTime = sleepTime
+	w.args["ARG_SLEEP_DURATION"] = configs.GetConfig().LoadGenerator.Args["ARG_SLEEP_DURATION"]
+	// -------------------------------------------------------------------
+
+	// BASE URL
+	baseURL := configs.GetConfig().LoadGenerator.Args["ARG_BASE_URL"]
+	w.BaseURL = baseURL
+	w.args["ARG_BASE_URL"] = configs.GetConfig().LoadGenerator.Args["ARG_BASE_URL"]
+	// -------------------------------------------------------------------
+
+	// ARCHITECTURE
+	architecture := configs.GetConfig().LoadGenerator.Args["ARG_ARCHITECTURE"]
+	w.Architecture = architecture
+	w.args["ARG_ARCHITECTURE"] = configs.GetConfig().LoadGenerator.Args["ARG_ARCHITECTURE"]
+	// -------------------------------------------------------------------
+
+	// REQUESTS
+	reqNames := make([]string, 0)
+	for _, reqName := range strings.Split(configs.GetConfig().LoadGenerator.Args["REQUEST_NAMES"], ",") {
+		reqNames = append(reqNames, reqName)
+	}
+	reqProbs := make(map[string]float64)
+	for idx, reqProbStr := range strings.Split(w.CmdStr, "_")[2:] {
+		reqProb, err := strconv.ParseFloat(reqProbStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cant parse request prob number %d %s", idx, reqProbStr)
+		}
+		reqProbs[reqNames[idx]] = reqProb
+		w.args["ARG_"+reqNames[idx]] = reqProbStr
+	}
+	w.requestProportion = reqProbs
+	lg := &K6{
+		Host:     configs.GetConfig().LoadGenerator.Details["host"],
+		Workload: w,
+	}
+	lg.Script = createLoadGeneartorScript(configs.GetConfig().LoadGenerator.Details["script"], w.args)
+
+	return lg, nil
 }
 
 // Prepare the load generator
-func (k *K6) Prepare(values map[string]string) error {
-	if _, ok := values["script"]; !ok {
-		return fmt.Errorf("the k6 load generator needs script in the prepare method")
-	}
-
+func (k *K6) Prepare() error {
 	url := k.Host + "/prepare"
 	method := "POST"
 
 	b, err := json.Marshal(struct {
 		Script string `json:"script"`
-	}{Script: values["script"]})
+	}{Script: k.Script})
 	if err != nil {
 		return fmt.Errorf("error while convert k6 prepare input to json: %w", err)
 	}
@@ -91,7 +144,8 @@ func (k *K6) Prepare(values map[string]string) error {
 	return nil
 }
 
-func (k *K6) Start(values map[string]string) error {
+// Start ...
+func (k *K6) Start() error {
 	url := k.Host + "/start"
 	method := "GET"
 
@@ -111,7 +165,8 @@ func (k *K6) Start(values map[string]string) error {
 	return nil
 }
 
-func (k *K6) Stop(values map[string]string) error {
+// Stop ...
+func (k *K6) Stop() error {
 	url := k.Host + "/stop"
 	method := "GET"
 
@@ -129,7 +184,8 @@ func (k *K6) Stop(values map[string]string) error {
 	return nil
 }
 
-func (k *K6) GetFeedback(values map[string]string) (map[string]interface{}, error) {
+// GetFeedback ...
+func (k *K6) GetFeedback() (map[string]interface{}, error) {
 	url := k.Host + "/feedback"
 	method := "GET"
 
@@ -154,15 +210,12 @@ func (k *K6) GetFeedback(values map[string]string) (map[string]interface{}, erro
 	return feedbackRes, nil
 }
 
-// CreateLoadGeneartorScript ...
-func CreateLoadGeneartorScript(scriptPath string, virtualUsers, durationSec int, authProb, bookProb, exitProb, sleepDuration float64) string {
+// createLoadGeneartorScript ...
+func createLoadGeneartorScript(scriptPath string, args map[string]string) string {
 	res := readLoadGeneratorScript(scriptPath)
-	res = strings.ReplaceAll(res, "ARG_VUS", strconv.Itoa(virtualUsers))
-	res = strings.ReplaceAll(res, "ARG_DURATION", strconv.Itoa(durationSec))
-	res = strings.ReplaceAll(res, "ARG_SLEEP_DURATION", strconv.FormatFloat(sleepDuration, 'f', -1, 64))
-	res = strings.ReplaceAll(res, "ARG_AuthProb", strconv.FormatFloat(authProb, 'f', -1, 64))
-	res = strings.ReplaceAll(res, "ARG_BookProb", strconv.FormatFloat(bookProb, 'f', -1, 64))
-	res = strings.ReplaceAll(res, "ARG_ExitProb", strconv.FormatFloat(exitProb, 'f', -1, 64))
+	for key, value := range args {
+		res = strings.ReplaceAll(res, key, value)
+	}
 	return res
 }
 

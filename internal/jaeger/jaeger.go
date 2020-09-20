@@ -16,47 +16,55 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type valueFormula struct {
-	RequestName string `yaml:"request_name"`
-	ValueName   string `yaml:"value_name"`
-	Formula     string `yaml:"formula"`
+type formula struct {
+	Key     string `yaml:"name"`
+	Formula string `yaml:"value"`
 }
 
-type jaegerServiceDetail struct {
-	ServiceName         string `yaml:"service_name"`
-	RequestName         string `yaml:"request_name"`
-	MinNumberOfSpans    int    `yaml:"min_number_of_spans"`
-	UniqueOperationName string `yaml:"unique_operation_name"`
+type tag struct {
+	Key   string
+	Value string
+}
+
+type requestFormula struct {
+	Name         string
+	ResponseTime string `yaml:"responseTime"`
+	Tags         []tag
+}
+
+type serviceFormula struct {
+	Name     string
+	Formulas []formula
+}
+
+type valueFormula struct {
+	Requests map[string]requestFormula
+	Services map[string]serviceFormula
 }
 
 // Aggregator ...
 type Aggregator struct {
-	Host           string
-	Values         map[string][]float64
-	StorePath      string
-	LastStoredFile string
-	ServiceDetails map[string]jaegerServiceDetail `yaml:"service_details"` //if changed, change NewAggregator
-	Formulas       []valueFormula                 `yaml:"formula"`         //if changed, change NewAggregator
+	Host                  string
+	requestsResponseTimes map[string][]float64
+	servicesTimeDetails   map[string]map[string]map[string][]float64
+	StorePath             string
+	LastStoredFile        string
+	ValueFormulas         valueFormula
 }
 
 // NewAggregator is the constructor for Aggregator
 func NewAggregator() *Aggregator {
-	temp := &struct {
-		ServiceDetails map[string]jaegerServiceDetail `yaml:"service_details"`
-		Formulas       []valueFormula                 `yaml:"formulas"`
-	}{}
+	temp := valueFormula{}
 
 	b, err := ioutil.ReadFile(configs.GetConfig().Jaeger.DetailsFilePath)
 	if err != nil {
 		log.Panic(err)
 	}
-	yaml.Unmarshal(b, temp)
+	yaml.Unmarshal(b, &temp)
 	j := &Aggregator{
-		Host:           configs.GetConfig().Jaeger.Host,
-		Values:         make(map[string][]float64),
-		StorePath:      configs.GetConfig().Jaeger.StorePath,
-		ServiceDetails: temp.ServiceDetails,
-		Formulas:       temp.Formulas,
+		Host:          configs.GetConfig().Jaeger.Host,
+		StorePath:     configs.GetConfig().Jaeger.StorePath,
+		ValueFormulas: temp,
 	}
 
 	return j
@@ -117,53 +125,91 @@ func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, erro
 	return data.Data, nil
 }
 
+func (j *Aggregator) identifyRequest(t *trace) string {
+
+	for _, s := range t.Spans {
+		for _, request := range j.ValueFormulas.Requests {
+			matchingTags := 0
+			for _, tag := range s.Tags {
+				for _, optionTag := range request.Tags {
+					if tag.Key == optionTag.Key && strings.Contains(tag.Value, optionTag.Value) {
+						matchingTags++
+					}
+				}
+				if matchingTags == len(request.Tags) {
+					return request.Name
+				}
+			}
+		}
+	}
+	fmt.Println("found no request type for this trace, number of spans are:", len(t.Spans), "marking trace as invalid")
+	return ""
+}
+
 func (j *Aggregator) parseTraces(Data []*trace) error {
 
-	for _, formula := range j.Formulas {
-		j.Values[formula.ValueName] = make([]float64, 0)
-	}
-	incompleteTraceCount := 0
-	for _, trace := range Data {
-		var service string
-		var request string
-		var key string
-
-		spans := make(map[string]*span) //TODO this should be a map to an array of span if we want to support a calling same operations multiple times
-		for _, span := range trace.Spans {
-			span.StartTime /= 1000
-			span.Duration /= 1000
-			span.EndTime = span.StartTime + span.Duration
-			span.OperationName = strings.ReplaceAll(span.OperationName, "-", "_")
-			spans[span.OperationName] = span
-
-			for k, details := range j.ServiceDetails {
-				if span.OperationName == details.UniqueOperationName {
-					service = details.ServiceName
-					request = details.RequestName
-					key = k
-					break
-				}
-			}
-		}
-
-		if len(trace.Spans) < j.ServiceDetails[key].MinNumberOfSpans {
-			incompleteTraceCount++
+	for i := range Data {
+		Data[i].RequestType = j.identifyRequest(Data[i])
+		if Data[i].RequestType == "" {
+			Data[i].Valid = false
 			continue
-		} //TODO implement retry
+		} else {
+			Data[i].Valid = true
+		}
+		Data[i].Services = make(map[string]string)
+		for j := range Data[i].Spans {
+			Data[i].Spans[j].ServiceName = Data[i].Processes[Data[i].Spans[j].ProcessID].ServiceName
+			Data[i].Services[Data[i].Spans[j].ServiceName] = ""
+		}
+	}
 
-		for _, formula := range j.Formulas {
-			if request == formula.RequestName || (strings.HasPrefix(formula.RequestName, "@service:") && formula.RequestName == "@service:"+service) || formula.RequestName == "@any:" {
-				value, err := evaluateJaegerFormula(formula.Formula, spans)
-				if err != nil {
-					panic(err)
+	j.requestsResponseTimes = make(map[string][]float64)
+	for _, request := range j.ValueFormulas.Requests {
+		j.requestsResponseTimes[request.Name] = make([]float64, 0)
+	}
+
+	for _, trace := range Data {
+		if !trace.Valid {
+			continue
+		}
+		value, err := evaluateJaegerFormula(j.ValueFormulas.Requests[trace.RequestType].ResponseTime, trace)
+		if err != nil {
+			log.Panic(fmt.Errorf("error while evaluating Jaeger Formula: %w", err))
+		}
+		j.requestsResponseTimes[trace.RequestType] = append(j.requestsResponseTimes[trace.RequestType], value)
+	}
+
+	j.servicesTimeDetails = make(map[string]map[string]map[string][]float64)
+	for _, service := range j.ValueFormulas.Services {
+		j.servicesTimeDetails[service.Name] = make(map[string]map[string][]float64)
+		for _, request := range j.ValueFormulas.Requests {
+			j.servicesTimeDetails[service.Name][request.Name] = make(map[string][]float64)
+		}
+	}
+
+	for _, t := range Data {
+		if !t.Valid {
+			continue
+		}
+		for serviceInTrace := range t.Services {
+			for _, f := range j.ValueFormulas.Services[serviceInTrace].Formulas {
+				value, err := evaluateJaegerFormula(f.Formula, t)
+				if value == 0 {
+					fmt.Println("this cant be 0! (I guess)")
+					return nil
 				}
-				j.Values[formula.ValueName] = append(j.Values[formula.ValueName], value)
+				if err != nil {
+					return err
+				}
+
+				if _, contains := j.servicesTimeDetails[serviceInTrace][t.RequestType][f.Key]; !contains {
+					j.servicesTimeDetails[serviceInTrace][t.RequestType][f.Key] = make([]float64, 0)
+				}
+				j.servicesTimeDetails[serviceInTrace][t.RequestType][f.Key] = append(j.servicesTimeDetails[serviceInTrace][t.RequestType][f.Key], value)
 			}
 		}
 	}
-	if incompleteTraceCount > 0 {
-		log.Println("warning", "incomplete Trace Count", incompleteTraceCount)
-	}
+
 	return nil
 }
 
@@ -183,38 +229,46 @@ func (j *Aggregator) GetTraces(start, end int64, service string) {
 }
 
 // GetRequestCount is to we comply with ResponseTimeCollector
-func (j *Aggregator) GetRequestCount(name string) (map[string]int, error) {
+func (j *Aggregator) GetRequestCount(name string) (int, error) {
 	log.Println("GetRequestCount:", "called with", name)
-	res := make(map[string]int)
-	for valueName, values := range j.Values {
-		if strings.HasPrefix(valueName, name) {
-			res[valueName] = len(values)
-		}
-	}
-	log.Println("GetRequestCount:", "called with", name, "found", len(res), "values")
-	return res, nil
+	return len(j.requestsResponseTimes[name]), nil
 }
 
-// GetResponseTimes is to we comply with RequestCountCollector
-func (j *Aggregator) GetResponseTimes(name string) (map[string][]float64, error) {
+// GetRequestResponseTimes ....
+func (j *Aggregator) GetRequestResponseTimes(name string) ([]float64, error) {
 	log.Println("GetResponseTimes:", "called with", name)
-
-	res := make(map[string][]float64)
-	for valueName, values := range j.Values {
-		if strings.HasPrefix(valueName, name) {
-			res[valueName] = values
-		}
-	}
+	res := j.requestsResponseTimes[name]
 	log.Println("GetResponseTimes:", "called with", name, "found", len(res), "values")
 	return res, nil
 }
 
+// GetServiceDetails ...
+func (j *Aggregator) GetServiceDetails(name string) (map[string]map[string][]float64, error) {
+	log.Println("GetServiceDetails:", "called with", name)
+	return j.servicesTimeDetails[name], nil
+}
+
+// GetRequestNames ...
+func (j *Aggregator) GetRequestNames() []string {
+	names := make([]string, 0)
+	for n := range j.ValueFormulas.Requests {
+		names = append(names, n)
+	}
+	return names
+}
+
 // Trace struct contains a group of spans
 type trace struct {
-	Spans     []*span `json:"spans"`
-	TraceType string  `json:"-"`
-	HasRoot   bool    `json:"-"`
-	TraceID   string  `json:"traceID"`
+	Spans       []*span            `json:"spans"`
+	RequestType string             `json:"-"`
+	Valid       bool               `json:"-"`
+	TraceID     string             `json:"traceID"`
+	Processes   map[string]process `json:"processes"`
+	Services    map[string]string  `json:"-"`
+}
+
+type process struct {
+	ServiceName string `json:"serviceName"`
 }
 
 // Span struct contains information about each span
@@ -227,4 +281,7 @@ type span struct {
 	TraceID       string        `json:"traceID"`
 	IsRoot        bool          `json:"-"`
 	References    []interface{} `json:"references"`
+	Tags          []tag         `json:"tags"`
+	ProcessID     string        `json:"processID"`
+	ServiceName   string        `json:"-"`
 }

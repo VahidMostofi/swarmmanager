@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"log"
@@ -133,7 +132,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			log.Println("Autoconfigurer: information is found for this configuration/workload")
 		} else {
 			time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
-			go a.LoadGenerator.Start(make(map[string]string))
+			go a.LoadGenerator.Start()
 			log.Println("load generator started")
 			time.Sleep(30 * time.Second)
 			a.ResourceUsageCollector = resource.GetTheResourceUsageCollector()
@@ -146,18 +145,35 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			time.Sleep(a.IterationDuration * time.Second)
 			end = time.Now().UnixNano() / 1e3
 			log.Println("finished the test")
-			a.LoadGenerator.Stop(make(map[string]string))
+			a.LoadGenerator.Stop()
 			time.Sleep(a.WaitAfterLoadGeneratorStopped * time.Second)
 			err = a.ResourceUsageCollector.Stop()
+			time.Sleep(10 * time.Second)
 			if err != nil {
 				log.Panic(err)
 			}
 			servicesInfo := a.GatherInfo(int64(start), int64(end))
+			lgFeedback, err := a.LoadGenerator.GetFeedback()
+			if err != nil {
+				log.Panic(fmt.Errorf("error while retrieving load generator feedback: %w", err))
+			}
 			info = history.Information{
-				ServicesInfo: servicesInfo,
-				Specs:        a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
-				JaegerFile:   a.ResponseTimeCollector.(*jaeger.Aggregator).LastStoredFile,
-				Workload:     a.Workload,
+				ServicesInfo:          servicesInfo,
+				Specs:                 a.SwarmManager.ToHumanReadable(a.SwarmManager.CurrentSpecs),
+				JaegerFile:            a.ResponseTimeCollector.(*jaeger.Aggregator).LastStoredFile,
+				Workload:              a.Workload,
+				RequestResponseTimes:  make(map[string]history.ResponseTimeStats),
+				LoadGeneratorFeedback: lgFeedback,
+			}
+			for _, reqName := range a.RequestCountCollector.GetRequestNames() {
+				responseTimes, err := a.ResponseTimeCollector.GetRequestResponseTimes(reqName)
+				if err != nil {
+					log.Panic(err)
+				}
+				info.RequestResponseTimes[reqName], err = createStats(responseTimes, []string{"count", "mean", "p90", "p95", "p99", "std", "c90p95"})
+				if err != nil {
+					log.Panic(err)
+				}
 			}
 			hash, err := a.Database.Store(a.Workload, a.SwarmManager.DesiredSpecs, info)
 			if err != nil {
@@ -166,7 +182,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			info.HashCode = hash
 		}
 		stackHistory.History = append(stackHistory.History, info)
-		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info.ServicesInfo, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
+		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -287,76 +303,94 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 		if e != nil {
 			log.Panic(e)
 		}
-		serviceInfo.RequestCount = c[serviceName+"_total"]
+		serviceInfo.RequestCount = c
 		//--------------------------------------------------
-		// Response Times
-		valueNameToResponseTimes, e := a.ResponseTimeCollector.GetResponseTimes(serviceName)
+		// TimeDetails
+		requestToValueNameToValues, e := a.ResponseTimeCollector.GetServiceDetails(serviceName)
 		if e != nil {
 			log.Panic(e)
 		}
 
-		serviceInfo.ResponseTimes = make(map[string]history.ResponseTimeStats)
-		for valueName, responseTimes := range valueNameToResponseTimes {
-			if len(responseTimes) == 0 {
-				continue
+		serviceInfo.TimesDetails = make(map[string]map[string]history.ResponseTimeStats)
+		for req := range requestToValueNameToValues {
+			serviceInfo.TimesDetails[req] = make(map[string]history.ResponseTimeStats)
+			for valueName := range requestToValueNameToValues[req] {
+				rts, err := createStats(requestToValueNameToValues[req][valueName], []string{"mean", "count"})
+				if err != nil {
+					log.Panic(err)
+				}
+				serviceInfo.TimesDetails[req][valueName] = rts
 			}
-			mean, std, p90, p95, p99 := getDifferentResponseTimes(responseTimes)
-
-			responseTimesStats := history.ResponseTimeStats{
-				ResponseTimesMean:         &mean,
-				ResponseTimesSTD:          &std,
-				ResponseTimes90Percentile: &p90,
-				ResponseTimes95Percentile: &p95,
-				ResponseTimes99Percentile: &p99,
-			}
-
-			//TODO the 90 and 95 values and the fact that which values should be computed should come form config file
-			_, uti, err := statutils.ComputeToleranceIntervalNonParametric(responseTimes, 0.90, 0.95)
-			if err != nil {
-				log.Println("response times:", responseTimes)
-				log.Panic(err)
-			}
-			responseTimesStats.RTToleranceIntervalUBoundConfidence90p95 = &uti
-			serviceInfo.ResponseTimes[strings.Split(valueName, "_")[1]] = responseTimesStats
-
 		}
-
 		info[serviceName] = serviceInfo
 	}
+
 	return info
 }
 
-func getDifferentResponseTimes(responseTimes []float64) (float64, float64, float64, float64, float64) {
-	if len(responseTimes) == 0 {
-		responseTimes = append(responseTimes, 0)
+func createStats(values []float64, names []string) (history.ResponseTimeStats, error) {
+	if len(values) == 0 {
+		values = append(values, 0)
 	}
-	mean, err := stats.Mean(responseTimes)
-	if err != nil {
-		log.Panic(err)
+	rts := history.ResponseTimeStats{}
+
+	if utils.ContainsString(names, "mean") {
+		mean, err := stats.Mean(values)
+		if err != nil {
+			log.Panic(err)
+		}
+		rts.ResponseTimesMean = &mean
 	}
 	//--------------------------------------------------
-	p90, err := stats.Percentile(responseTimes, 90)
-	if err != nil {
-		log.Panic(err)
+	if utils.ContainsString(names, "p90") {
+		p90, err := stats.Percentile(values, 90)
+		if err != nil {
+			log.Panic(err)
+		}
+		rts.ResponseTimes90Percentile = &p90
 	}
 
 	//--------------------------------------------------
-	p95, err := stats.Percentile(responseTimes, 95)
-	if err != nil {
-		log.Panic(err)
+	if utils.ContainsString(names, "p95") {
+		p95, err := stats.Percentile(values, 95)
+		if err != nil {
+			log.Panic(err)
+		}
+		rts.ResponseTimes95Percentile = &p95
 	}
 
 	//--------------------------------------------------
-	p99, err := stats.Percentile(responseTimes, 99)
-	if err != nil {
-		log.Panic(err)
+	if utils.ContainsString(names, "p99") {
+		p99, err := stats.Percentile(values, 99)
+		if err != nil {
+			log.Panic(err)
+		}
+		rts.ResponseTimes99Percentile = &p99
 	}
 
 	//--------------------------------------------------
-	std, err := stats.StandardDeviation(responseTimes)
-	if err != nil {
-		log.Panic(err)
+	if utils.ContainsString(names, "std") {
+		std, err := stats.StandardDeviation(values)
+		if err != nil {
+			log.Panic(err)
+		}
+		rts.ResponseTimesSTD = &std
 	}
 
-	return mean, std, p90, p95, p99
+	//--------------------------------------------------
+	if utils.ContainsString(names, "count") {
+		c := len(values)
+		rts.Count = &c
+	}
+
+	//--------------------------------------------------
+	if utils.ContainsString(names, "c90p95") && len(values) > 10 {
+		_, uti, err := statutils.ComputeToleranceIntervalNonParametric(values, 0.90, 0.95)
+		if err != nil {
+			log.Println("response times:", values)
+			log.Panic(err)
+		}
+		rts.RTToleranceIntervalUBoundConfidence90p95 = &uti
+	}
+	return rts, nil
 }

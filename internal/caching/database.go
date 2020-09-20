@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strconv"
 
 	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/history"
@@ -84,6 +85,12 @@ func (md *DropboxDatabase) hash(workload string, specs map[string]swarm.ServiceS
 	bytes = append(bytes, []byte(configs.GetConfig().Version)...)
 	bytes = append(bytes, []byte(configs.GetConfig().AppName)...)
 	bytes = append(bytes, []byte(workload)...)
+	bytes = append(bytes, []byte(strconv.Itoa(configs.GetConfig().Test.Duration))...)
+	str := ""
+	for key, value := range configs.GetConfig().LoadGenerator.Args {
+		str += value + key
+	}
+	bytes = append(bytes, []byte(str)...)
 
 	var keys []string
 	var tempConfigs = make(map[string]swarm.ServiceSpecs)

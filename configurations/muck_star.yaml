@@ -1,0 +1,61 @@
+# micromuck-two-layers
+version: "v10"
+
+results:
+    path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
+
+testBed:
+    dockerComposeFile: "/home/vahid/Desktop/projects/micromuck-nodejs/star-docker-compose-10.yml"
+    serviceCount: 11
+    stackName: "micromuck-star"
+    servicesToConfigure: 
+        - serviceb
+        - servicec
+        - serviced
+        - servicee
+        - servicef
+        - serviceg
+        - serviceh
+        - servicei
+        - servicej
+
+host:
+    availableCpuCount: 48
+    host: "tcp://136.159.209.204:2375"
+
+jaeger:
+    host: "http://136.159.209.204:16686"
+    rootService: "servicea"
+    detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/muck_general.yaml"
+    storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+
+cache:
+    type: 'dropbox'
+    details:
+        - path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
+
+log:
+    directory: "/home/vahid/Desktop/projects/swarm-manager-data/logs" 
+
+loadGenerator:
+    type: "k6"
+    details:
+        - script: "/home/vahid/Desktop/projects/micromuck-nodejs/load-generator-scripts/general-script.js"
+        - host: "http://136.159.209.214:7112"
+    args:
+        - ARG_BASE_URL: "http://136.159.209.204:10080"
+        - ARG_ARCHITECTURE: "starArchitecture"
+        - ARG_SLEEP_DURATION: "1"
+        - REQUEST_NAMES: "req1,req2,req3,req4,req5"
+
+test:
+    duration: 60
+    waitAfterLoadGeneratorDone: 30
+
+usageCollector:
+    type: "MultiHostCollector"
+    details:
+        - hosts:
+            - "tcp://136.159.209.203:2375"
+            - "tcp://136.159.209.204:2375"
+            - "tcp://136.159.209.205:2375"

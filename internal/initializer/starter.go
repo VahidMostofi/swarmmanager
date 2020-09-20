@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
+	"path/filepath"
 	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/configs"
@@ -27,31 +27,14 @@ func getJaegerCollector() *jaeger.Aggregator {
 
 // GetTheLoadGenerator ...
 func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
-	l := loadgenerator.NewK6LoadGenerator("http://136.159.209.214:7112")
-	log.Println("workload string:", workloadStr)
-	parts := strings.Split(workloadStr, "_")
-	vus, err := strconv.Atoi(parts[0])
+	l, err := loadgenerator.GetLoadGenerator()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
-	duration, err := strconv.Atoi(parts[1])
+	err = l.Prepare()
 	if err != nil {
-		panic(err)
+		log.Panic(fmt.Errorf("error while preparing load generator: %w", err))
 	}
-	if duration < configs.GetConfig().Test.Duration {
-		panic("for now these two values should be equal or duration should be more than TestDuration!")
-	}
-	authProb, err := strconv.ParseFloat(parts[2], 64)
-	if err != nil {
-		panic(err)
-	}
-	bookProb := 1 - authProb
-	sleepDuration, err := strconv.ParseFloat(parts[3], 64)
-	if err != nil {
-		panic(err)
-	}
-	script := loadgenerator.CreateLoadGeneartorScript(configs.GetConfig().LoadGenerator.Details["script"], vus, duration, authProb, bookProb, 0, sleepDuration)
-	l.Prepare(map[string]string{"script": script})
 	return l
 }
 
@@ -79,6 +62,11 @@ func StartAutoconfig(strategy strategies.Configurer, strategyName string) {
 	if strings.Contains(configs.GetConfig().Results.Path, "$STRATEGY") {
 		configs.GetConfig().Results.Path = strings.Replace(configs.GetConfig().Results.Path, "$STRATEGY", strategyName, 1)
 		log.Println("Updating result path to", configs.GetConfig().Results.Path)
+	}
+
+	// creating directories for ResultDirectoryPath
+	if err := os.MkdirAll(filepath.Dir(configs.GetConfig().Results.Path), 0777); err != nil {
+		log.Panic(err)
 	}
 
 	workloadStr := viper.GetString("workloadStr")

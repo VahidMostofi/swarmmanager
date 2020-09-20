@@ -4,8 +4,8 @@
 - [ ] create a tool to visualize and search for configs in cache
 - [ ] add load generator configs to config.yml
 - [ ] Run R automatically
-- [ ] make sure we are always on pressure
+- [X] make sure we are always on pressure
 - [ ] factory method for load generator
-- [ ] move to multi host
+- [X] move to multi host
 - [ ] use a well-known collector to gather system utilization
-- [ ] clean main
+- [X] clean main

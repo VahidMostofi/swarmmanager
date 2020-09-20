@@ -17,12 +17,13 @@ type CPUUsageIncrease struct {
 	ValueToConsider string // CPUUsageMean,CPUUsage90Percentile 70-95, 99
 }
 
+// GetInitialConfig ...
 func (c *CPUUsageIncrease) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
 	return make(map[string]swarm.SimpleSpecs), nil
 }
 
 // Configure ....
-func (c *CPUUsageIncrease) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (c *CPUUsageIncrease) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 	if c.Threshold < 1 {
 		return nil, isChanged, fmt.Errorf("the Threshold value is not set for CPUUsageIncrease")
@@ -44,13 +45,13 @@ func (c *CPUUsageIncrease) Configure(values map[string]history.ServiceInfo, curr
 		}
 		var whatToCompareTo float64
 		if c.ValueToConsider == "CPUUsageMean" {
-			whatToCompareTo = values[currentState[key].Name].CPUUsageMean
+			whatToCompareTo = info.ServicesInfo[currentState[key].Name].CPUUsageMean
 		} else if c.ValueToConsider == "CPUUsage90Percentile" {
-			whatToCompareTo = values[currentState[key].Name].CPUUsage90Percentile
+			whatToCompareTo = info.ServicesInfo[currentState[key].Name].CPUUsage90Percentile
 		} else if c.ValueToConsider == "CPUUsage95Percentile" {
-			whatToCompareTo = values[currentState[key].Name].CPUUsage95Percentile
+			whatToCompareTo = info.ServicesInfo[currentState[key].Name].CPUUsage95Percentile
 		} else if c.ValueToConsider == "CPUUsage99Percentile" {
-			whatToCompareTo = values[currentState[key].Name].CPUUsage99Percentile
+			whatToCompareTo = info.ServicesInfo[currentState[key].Name].CPUUsage99Percentile
 		} else {
 			return nil, false, fmt.Errorf("the PropertyToConsider is unknown: %s", c.ValueToConsider)
 		}

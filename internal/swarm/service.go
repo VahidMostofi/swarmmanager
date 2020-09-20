@@ -381,6 +381,7 @@ func (s *Manager) CheckServicedDeployment(numberOfServices int) {
 	if err != nil {
 		log.Panic(err)
 	}
+	// fmt.Println("len(services)", len(services))
 	if len(services) == numberOfServices {
 		s.StackStateCh <- StackStateServicesAreDeployed
 	}
