@@ -48,6 +48,7 @@ func init() {
 	// Every new strategy must be added here
 	autoconfigCmd.AddCommand(strategiesCmd.ADFCCmd)
 	autoconfigCmd.AddCommand(strategiesCmd.CUICmd)
+	autoconfigCmd.AddCommand(strategiesCmd.DemandsCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.

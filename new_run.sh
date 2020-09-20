@@ -35,10 +35,11 @@
 go run main.go autoconfig \
     --appname muck_star \
     --config configurations/muck_star.yaml \
-    --workload  1_1300_0.2_0.2_0.2_0.2_0.2 \
+    --workload  1_1400_0.2_0.2_0.2_0.2_0.2 \
     --testName demands \
-    demand \
-    --duration 1200
+    demands \
+    --duration 1200 \
+    --resultpath /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml
 # #THESE ARE FOR STAR ARCHITECTURE
 # go run main.go autoconfig \
 #     --appname muck_star \
