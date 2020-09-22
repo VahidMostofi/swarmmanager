@@ -32,53 +32,160 @@
 #     --cpuThreshold 50
 # ######################################################
 # #FINDING DEMANDS FOR STAR
-go run main.go autoconfig \
-    --appname muck_star \
-    --config configurations/muck_star.yaml \
-    --workload  1_1400_0.2_0.2_0.2_0.2_0.2 \
-    --testName demands \
-    demands \
-    --duration 1200 \
-    --resultpath /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  1_1400_0.2_0.2_0.2_0.2_0.2 \
+#     --testName demands \
+#     demands \
+#     --duration 1200 \
+#     --resultpath /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml
 # #THESE ARE FOR STAR ARCHITECTURE
 # go run main.go autoconfig \
 #     --appname muck_star \
 #     --config configurations/muck_star.yaml \
 #     --workload  50_110_0.3_0.2_0.1_0.1_0.3 \
-#     --testName cui-350-mean-50 \
+#     --testName cui-250-mean-50 \
 #     cui \
 #     --cpuStat  CPUUsageMean \
+#     --cpuThreshold 50
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  50_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName cui-250-90-50 \
+#     cui \
+#     --cpuStat CPUUsage90Percentile  \
 #     --cpuThreshold 50
 # go run main.go autoconfig \
 #     --appname muck_star \
 #     --config configurations/muck_star.yaml \
 #     --workload  60_110_0.3_0.2_0.1_0.1_0.3 \
-#     --testName cui-350-mean-50 \
+#     --testName cui-250-mean-50 \
 #     cui \
 #     --cpuStat  CPUUsageMean \
 #     --cpuThreshold 50
+
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  60_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName cui-250-90-50 \
+#     cui \
+#     --cpuStat CPUUsage90Percentile  \
+#     --cpuThreshold 50
+
 # go run main.go autoconfig \
 #     --appname muck_star \
 #     --config configurations/muck_star.yaml \
 #     --workload  70_110_0.3_0.2_0.1_0.1_0.3 \
-#     --testName cui-350-mean-50 \
+#     --testName cui-250-mean-50 \
 #     cui \
 #     --cpuStat  CPUUsageMean \
 #     --cpuThreshold 50
+
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  70_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName cui-250-90-50 \
+#     cui \
+#     --cpuStat CPUUsage90Percentile  \
+#     --cpuThreshold 50
+
 # go run main.go autoconfig \
 #     --appname muck_star \
 #     --config configurations/muck_star.yaml \
 #     --workload  80_110_0.3_0.2_0.1_0.1_0.3 \
-#     --testName cui-350-mean-50 \
+#     --testName cui-250-mean-50 \
 #     cui \
 #     --cpuStat  CPUUsageMean \
 #     --cpuThreshold 50
+
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  80_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName cui-250-90-50 \
+#     cui \
+#     --cpuStat CPUUsage90Percentile  \
+#     --cpuThreshold 50
+
 # go run main.go autoconfig \
 #     --appname muck_star \
 #     --config configurations/muck_star.yaml \
 #     --workload  90_110_0.3_0.2_0.1_0.1_0.3 \
-#     --testName cui-350-mean-50 \
+#     --testName cui-250-mean-50 \
 #     cui \
 #     --cpuStat  CPUUsageMean \
 #     --cpuThreshold 50
+
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  90_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName cui-250-90-50 \
+#     cui \
+#     --cpuStat CPUUsage90Percentile  \
+#     --cpuThreshold 50
 # #################################################
+# #FINDING the configuration using PPEU approach with stepSize = 0.5
+# go run main.go autoconfig \
+#     --appname muck_star \
+#     --config configurations/muck_star.yaml \
+#     --workload  50_110_0.3_0.2_0.1_0.1_0.3 \
+#     --testName ppeu-250-0.5-mc \
+#     ppeu \
+#     --property RTToleranceIntervalUBoundc90p95  \
+#     --value 250 \
+#     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+#     --mc \
+#     --stepsize 0.5
+
+go run main.go autoconfig \
+    --appname muck_star \
+    --config configurations/muck_star.yaml \
+    --workload  60_110_0.3_0.2_0.1_0.1_0.3 \
+    --testName ppeu-250-0.5-mc \
+    ppeu \
+    --property RTToleranceIntervalUBoundc90p95  \
+    --value 250 \
+    --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+    --mc \
+    --stepsize 0.5
+
+go run main.go autoconfig \
+    --appname muck_star \
+    --config configurations/muck_star.yaml \
+    --workload  70_110_0.3_0.2_0.1_0.1_0.3 \
+    --testName ppeu-250-0.5-mc \
+    ppeu \
+    --property RTToleranceIntervalUBoundc90p95  \
+    --value 250 \
+    --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+    --mc \
+    --stepsize 0.5
+
+go run main.go autoconfig \
+    --appname muck_star \
+    --config configurations/muck_star.yaml \
+    --workload  80_110_0.3_0.2_0.1_0.1_0.3 \
+    --testName ppeu-250-0.5-mc \
+    ppeu \
+    --property RTToleranceIntervalUBoundc90p95  \
+    --value 250 \
+    --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+    --mc \
+    --stepsize 0.5
+
+go run main.go autoconfig \
+    --appname muck_star \
+    --config configurations/muck_star.yaml \
+    --workload  80_110_0.3_0.2_0.1_0.1_0.3 \
+    --testName ppeu-250-0.5-mc \
+    ppeu \
+    --property RTToleranceIntervalUBoundc90p95  \
+    --value 250 \
+    --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+    --mc \
+    --stepsize 0.5

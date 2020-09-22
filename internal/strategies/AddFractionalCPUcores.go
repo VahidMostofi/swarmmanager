@@ -2,6 +2,7 @@ package strategies
 
 import (
 	"github.com/VahidMostofi/swarmmanager/internal/history"
+	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
@@ -14,7 +15,7 @@ type AddFractionalCPUcores struct {
 }
 
 // GetInitialConfig ...
-func (c *AddFractionalCPUcores) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+func (c *AddFractionalCPUcores) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
 	return make(map[string]swarm.SimpleSpecs), nil
 }
 

@@ -116,6 +116,11 @@ func newK6LoadGenerator() (*K6, error) {
 	return lg, nil
 }
 
+// GetWorkload ...
+func (k *K6) GetWorkload() Workload {
+	return k.Workload
+}
+
 // Prepare the load generator
 func (k *K6) Prepare() error {
 	url := k.Host + "/prepare"

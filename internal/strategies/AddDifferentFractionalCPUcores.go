@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
+	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
@@ -19,7 +20,7 @@ type AddDifferentFractionalCPUcores struct {
 }
 
 // GetInitialConfig ...
-func (c *AddDifferentFractionalCPUcores) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
+func (c *AddDifferentFractionalCPUcores) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
 	return make(map[string]swarm.SimpleSpecs), nil
 }
 

@@ -49,6 +49,7 @@ func init() {
 	autoconfigCmd.AddCommand(strategiesCmd.ADFCCmd)
 	autoconfigCmd.AddCommand(strategiesCmd.CUICmd)
 	autoconfigCmd.AddCommand(strategiesCmd.DemandsCmd)
+	autoconfigCmd.AddCommand(strategiesCmd.PPEUCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.

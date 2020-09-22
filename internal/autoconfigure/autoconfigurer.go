@@ -97,7 +97,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 	// dockerComposePath := "/Users/vahid/workspace/bookstore/docker-compose.yml"
 	dockerComposePath := configs.GetConfig().TestBed.DockerComposeFile
 
-	initialConfig, err := a.ConfigurerAgent.GetInitialConfig()
+	initialConfig, err := a.ConfigurerAgent.GetInitialConfig(a.LoadGenerator.GetWorkload())
 	if err != nil {
 		log.Panic(err)
 	}

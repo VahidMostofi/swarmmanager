@@ -1,5 +1,5 @@
 # micromuck-two-layers
-version: "v10"
+version: "v12"
 
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
@@ -20,7 +20,7 @@ testBed:
         - servicej
 
 host:
-    availableCpuCount: 48
+    availableCpuCount: 24
     host: "tcp://136.159.209.204:2375"
 
 jaeger:
@@ -56,6 +56,6 @@ usageCollector:
     type: "MultiHostCollector"
     details:
         - hosts:
-            - "tcp://136.159.209.203:2375"
+            # - "tcp://136.159.209.203:2375"
             - "tcp://136.159.209.204:2375"
-            - "tcp://136.159.209.205:2375"
+            # - "tcp://136.159.209.205:2375"

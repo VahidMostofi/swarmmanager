@@ -12,6 +12,7 @@ type LoadGenerator interface {
 	Start() error
 	Stop() error
 	GetFeedback() (map[string]interface{}, error)
+	GetWorkload() Workload
 }
 
 // Workload type
