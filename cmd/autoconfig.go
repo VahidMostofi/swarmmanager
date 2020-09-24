@@ -51,6 +51,7 @@ func init() {
 	autoconfigCmd.AddCommand(strategiesCmd.DemandsCmd)
 	autoconfigCmd.AddCommand(strategiesCmd.PPEUCmd)
 	autoconfigCmd.AddCommand(strategiesCmd.PPAUCmd)
+	autoconfigCmd.AddCommand(strategiesCmd.PPECmd)
 	autoconfigCmd.AddCommand(strategiesCmd.BNV1Cmd)
 	autoconfigCmd.AddCommand(strategiesCmd.BNV2Cmd)
 }

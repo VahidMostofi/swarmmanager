@@ -13,8 +13,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// PerPathActualUtilization ...
-type PerPathActualUtilization struct {
+// PerPathEqual ...
+type PerPathEqual struct {
 	RequestToServiceToEU map[string]map[string]float64
 	StepSize             float64
 	Agreements           []Agreement
@@ -28,7 +28,7 @@ type PerPathActualUtilization struct {
 }
 
 // Init ...
-func (c *PerPathActualUtilization) Init() error {
+func (c *PerPathEqual) Init() error {
 	c.initialized = true
 	c.path2StepSize = make(map[string]float64)
 
@@ -43,7 +43,7 @@ func (c *PerPathActualUtilization) Init() error {
 	return nil
 }
 
-func (c *PerPathActualUtilization) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
+func (c *PerPathEqual) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
 	if c.MultiContainer {
 		for service, totalCPU := range service2totalResource {
@@ -66,7 +66,7 @@ func (c *PerPathActualUtilization) getReconfiguredConfiguration(service2totalRes
 	return reconfiguredSpecs
 }
 
-func (c *PerPathActualUtilization) updateSpecsFromSimpleSpecs(current map[string]swarm.ServiceSpecs, delta map[string]swarm.SimpleSpecs) map[string]swarm.ServiceSpecs {
+func (c *PerPathEqual) updateSpecsFromSimpleSpecs(current map[string]swarm.ServiceSpecs, delta map[string]swarm.SimpleSpecs) map[string]swarm.ServiceSpecs {
 	for service, dChange := range delta {
 		temp := current[service]
 		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, dChange.Worker)
@@ -79,7 +79,7 @@ func (c *PerPathActualUtilization) updateSpecsFromSimpleSpecs(current map[string
 }
 
 // GetInitialConfig ...
-func (c *PerPathActualUtilization) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
+func (c *PerPathEqual) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
 	if !c.initialized {
 		return nil, fmt.Errorf("Configurer Agent: the configurer need to be initialized, call Init()")
 	}
@@ -133,7 +133,7 @@ func (c *PerPathActualUtilization) GetInitialConfig(workload loadgenerator.Workl
 }
 
 // Configure ....
-func (c *PerPathActualUtilization) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (c *PerPathEqual) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 
 	newSpecs := make(map[string]swarm.ServiceSpecs)
@@ -161,18 +161,19 @@ func (c *PerPathActualUtilization) Configure(info history.Information, currentSt
 		log.Println("Configurer Agent:", "request (path) is", requestName, ",", ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
 
 		if ag.Value < whatToCompareTo { // the path is not meeting the SLA, so we need to add more resources
-			var totalMeanCPUUtilization float64 = 0
-			for serviceName, eu := range c.RequestToServiceToEU[requestName] {
+			var numberOfServicesInThisPath float64 = 0
+			for _, eu := range c.RequestToServiceToEU[requestName] {
 				if eu > 0 {
-					log.Println("Configurer Agent:", serviceName, "mean CPU Utilization is", info.ServicesInfo[serviceName].CPUUsageMean)
-					totalMeanCPUUtilization += info.ServicesInfo[serviceName].CPUUsageMean
+					numberOfServicesInThisPath++
 				}
 			}
+			log.Println("Configurer Agent:", "there are", numberOfServicesInThisPath, "services in this path", requestName)
 			for serviceName, eu := range c.RequestToServiceToEU[requestName] {
 				if eu > 0 {
-					increaseValue := (info.ServicesInfo[serviceName].CPUUsageMean / totalMeanCPUUtilization) * c.path2StepSize[requestName]
+					share := 1 / numberOfServicesInThisPath
+					increaseValue := share * c.path2StepSize[requestName]
 					if increaseValue > 0 {
-						log.Println("Configurer Agent:", serviceName, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName], serviceName, "gets", info.ServicesInfo[serviceName].CPUUsageMean/totalMeanCPUUtilization, "which is", increaseValue)
+						log.Println("Configurer Agent:", serviceName, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName], serviceName, "gets", share, "which is", increaseValue)
 						prev := newCPUCount[serviceName]
 						newCPUCount[serviceName] += increaseValue
 						log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceName])
@@ -189,6 +190,6 @@ func (c *PerPathActualUtilization) Configure(info history.Information, currentSt
 }
 
 // OnFeedbackCallback ...
-func (c *PerPathActualUtilization) OnFeedbackCallback(map[string]history.ServiceInfo) error {
+func (c *PerPathEqual) OnFeedbackCallback(map[string]history.ServiceInfo) error {
 	return nil
 }

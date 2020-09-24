@@ -160,21 +160,21 @@
 #     --stepsize 1.0
 
 # VUSs=(30 40 60 70 80 90 )
-VUSs=(20 )
-for VUS in "${VUSs[@]}"
-do
+# VUSs=(20 )
+# for VUS in "${VUSs[@]}"
+# do
     #PPAU ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
-    go run main.go autoconfig \
-        --appname muck_star \
-        --config configurations/muck_star.yaml \
-        --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
-        --testName ppau-250-0.5-mc \
-        ppau \
-        --property RTToleranceIntervalUBoundc90p95  \
-        --value 250 \
-        --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
-        --mc \
-        --stepsize 0.5
+    # go run main.go autoconfig \
+    #     --appname muck_star \
+    #     --config configurations/muck_star.yaml \
+    #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+    #     --testName ppau-250-0.5-mc \
+    #     ppau \
+    #     --property RTToleranceIntervalUBoundc90p95  \
+    #     --value 250 \
+    #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+    #     --mc \
+    #     --stepsize 0.5
     
     # #PPAU ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 1.0
     # go run main.go autoconfig \
@@ -188,4 +188,49 @@ do
     #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
     #     --mc \
     #     --stepsize 1.0
+# done
+
+VUSs=(20 30 40 50 60 70 80 )
+for VUS in "${VUSs[@]}"
+do
+    #PPAU ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5 with constant init
+    go run main.go autoconfig \
+        --appname muck_star \
+        --config configurations/muck_star.yaml \
+        --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+        --testName ppau-250-0.5-mc-c-0.5 \
+        ppau \
+        --property RTToleranceIntervalUBoundc90p95  \
+        --value 250 \
+        --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+        --mc \
+        --stepsize 0.5 \
+        --constantinit 0.5
+
+    #PPE ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5 with constant init
+    go run main.go autoconfig \
+        --appname muck_star \
+        --config configurations/muck_star.yaml \
+        --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+        --testName ppe-250-0.5-mc-c-0.5 \
+        ppe \
+        --property RTToleranceIntervalUBoundc90p95  \
+        --value 250 \
+        --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+        --mc \
+        --stepsize 0.5 \
+        --constantinit 0.5
+
+    go run main.go autoconfig \
+        --appname muck_star \
+        --config configurations/muck_star.yaml \
+        --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+        --testName ppe-250-0.5-mc \
+        ppe \
+        --property RTToleranceIntervalUBoundc90p95  \
+        --value 250 \
+        --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+        --mc \
+        --stepsize 0.5
+
 done
