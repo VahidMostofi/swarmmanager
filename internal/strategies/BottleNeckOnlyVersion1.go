@@ -13,21 +13,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// PerPathEstimatedUtilization ...
-type PerPathEstimatedUtilization struct {
-	RequestToServiceToEU           map[string]map[string]float64
-	NormalizedRequestToServiceToEU map[string]map[string]float64
-	StepSize                       float64
-	Agreements                     []Agreement
-	MultiContainer                 bool
-	path2StepSize                  map[string]float64 //TODO feature for future
-	initialized                    bool
-	DemandsFilePath                string
-	demands                        map[string]map[string]float64
+// BottleNeckOnlyVersion1 ...
+type BottleNeckOnlyVersion1 struct {
+	RequestToServiceToEU map[string]map[string]float64
+	StepSize             float64
+	Agreements           []Agreement
+	MultiContainer       bool
+	path2StepSize        map[string]float64 //TODO feature for future
+	initialized          bool
+	DemandsFilePath      string
+	demands              map[string]map[string]float64
 }
 
 // Init ...
-func (c *PerPathEstimatedUtilization) Init() error {
+func (c *BottleNeckOnlyVersion1) Init() error {
 	c.initialized = true
 	c.path2StepSize = make(map[string]float64)
 
@@ -42,7 +41,7 @@ func (c *PerPathEstimatedUtilization) Init() error {
 	return nil
 }
 
-func (c *PerPathEstimatedUtilization) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
+func (c *BottleNeckOnlyVersion1) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
 	if c.MultiContainer {
 		for service, totalCPU := range service2totalResource {
@@ -65,7 +64,7 @@ func (c *PerPathEstimatedUtilization) getReconfiguredConfiguration(service2total
 	return reconfiguredSpecs
 }
 
-func (c *PerPathEstimatedUtilization) updateSpecsFromSimpleSpecs(current map[string]swarm.ServiceSpecs, delta map[string]swarm.SimpleSpecs) map[string]swarm.ServiceSpecs {
+func (c *BottleNeckOnlyVersion1) updateSpecsFromSimpleSpecs(current map[string]swarm.ServiceSpecs, delta map[string]swarm.SimpleSpecs) map[string]swarm.ServiceSpecs {
 	for service, dChange := range delta {
 		temp := current[service]
 		temp.EnvironmentVariables = utils.UpdateENVWorkerCounts(temp.EnvironmentVariables, dChange.Worker)
@@ -78,13 +77,12 @@ func (c *PerPathEstimatedUtilization) updateSpecsFromSimpleSpecs(current map[str
 }
 
 // GetInitialConfig ...
-func (c *PerPathEstimatedUtilization) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
+func (c *BottleNeckOnlyVersion1) GetInitialConfig(workload loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
 	if !c.initialized {
 		return nil, fmt.Errorf("Configurer Agent: the configurer need to be initialized, call Init()")
 	}
 
 	c.RequestToServiceToEU = make(map[string]map[string]float64)
-	c.NormalizedRequestToServiceToEU = make(map[string]map[string]float64)
 
 	for requestName, requestProb := range workload.GetRequestProportion() {
 		c.RequestToServiceToEU[requestName] = make(map[string]float64)
@@ -93,27 +91,12 @@ func (c *PerPathEstimatedUtilization) GetInitialConfig(workload loadgenerator.Wo
 		}
 	}
 
-	for requestName := range c.RequestToServiceToEU {
-		for serviceName, eu := range c.RequestToServiceToEU[requestName] {
-			if eu > 0 {
-				fmt.Println(requestName, serviceName, "eu", eu, "demand", c.demands[serviceName][requestName])
-			}
-		}
-	}
+	// for requestName := range c.RequestToServiceToEU {
+	// 	for serviceName, eu := range c.RequestToServiceToEU[requestName] {
+	// 		fmt.Println(requestName, serviceName, eu, c.demands[serviceName][requestName], workload.GetRequestProportion()[requestName])
+	// 	}
+	// }
 	// fmt.Println(workload.GetThroughput())
-
-	for requestName := range c.RequestToServiceToEU {
-		var sum float64 = 0
-		for _, eu := range c.RequestToServiceToEU[requestName] {
-			sum += eu
-		}
-
-		c.NormalizedRequestToServiceToEU[requestName] = make(map[string]float64)
-
-		for serviceName, eu := range c.RequestToServiceToEU[requestName] {
-			c.NormalizedRequestToServiceToEU[requestName][serviceName] = eu / sum
-		}
-	}
 
 	for requestName := range c.RequestToServiceToEU {
 		c.path2StepSize[requestName] = c.StepSize
@@ -137,7 +120,7 @@ func (c *PerPathEstimatedUtilization) GetInitialConfig(workload loadgenerator.Wo
 }
 
 // Configure ....
-func (c *PerPathEstimatedUtilization) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (c *BottleNeckOnlyVersion1) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
 
 	newSpecs := make(map[string]swarm.ServiceSpecs)
@@ -165,15 +148,27 @@ func (c *PerPathEstimatedUtilization) Configure(info history.Information, curren
 		log.Println("Configurer Agent:", "request (path) is", requestName, ",", ag.PropertyToConsider, "is", whatToCompareTo, "and should be less than or equal to", ag.Value)
 
 		if ag.Value < whatToCompareTo { // the path is not meeting the SLA, so we need to add more resources
-			for serviceName, neu := range c.NormalizedRequestToServiceToEU[requestName] {
-				increaseValue := neu * c.StepSize
-				if increaseValue > 0 {
-					log.Println("Configurer Agent:", serviceName, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName], "normalized CPU share for this service is", neu)
-					prev := newCPUCount[serviceName]
-					newCPUCount[serviceName] += increaseValue
-					log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceName])
-					isChanged = true
+			var serviceWithMaxCPUUtil string
+			var maxCPUUtil float64 = 0
+			for serviceName, eu := range c.RequestToServiceToEU[requestName] {
+				if eu > 0 {
+					log.Println("Configurer Agent:", serviceName, "is involved in", requestName, "the mean CPU Util is", info.ServicesInfo[serviceName].CPUUsageMean)
+					if info.ServicesInfo[serviceName].CPUUsageMean > maxCPUUtil {
+						maxCPUUtil = info.ServicesInfo[serviceName].CPUUsageMean
+						serviceWithMaxCPUUtil = serviceName
+					}
 				}
+			}
+			log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "has the max mean CPU Utilization")
+			increaseValue := c.RequestToServiceToEU[requestName][serviceWithMaxCPUUtil] * c.StepSize
+			if increaseValue > 0 {
+				log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName], "Estimated CPU Utilization for this (service,request) is", c.RequestToServiceToEU[requestName][serviceWithMaxCPUUtil])
+				prev := newCPUCount[serviceWithMaxCPUUtil]
+				newCPUCount[serviceWithMaxCPUUtil] += increaseValue
+				log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceWithMaxCPUUtil])
+				isChanged = true
+			} else {
+				return nil, false, fmt.Errorf("Configurer Agent: the increaseValue must be positive")
 			}
 		}
 	}
@@ -184,24 +179,6 @@ func (c *PerPathEstimatedUtilization) Configure(info history.Information, curren
 }
 
 // OnFeedbackCallback ...
-func (c *PerPathEstimatedUtilization) OnFeedbackCallback(map[string]history.ServiceInfo) error {
+func (c *BottleNeckOnlyVersion1) OnFeedbackCallback(map[string]history.ServiceInfo) error {
 	return nil
-}
-
-func findWhatToCompareToForAgreement(ag Agreement, responseTimes *history.ResponseTimeStats) (float64, error) {
-	var whatToCompareTo float64
-	if ag.PropertyToConsider == "ResponseTimesMean" {
-		whatToCompareTo = *(responseTimes.ResponseTimesMean)
-	} else if ag.PropertyToConsider == "ResponseTimes90Percentile" {
-		whatToCompareTo = *(responseTimes.ResponseTimes90Percentile)
-	} else if ag.PropertyToConsider == "ResponseTimes95Percentile" {
-		whatToCompareTo = *(responseTimes.ResponseTimes95Percentile)
-	} else if ag.PropertyToConsider == "ResponseTimes99Percentile" {
-		whatToCompareTo = *(responseTimes.ResponseTimes99Percentile)
-	} else if ag.PropertyToConsider == "RTToleranceIntervalUBoundc90p95" {
-		whatToCompareTo = *(responseTimes.RTToleranceIntervalUBoundConfidence90p95)
-	} else {
-		return 0, fmt.Errorf("Agreement's property is %s", ag.PropertyToConsider)
-	}
-	return whatToCompareTo, nil
 }

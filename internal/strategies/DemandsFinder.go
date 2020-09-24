@@ -46,7 +46,7 @@ func (c *DemandsFinder) Configure(info history.Information, currentState map[str
 		return nil, false, fmt.Errorf("error while saving demands to %s: %w", c.ResultPath, err)
 	}
 
-	log.Println("demands wrote to: %s", c.ResultPath)
+	log.Println("demands wrote to:", c.ResultPath)
 
 	return currentState, false, nil
 }
