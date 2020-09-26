@@ -17,7 +17,7 @@ var bnv1DemandsFile string
 var BNV1Cmd = &cobra.Command{
 	Use:   "bnv1",
 	Short: "Bottle Neck Version 1",
-	Long:  `Bottle Neck Version 1 description should be here. Initial Values are EU. At each step, if the path doesnt meet SLA, adds EU * StepSize to the bottleneck only`,
+	Long:  `Bottle Neck Version 1 description should be here. Initial Values are EU. At each step, if the path doesnt meet SLA adds StepSize to the bottleneck only`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		strategy := &strategies.BottleNeckOnlyVersion1{

@@ -160,9 +160,9 @@ func (c *BottleNeckOnlyVersion1) Configure(info history.Information, currentStat
 				}
 			}
 			log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "has the max mean CPU Utilization")
-			increaseValue := c.RequestToServiceToEU[requestName][serviceWithMaxCPUUtil] * c.StepSize
+			increaseValue := c.StepSize
 			if increaseValue > 0 {
-				log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName], "Estimated CPU Utilization for this (service,request) is", c.RequestToServiceToEU[requestName][serviceWithMaxCPUUtil])
+				log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName])
 				prev := newCPUCount[serviceWithMaxCPUUtil]
 				newCPUCount[serviceWithMaxCPUUtil] += increaseValue
 				log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceWithMaxCPUUtil])
