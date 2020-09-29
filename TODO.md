@@ -9,4 +9,7 @@
 - [X] move to multi host
 - [ ] use a well-known collector to gather system utilization
 - [X] clean main
-- [ ] 
+- [X] Bookstore to use DB again
+- [ ] Run approaches on Bookstore
+- [ ] move docker compose files here
+- [ ] move load generators here

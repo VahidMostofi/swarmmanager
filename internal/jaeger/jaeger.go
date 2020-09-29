@@ -100,6 +100,7 @@ func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, erro
 			panic(fmt.Errorf("error in generating uuid %w", err)) //TODO
 		}
 		j.LastStoredFile = j.StorePath + "/" + id.String() + ".zip"
+		log.Println("Jaeger: storing traces at:", j.LastStoredFile)
 		newZipFile, err := os.Create(j.LastStoredFile)
 		if err != nil {
 			panic(err)
@@ -168,17 +169,22 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 		j.requestsResponseTimes[request.Name] = make([]float64, 0)
 	}
 
+	failedEvaluations := 0
+
 	for _, trace := range Data {
 		if !trace.Valid {
 			continue
 		}
 		value, err := evaluateJaegerFormula(j.ValueFormulas.Requests[trace.RequestType].ResponseTime, trace)
 		if err != nil {
-			log.Panic(fmt.Errorf("error while evaluating Jaeger Formula: %w", err))
+			// log.Panic(fmt.Errorf("error while evaluating Jaeger Formula: %w", err))
+			failedEvaluations++
+		} else {
+			j.requestsResponseTimes[trace.RequestType] = append(j.requestsResponseTimes[trace.RequestType], value)
+			// fmt.Println(value)
 		}
-		j.requestsResponseTimes[trace.RequestType] = append(j.requestsResponseTimes[trace.RequestType], value)
 	}
-
+	log.Println("Jaeger: failed evaluations count", failedEvaluations)
 	j.servicesTimeDetails = make(map[string]map[string]map[string][]float64)
 	for _, service := range j.ValueFormulas.Services {
 		j.servicesTimeDetails[service.Name] = make(map[string]map[string][]float64)

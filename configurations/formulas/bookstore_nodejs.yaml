@@ -1,47 +1,50 @@
-service_details:
-  auth_login:
-    service_name: auth
-    request_name: login
-    min_number_of_spans: 10
-    unique_operation_name: auth_req_login
-  books_edit:
-    service_name: books
-    request_name: edit_book
-    min_number_of_spans: 10
-    unique_operation_name: books_edit_book
-  books_get:
-    service_name: books
-    request_name: get_book
-    min_number_of_spans: 10
-    unique_operation_name: books_get_book
-formulas:
-- request_name: login
-  value_name: auth_total
-  formula: backend.Duration
-- request_name: login
-  value_name: auth_gateway
-  formula: backend.Duration - (auth.EndTime - auth_connect.EndTime)
-- request_name: login
-  value_name: auth_service
-  formula: auth.EndTime - auth_connect.EndTime
-- request_name: edit_book
-  value_name: books_total
-  formula: backend.Duration
-- request_name: edit_book
-  value_name: books_gateway
-  formula: backend.Duration - (books.EndTime - books_connect.EndTime)
-- request_name: edit_book
-  value_name: books_service
-  formula: books.EndTime - books_connect.EndTime
-- request_name: get_book
-  value_name: books_total
-  formula: backend.Duration
-- request_name: get_book
-  value_name: books_gateway
-  formula: backend.Duration - (books.EndTime - books_connect.EndTime)
-- request_name: get_book
-  value_name: books_service
-  formula: books.EndTime - books_connect.EndTime
-- request_name: '@any:'
-  value_name: gateway_total
-  formula: backend.Duration
+requests:
+  login: 
+      name: login
+      responseTime: gateway.gateway.Duration
+      tags:
+          - 
+              key: http.request.path
+              value: /auth/login
+          -
+              key: http.request.method
+              value: POST
+  get_book: 
+      name: get_book
+      responseTime: gateway.gateway.Duration
+      tags:
+          - 
+              key: http.request.path
+              value: /books/
+          -
+              key: http.request.method
+              value: GET
+  edit_book: 
+      name: edit_book
+      responseTime: gateway.gateway.Duration
+      tags:
+          - 
+              key: http.request.path
+              value: /books/
+          -
+              key: http.request.method
+              value: PUT
+services:
+  gateway:
+      name: gateway
+      formulas:
+          - 
+              name: service_time
+              value: gateway.gateway.Duration - gateway.call.Duration
+  auth:
+      name: auth
+      formulas:
+          - 
+              name: service_time
+              value: gateway.call.Duration - auth.queryDB.Duration
+  books:
+      name: books
+      formulas:
+          - 
+              name: service_time
+              value: gateway.call.Duration - books.DB.Duration

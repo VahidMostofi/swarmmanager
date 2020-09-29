@@ -12,7 +12,7 @@ import (
 
 func TestJaegerParser(t *testing.T) {
 	// TODO this is hardcoded
-	formulasPath := "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/muck_general.yaml"
+	formulasPath := "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/bookstore_nodejs.yaml"
 	temp := valueFormula{}
 	b, err := ioutil.ReadFile(formulasPath)
 	yaml.Unmarshal(b, &temp)
@@ -21,7 +21,7 @@ func TestJaegerParser(t *testing.T) {
 	}
 
 	// TODO this is hardcoded
-	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/64c12667-8dcb-4581-412a-ff505d925c05.zip"
+	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/e4abd650-a35a-4acc-541e-ecdbcabf1304.zip"
 	r, err := zip.OpenReader(jaegerDataFilePath)
 	if err != nil {
 		t.Error(err)

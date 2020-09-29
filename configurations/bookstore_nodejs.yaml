@@ -1,11 +1,11 @@
 # nodejs_bookstore
-version: "v5"
+version: "v7"
 
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
-    dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-nodb.yml"
+    dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
     serviceCount: 5
     stackName: "bookstore"
     servicesToConfigure: 
@@ -19,7 +19,7 @@ host:
 
 jaeger:
     host: "http://136.159.209.204:16686"
-    rootService: "nginx"
+    rootService: "gateway"
     detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/bookstore_nodejs.yaml"
     storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 
@@ -34,17 +34,19 @@ log:
 loadGenerator:
     type: "k6"
     details:
-        - script: "/home/vahid/Desktop/type8.js"
+        - script: "/home/vahid/workspace/configuration_suggestion/comparing_approahces/bookstore/workloads/scripts/bookstore/type8-remote.js"
+        - host: "http://136.159.209.214:7112"
+    args:
+        - ARG_BASE_URL: "http://136.159.209.204:9080"
+        - ARG_SLEEP_DURATION: "1"
+        - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 15
+    duration: 60
     waitAfterLoadGeneratorDone: 30 
 
 usageCollector:
-    # type: "SingleCollector"
     type: "MultiHostCollector"
     details:
-        # - host: "tcp://136.159.209.204:2375"
         - hosts:
             - "tcp://136.159.209.204:2375"
-            - "tcp://136.159.209.214:2375"
