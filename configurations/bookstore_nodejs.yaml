@@ -1,5 +1,5 @@
 # nodejs_bookstore
-version: "v8"
+version: "v9"
 
 continuesRuns: true
 

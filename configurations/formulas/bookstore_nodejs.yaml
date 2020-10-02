@@ -30,8 +30,8 @@ requests:
               key: http.request.method
               value: PUT
 services:
-  gateway:
-      name: gateway
+  entry:
+      name: entry
       formulas:
           - 
               name: service_time
