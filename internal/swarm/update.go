@@ -13,7 +13,12 @@ import (
 var ForceAllUpdate = true
 
 // UpdateServices based on desired specs
-func (m *Manager) UpdateServices() {
+func (m *Manager) UpdateServices(liveUpdate bool) {
+
+	if liveUpdate {
+		m.liveUpdate()
+		return
+	}
 
 	m.StackStateCh <- StackStateUpdatingSpecs
 	for key := range m.DesiredSpecs {

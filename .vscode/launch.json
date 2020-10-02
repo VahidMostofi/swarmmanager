@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    
 
 
         {
@@ -19,9 +20,9 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "test",
+            "program": "main.go",
             "env": {},
-            "args": []
+            "args": ["autoconfig","--appname","bookstore_nodejs","--config","configurations/bookstore_nodejs.yaml","--workload","150_110_0.33_0.33_0.34","--testName","ppau-250-0.5-mc-liveupdate","ppau","--property","RTToleranceIntervalUBoundc90p95","--value","250","--demands","/home/vahid/Dropbox/data/swarm-manager-data/demands/bookstore_nodejs_demands.yaml","--mc","--stepsize","0.5"]
         }
     ]
 }

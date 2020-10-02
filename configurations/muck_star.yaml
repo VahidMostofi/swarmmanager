@@ -1,6 +1,8 @@
 # micromuck-two-layers
 version: "v14"
 
+continuesRuns: true
+
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 

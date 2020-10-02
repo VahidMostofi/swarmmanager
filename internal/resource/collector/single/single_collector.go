@@ -103,6 +103,7 @@ func (sc *Collector) Start() error {
 			sc.Containers = append(sc.Containers, container)
 			// fmt.Println("monitoing stats for these containers:", sc.Containers)
 			serviceName := container.Labels["com.docker.swarm.service.name"]
+			fmt.Println("Single Collector: Found this service: ", serviceName)
 			sc.ServiceToContainers[serviceName] = append(sc.ServiceToContainers[serviceName], container.ID)
 			sc.Services[serviceName] = serviceName
 
@@ -169,6 +170,7 @@ func (sc *Collector) recordStats(statsCh chan struct {
 		case pair := <-statsCh:
 			sc.ResourceStats[pair.string].AddCPUUsage(pair.float64, pair.int64)
 			sc.ResourceStats[sc.ContainerToService[pair.string]].AddCPUUsage(pair.float64, pair.int64)
+			// fmt.Println(pair.string, sc.ContainerToService[pair.string], pair.float64)
 		}
 	}
 }

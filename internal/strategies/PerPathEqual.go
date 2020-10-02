@@ -23,8 +23,8 @@ type PerPathEqual struct {
 	initialized          bool
 	DemandsFilePath      string
 	demands              map[string]map[string]float64
-	ConstantInit		 bool
-	ConstantInitValue	 float64
+	ConstantInit         bool
+	ConstantInitValue    float64
 }
 
 // Init ...
@@ -49,7 +49,7 @@ func (c *PerPathEqual) getReconfiguredConfiguration(service2totalResource map[st
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     float64(totalCPU / float64(replicaCount)),
+				CPU:     round(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}
@@ -101,7 +101,7 @@ func (c *PerPathEqual) GetInitialConfig(workload loadgenerator.Workload) (map[st
 		}
 	}
 	// fmt.Println(workload.GetThroughput())
-	
+
 	for requestName := range c.RequestToServiceToEU {
 		c.path2StepSize[requestName] = c.StepSize
 		log.Println(requestName, "step size is", c.path2StepSize[requestName])
@@ -109,13 +109,13 @@ func (c *PerPathEqual) GetInitialConfig(workload loadgenerator.Workload) (map[st
 
 	totalAllocatedResources := make(map[string]float64) // total allocated CPU to each service initially
 
-	if c.ConstantInit{
+	if c.ConstantInit {
 		for _, service2EUtilization := range c.RequestToServiceToEU {
 			for serviceName := range service2EUtilization { //eu is estimated utilization
 				totalAllocatedResources[serviceName] = c.ConstantInitValue
 			}
-		}		
-	}else{
+		}
+	} else {
 		for _, service2EUtilization := range c.RequestToServiceToEU {
 			for serviceName, eu := range service2EUtilization { //eu is estimated utilization
 				if current, ok := totalAllocatedResources[serviceName]; ok {
@@ -126,7 +126,7 @@ func (c *PerPathEqual) GetInitialConfig(workload loadgenerator.Workload) (map[st
 			}
 		}
 	}
-	
+
 	initialConfig := c.getReconfiguredConfiguration(totalAllocatedResources)
 	log.Println("Configurer Agent: providing initial config:", initialConfig)
 	return initialConfig, nil

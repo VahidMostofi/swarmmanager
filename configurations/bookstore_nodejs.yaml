@@ -1,17 +1,19 @@
 # nodejs_bookstore
-version: "v7"
+version: "v8"
+
+continuesRuns: true
 
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
     dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
-    serviceCount: 5
+    serviceCount: 6
     stackName: "bookstore"
     servicesToConfigure: 
         - auth
         - books
-        - gateway
+        - entry
 
 host:
     availableCpuCount: 24
@@ -42,8 +44,8 @@ loadGenerator:
         - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 60
-    waitAfterLoadGeneratorDone: 30 
+    duration: 30
+    waitAfterLoadGeneratorDone: 15 
 
 usageCollector:
     type: "MultiHostCollector"

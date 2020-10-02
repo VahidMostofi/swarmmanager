@@ -171,7 +171,7 @@ func (s *Manager) monitorSpecs() {
 				log.Println("specs comparision is:", comparision)
 			}
 			if !comparision {
-				s.UpdateServices()
+				s.UpdateServices(configs.GetConfig().ContinuesRuns) //todo
 			}
 			if comparision && s.CurrentStackState == StackStateMustCompare { // the second part of the condition, im not sure about it
 				s.StackStateCh <- StackStateServicesAreDeployed
@@ -268,7 +268,7 @@ func (s *Manager) UpdateServicesSpecs() error {
 
 // comapeServiceSpecs ... returns true if they are equal
 func (s *Manager) comapeServiceSpecs(serviceName string) (bool, []string) {
-	const float64EqualityThreshold = 1e-5
+	const float64EqualityThreshold = 1e-3
 	changes := []string{}
 	if s.CurrentSpecs[serviceName].ImageName != s.DesiredSpecs[serviceName].ImageName {
 		log.Println("CompareSpecs:", serviceName, "ImageName is changed")

@@ -23,8 +23,8 @@ type PerPathActualUtilization struct {
 	initialized          bool
 	DemandsFilePath      string
 	demands              map[string]map[string]float64
-	ConstantInit		 bool
-	ConstantInitValue	 float64
+	ConstantInit         bool
+	ConstantInitValue    float64
 }
 
 // Init ...
@@ -42,14 +42,16 @@ func (c *PerPathActualUtilization) Init() error {
 
 	return nil
 }
-
+func round(value float64) float64 {
+	return math.Floor(value*1000) / 1000
+}
 func (c *PerPathActualUtilization) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
 	if c.MultiContainer {
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     float64(totalCPU / float64(replicaCount)),
+				CPU:     round(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}
@@ -101,7 +103,7 @@ func (c *PerPathActualUtilization) GetInitialConfig(workload loadgenerator.Workl
 		}
 	}
 	// fmt.Println(workload.GetThroughput())
-	
+
 	for requestName := range c.RequestToServiceToEU {
 		c.path2StepSize[requestName] = c.StepSize
 		log.Println(requestName, "step size is", c.path2StepSize[requestName])
@@ -109,13 +111,13 @@ func (c *PerPathActualUtilization) GetInitialConfig(workload loadgenerator.Workl
 
 	totalAllocatedResources := make(map[string]float64) // total allocated CPU to each service initially
 
-	if c.ConstantInit{
+	if c.ConstantInit {
 		for _, service2EUtilization := range c.RequestToServiceToEU {
 			for serviceName := range service2EUtilization { //eu is estimated utilization
 				totalAllocatedResources[serviceName] = c.ConstantInitValue
 			}
-		}		
-	}else{
+		}
+	} else {
 		for _, service2EUtilization := range c.RequestToServiceToEU {
 			for serviceName, eu := range service2EUtilization { //eu is estimated utilization
 				if current, ok := totalAllocatedResources[serviceName]; ok {
@@ -126,7 +128,7 @@ func (c *PerPathActualUtilization) GetInitialConfig(workload loadgenerator.Workl
 			}
 		}
 	}
-	
+
 	initialConfig := c.getReconfiguredConfiguration(totalAllocatedResources)
 	log.Println("Configurer Agent: providing initial config:", initialConfig)
 	return initialConfig, nil

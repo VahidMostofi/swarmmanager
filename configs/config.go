@@ -26,6 +26,7 @@ type Configurations struct {
 	LoadGenerator  LoadGeneratorConfigurations
 	Test           TestConfigurations
 	UsageCollector UsageCollectorConfigurations
+	ContinuesRuns  bool
 }
 
 // TestConfigurations ...

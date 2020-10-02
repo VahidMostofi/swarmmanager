@@ -47,7 +47,7 @@ func (c *BottleNeckOnlyVersion1) getReconfiguredConfiguration(service2totalResou
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     float64(totalCPU / float64(replicaCount)),
+				CPU:     round(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}

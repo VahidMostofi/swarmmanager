@@ -44,6 +44,7 @@ type AutoConfigurer struct {
 	SwarmManager           *swarm.Manager
 	Database               caching.Database
 	TimingConfigs
+	LoadGeneratorStarted bool
 }
 
 // NewAutoConfigurer ...
@@ -60,8 +61,9 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 			WaitAfterServicesAreReadyDuration: 7,
 			WaitAfterLoadGeneratorStopped:     time.Duration(configs.GetConfig().Test.WaitAfterLoadGeneratorDone),
 		},
-		Workload: workload,
-		Database: database,
+		Workload:             workload,
+		Database:             database,
+		LoadGeneratorStarted: false,
 	}
 	return a
 }
@@ -127,14 +129,25 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			}
 			time.Sleep(150 * time.Millisecond)
 		}
+		log.Println("Services are ready")
+		if configs.GetConfig().ContinuesRuns {
+			if !a.LoadGeneratorStarted {
+				go a.LoadGenerator.Start()
+				a.LoadGeneratorStarted = true
+				time.Sleep(30 * time.Second)
+			}
+		}
+
 		info, err := a.Database.Retrieve(string(a.Workload), a.SwarmManager.DesiredSpecs)
 		if err == nil {
 			log.Println("Autoconfigurer: information is found for this configuration/workload")
 		} else {
 			time.Sleep(a.WaitAfterServicesAreReadyDuration * time.Second)
-			go a.LoadGenerator.Start()
-			log.Println("load generator started")
-			time.Sleep(30 * time.Second)
+			if !configs.GetConfig().ContinuesRuns {
+				go a.LoadGenerator.Start()
+				log.Println("load generator started")
+				time.Sleep(15 * time.Second)
+			}
 			a.ResourceUsageCollector = resource.GetTheResourceUsageCollector()
 			err = a.ResourceUsageCollector.Start()
 			if err != nil {
@@ -145,7 +158,9 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			time.Sleep(a.IterationDuration * time.Second)
 			end = time.Now().UnixNano() / 1e3
 			log.Println("finished the test")
-			a.LoadGenerator.Stop()
+			if !configs.GetConfig().ContinuesRuns {
+				a.LoadGenerator.Stop()
+			}
 			time.Sleep(a.WaitAfterLoadGeneratorStopped * time.Second)
 			err = a.ResourceUsageCollector.Stop()
 			time.Sleep(10 * time.Second)
@@ -153,7 +168,10 @@ func (a *AutoConfigurer) Start(name string, command string) {
 				log.Panic(err)
 			}
 			servicesInfo := a.GatherInfo(int64(start), int64(end))
-			lgFeedback, err := a.LoadGenerator.GetFeedback()
+			var lgFeedback map[string]interface{} = nil
+			if !configs.GetConfig().ContinuesRuns {
+				lgFeedback, err = a.LoadGenerator.GetFeedback()
+			}
 			if err != nil {
 				log.Panic(fmt.Errorf("error while retrieving load generator feedback: %w", err))
 			}
@@ -188,6 +206,10 @@ func (a *AutoConfigurer) Start(name string, command string) {
 		}
 		if _, ok := Validate(newSpecs); !ok {
 			log.Println("new config is not valid, breaking out of loop")
+			log.Println("stopping load generator")
+			if configs.GetConfig().ContinuesRuns {
+				a.LoadGenerator.Stop()
+			}
 			break
 		}
 		fmt.Println("validated the new specs")
