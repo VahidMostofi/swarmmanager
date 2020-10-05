@@ -1,6 +1,7 @@
 package bruteforce
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,8 +47,8 @@ func NewBruteForce(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeColl
 		SwarmManager:          m,
 		Workload:              workload,
 		LoadGeneratorStarted:  false,
-		InitialCPUCount:       0.25,
-		CPUStepSize:           0.25,
+		InitialCPUCount:       0.20,
+		CPUStepSize:           0.20,
 		FinalCPUCount:         5,
 		Version:               "v1",
 	}
@@ -61,8 +62,8 @@ func (b *BruteForce) mainLoop() {
 		prevConfig[service] = swarm.SimpleSpecs{}
 	}
 
-	var start int64
-	var end int64
+	// var start int64
+	// var end int64
 	for i := 0; i < len(allConfigs); i++ {
 
 		if !b.isConfigNew(allConfigs[i]) {
@@ -79,27 +80,21 @@ func (b *BruteForce) mainLoop() {
 		log.Println("Deployed")
 		go b.LoadGenerator.Start()
 		prevConfig = currentConfig
-		start = time.Now().UnixNano() / 1e3
-		time.Sleep(16 * time.Second)
-		end = time.Now().UnixNano() / 1e3
+
+		time.Sleep(30 * time.Second)
 		b.LoadGenerator.Stop()
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Second)
 
-		// data, err := b.LoadGenerator.GetFeedbackRaw()
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// lf := &LGFeedback{}
-		// json.Unmarshal(data, lf)
-
-		rts := b.GatherResponeTimes(start, end)
+		data, err := b.LoadGenerator.GetFeedbackRaw()
 		if err != nil {
 			panic(err)
 		}
+		lf := &LGFeedback{}
+		json.Unmarshal(data, lf)
 
-		isGood := b.isGood(rts)
+		isGood := b.isGood(*lf)
 		if isGood {
-			b.saveJaegerFeedback(currentConfig, rts)
+			b.saveLoadGeneratorFeedback(currentConfig)
 			b.saveToFile(currentConfig, getGoodDirecotry())
 		}
 		b.saveToFile(currentConfig, getPartialDirecotry())
@@ -119,16 +114,6 @@ func (b *BruteForce) Start() {
 	}
 
 	b.mainLoop()
-
-	// all := b.generateAllConfigurationsSorted()
-	// count := 0
-	// for _, c := range all {
-	// 	sum := getTotalCPUCount(c)
-	// 	if sum > 2 && sum <= 5 {
-	// 		count++
-	// 	}
-	// }
-	// fmt.Println(count)
 
 }
 
@@ -375,34 +360,23 @@ func createStats(values []float64, names []string) (history.ResponseTimeStats, e
 	return rts, nil
 }
 
-func (b *BruteForce) isGood(rts map[string]history.ResponseTimeStats) bool {
+func (b *BruteForce) isGood(lf LGFeedback) bool {
 
-	// lf.Metrics.LoginDurationTrend.P95 = round(lf.Metrics.LoginDurationTrend.P95)
-	// lf.Metrics.EditBookDurationTrend.P95 = round(lf.Metrics.EditBookDurationTrend.P95)
-	// lf.Metrics.GetBookDurationTrend.P95 = round(lf.Metrics.GetBookDurationTrend.P95)
-	// fmt.Print("login", " ", lf.Metrics.LoginDurationTrend.P95, " | ", "edit_book ", lf.Metrics.EditBookDurationTrend.P95, " | ", "get_booK ", lf.Metrics.GetBookDurationTrend.P95)
-	// if lf.Metrics.LoginDurationTrend.P95 > 250 {
-	// 	fmt.Println(" ")
-	// 	return false
-	// }
-	// if lf.Metrics.EditBookDurationTrend.P95 > 250 {
-	// 	fmt.Println(" ")
-	// 	return false
-	// }
-	// if lf.Metrics.GetBookDurationTrend.P95 > 250 {
-	// 	fmt.Println(" ")
-	// 	return false
-	// }
-	// fmt.Println(" meets SLA")
-
-	for request, rt := range rts {
-		fmt.Print(request, ": ", rt.Count, ":", round(*rt.RTToleranceIntervalUBoundConfidence90p95), " | ")
+	lf.Metrics.LoginDurationTrend.P95 = round(lf.Metrics.LoginDurationTrend.P95)
+	lf.Metrics.EditBookDurationTrend.P95 = round(lf.Metrics.EditBookDurationTrend.P95)
+	lf.Metrics.GetBookDurationTrend.P95 = round(lf.Metrics.GetBookDurationTrend.P95)
+	fmt.Print("login", " ", lf.Metrics.LoginDurationTrend.P95, " | ", "edit_book ", lf.Metrics.EditBookDurationTrend.P95, " | ", "get_booK ", lf.Metrics.GetBookDurationTrend.P95)
+	if lf.Metrics.LoginDurationTrend.P95 > 250 {
+		fmt.Println(" ")
+		return false
 	}
-	for _, rt := range rts {
-		if !(*rt.Count > 10 && *rt.RTToleranceIntervalUBoundConfidence90p95 <= 250) {
-			fmt.Println("")
-			return false
-		}
+	if lf.Metrics.EditBookDurationTrend.P95 > 250 {
+		fmt.Println(" ")
+		return false
+	}
+	if lf.Metrics.GetBookDurationTrend.P95 > 250 {
+		fmt.Println(" ")
+		return false
 	}
 	fmt.Println(" meets SLA")
 	return true
@@ -416,13 +390,16 @@ func (b *BruteForce) saveToFile(config map[string]swarm.SimpleSpecs, directory s
 	ioutil.WriteFile(directory+b.hash(config)+".yml", data, 0777)
 }
 
-func (b *BruteForce) saveJaegerFeedback(config map[string]swarm.SimpleSpecs, rts map[string]history.ResponseTimeStats) {
-
-	data, err := yaml.Marshal(rts)
+func (b *BruteForce) saveLoadGeneratorFeedback(config map[string]swarm.SimpleSpecs) {
+	feedback, err := b.LoadGenerator.GetFeedback()
 	if err != nil {
 		panic(err)
 	}
-	ioutil.WriteFile(getGoodDirecotry()+b.hash(config)+"_feedback.yml", data, 0777)
+	data, err := json.MarshalIndent(feedback, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	ioutil.WriteFile(getGoodDirecotry()+b.hash(config)+".json", data, 0777)
 
 }
 
