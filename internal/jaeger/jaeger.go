@@ -70,7 +70,7 @@ func NewAggregator() *Aggregator {
 	return j
 }
 
-func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, error) {
+func (j *Aggregator) getTraces(start, end int64, service string, store bool) ([]*trace, error) {
 	body := make([]byte, 0)
 	for len(body) < 100 { //TODO WTF with 100?!?!?!?
 		url := fmt.Sprintf("%s/api/traces?end=%d&limit=100000&service=%s&start=%d", j.Host, end, service, start)
@@ -88,13 +88,13 @@ func (j *Aggregator) getTraces(start, end int64, service string) ([]*trace, erro
 			continue
 		}
 		body, err = ioutil.ReadAll(res.Body)
-		fmt.Println("len(body)", len(body))
-		fmt.Println(url)
+		// fmt.Println("len(body)", len(body))
+		// fmt.Println(url)
 		res.Body.Close()
 		time.Sleep(3 * time.Second)
 	}
 
-	if len(j.StorePath) > 1 {
+	if store && len(j.StorePath) > 1 {
 		id, err := uuid.NewV4()
 		if err != nil {
 			panic(fmt.Errorf("error in generating uuid %w", err)) //TODO
@@ -143,7 +143,7 @@ func (j *Aggregator) identifyRequest(t *trace) string {
 			}
 		}
 	}
-	fmt.Println("found no request type for this trace, number of spans are:", len(t.Spans), "marking trace as invalid")
+	// fmt.Println("found no request type for this trace, number of spans are:", len(t.Spans), "marking trace as invalid")
 	return ""
 }
 
@@ -220,9 +220,9 @@ func (j *Aggregator) parseTraces(Data []*trace) error {
 }
 
 // GetTraces retrieves traces form Jaeger instance
-func (j *Aggregator) GetTraces(start, end int64, service string) {
+func (j *Aggregator) GetTraces(start, end int64, service string, store bool) {
 
-	Data, err := j.getTraces(start, end, service)
+	Data, err := j.getTraces(start, end, service, store)
 	if err != nil {
 		panic(err)
 	}
@@ -242,9 +242,9 @@ func (j *Aggregator) GetRequestCount(name string) (int, error) {
 
 // GetRequestResponseTimes ....
 func (j *Aggregator) GetRequestResponseTimes(name string) ([]float64, error) {
-	log.Println("GetResponseTimes:", "called with", name)
+	// log.Println("GetResponseTimes:", "called with", name)
 	res := j.requestsResponseTimes[name]
-	log.Println("GetResponseTimes:", "called with", name, "found", len(res), "values")
+	// log.Println("GetResponseTimes:", "called with", name, "found", len(res), "values")
 	return res, nil
 }
 

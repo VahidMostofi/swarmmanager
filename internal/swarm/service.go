@@ -117,7 +117,7 @@ const (
 
 // GetNewSwarmManager is constructor
 // required fields: host, stackname, services: one string with comma separated services' names
-func GetNewSwarmManager(values map[string]string) (*Manager, error) {
+func GetNewSwarmManager(values map[string]string, shouldMonitorSpecs bool) (*Manager, error) {
 	defaultHeaders := map[string]string{"User-Agent": "engine-api-cli-1.0"}
 	cli, err := client.NewClient(values["host"], "", nil, defaultHeaders)
 	if err != nil {
@@ -153,7 +153,9 @@ func GetNewSwarmManager(values map[string]string) (*Manager, error) {
 
 	go m.monitorState()
 	go m.manageState()
-	go m.monitorSpecs()
+	if shouldMonitorSpecs {
+		go m.monitorSpecs()
+	}
 	return m, nil
 }
 

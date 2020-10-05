@@ -1,7 +1,7 @@
 requests:
   login: 
       name: login
-      responseTime: gateway.gateway.Duration
+      responseTime: nginx.backend.Duration
       tags:
           - 
               key: http.request.path
@@ -11,7 +11,7 @@ requests:
               value: POST
   get_book: 
       name: get_book
-      responseTime: gateway.gateway.Duration
+      responseTime: nginx.backend.Duration
       tags:
           - 
               key: http.request.path
@@ -21,7 +21,7 @@ requests:
               value: GET
   edit_book: 
       name: edit_book
-      responseTime: gateway.gateway.Duration
+      responseTime: nginx.backend.Duration
       tags:
           - 
               key: http.request.path

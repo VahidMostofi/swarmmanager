@@ -39,8 +39,8 @@ func GetTheLoadGenerator(workloadStr string) loadgenerator.LoadGenerator {
 }
 
 // GetSwarmManager ...
-func GetSwarmManager() *swarm.Manager {
-	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": configs.GetConfig().TestBed.StackName, "host": configs.GetConfig().Host.Host})
+func GetSwarmManager(monitorSpecs bool) *swarm.Manager {
+	m, err := swarm.GetNewSwarmManager(map[string]string{"stackname": configs.GetConfig().TestBed.StackName, "host": configs.GetConfig().Host.Host}, monitorSpecs)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -101,7 +101,7 @@ func StartAutoconfig(strategy strategies.Configurer, strategyName string) {
 	// 	os.Exit(1)
 	// }
 	// var c = GetAnotherConfigurer()
-	var m = GetSwarmManager()
+	var m = GetSwarmManager(true)
 	db := GetNewDatabase()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, strategy, m, workloadStr, db)
 	log.Println("name of the test is:", viper.GetString("testName"))

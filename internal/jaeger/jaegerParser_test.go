@@ -21,7 +21,7 @@ func TestJaegerParser(t *testing.T) {
 	}
 
 	// TODO this is hardcoded
-	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/e4abd650-a35a-4acc-541e-ecdbcabf1304.zip"
+	jaegerDataFilePath := "/home/vahid/Dropbox/data/swarm-manager-data/jaegers/3804bdfa-84b3-418b-43b3-b14566de9a20.zip"
 	r, err := zip.OpenReader(jaegerDataFilePath)
 	if err != nil {
 		t.Error(err)
@@ -55,9 +55,9 @@ func TestJaegerParser(t *testing.T) {
 	if err != nil {
 		t.Errorf("error evaluateing formula: %w", err)
 	}
-	for _, t := range data.Data {
-		fmt.Println(t.Valid)
-	}
+	// for _, t := range data.Data {
+	// 	fmt.Println(t.Valid)
+	// }
 	for r := range j.ValueFormulas.Requests {
 		v, _ := j.GetRequestResponseTimes(r)
 		fmt.Println(len(v))

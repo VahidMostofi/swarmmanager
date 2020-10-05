@@ -189,6 +189,29 @@ func (k *K6) Stop() error {
 	return nil
 }
 
+// GetFeedbackRaw ...
+func (k *K6) GetFeedbackRaw() ([]byte, error) {
+	url := k.Host + "/feedback"
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while creating feedback request to k6 wrapper server: %w", err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error from sending feedback request to k6 wrapper server: %w", err)
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	return body, nil
+
+}
+
 // GetFeedback ...
 func (k *K6) GetFeedback() (map[string]interface{}, error) {
 	url := k.Host + "/feedback"

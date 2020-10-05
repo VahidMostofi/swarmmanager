@@ -250,7 +250,7 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 // GatherInfo ...
 func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
-	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, configs.GetConfig().Jaeger.RootService)
+	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, configs.GetConfig().Jaeger.RootService, true)
 	info := make(map[string]history.ServiceInfo)
 	for key := range a.SwarmManager.CurrentSpecs {
 		serviceName := a.SwarmManager.CurrentSpecs[key].Name

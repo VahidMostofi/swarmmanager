@@ -2,7 +2,6 @@ package statutils
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -59,7 +58,7 @@ func ComputeToleranceIntervalNonParametric(data []float64, confidence, portionOf
 	}
 	alpha := strconv.FormatFloat(1-float64(confidence), 'f', 4, 64)
 	p := strconv.FormatFloat(portionOfPopulation, 'f', 4, 64)
-	log.Println("Statutils: alpha:", alpha, "P:", p)
+	// log.Println("Statutils: alpha:", alpha, "P:", p)
 	command := "library(\"tolerance\"); nptol.int(x = c(" + numbers + "), alpha = " + alpha + ", P = " + p + ", side = 1,  method = \"WALD\", upper = NULL, lower = NULL)"
 
 	value, err := rClient.Eval(command)

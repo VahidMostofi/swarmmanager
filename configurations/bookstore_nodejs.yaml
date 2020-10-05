@@ -1,7 +1,7 @@
 # nodejs_bookstore
-version: "v9"
+version: "v10"
 
-continuesRuns: true
+continuesRuns: false
 
 results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
@@ -44,7 +44,7 @@ loadGenerator:
         - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 30
+    duration: 60
     waitAfterLoadGeneratorDone: 15 
 
 usageCollector:
