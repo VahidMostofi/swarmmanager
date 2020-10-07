@@ -49,7 +49,7 @@ func NewBruteForce(lg loadgenerator.LoadGenerator, rtc workload.ResponseTimeColl
 		LoadGeneratorStarted:  false,
 		InitialCPUCount:       0.20,
 		CPUStepSize:           0.20,
-		FinalCPUCount:         5,
+		FinalCPUCount:         6,
 		Version:               "v1",
 	}
 	return b
@@ -69,8 +69,11 @@ func (b *BruteForce) mainLoop() {
 		if !b.isConfigNew(allConfigs[i]) {
 			continue
 		}
+		if getTotalCPUCount(allConfigs[i]) <= 5.22 {
+			continue
+		}
 		currentConfig := allConfigs[i]
-		log.Println("working on config", (i + 1), b.hash(currentConfig), toString(currentConfig))
+		log.Println("working on config", (i + 1), b.hash(currentConfig), "/", len(allConfigs), toString(currentConfig))
 
 		err := b.SwarmManager.FastUpdate(currentConfig, prevConfig)
 		if err != nil {

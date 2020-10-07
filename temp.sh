@@ -26,7 +26,7 @@ do
 go run main.go autoconfig \
     --appname bookstore_nodejs \
     --config configurations/bookstore_nodejs.yaml \
-    --workload  "75_60_0.33_0.33_0.34" \
+    --workload  "125_60_0.33_0.33_0.34" \
     --testName brute-force \
     brute
 
