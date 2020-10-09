@@ -19,12 +19,14 @@ func (m *Manager) UpdateServices(liveUpdate bool) {
 		m.liveUpdate()
 		return
 	}
-
+	doLog := false
 	m.StackStateCh <- StackStateUpdatingSpecs
 	for key := range m.DesiredSpecs {
 		serviceName := m.DesiredSpecs[key].Name
 		serviceID := m.DesiredSpecs[key].ID
-		log.Println("updating", serviceName, serviceID)
+		if doLog {
+			log.Println("updating", serviceName, serviceID)
+		}
 		areEqual, changes := m.comapeServiceSpecs(serviceName)
 		if !ForceAllUpdate {
 			if areEqual {
@@ -54,11 +56,15 @@ func (m *Manager) UpdateServices(liveUpdate bool) {
 		newSpec.TaskTemplate.Resources.Reservations.MemoryBytes = m.DesiredSpecs[key].MemoryReservations
 		newSpec.Mode.Replicated.Replicas = &serviceReplicaCount
 		newSpec.TaskTemplate.ForceUpdate++
-		log.Println("forcing update on", m.DesiredSpecs[key].Name)
+		if doLog {
+			log.Println("forcing update on", m.DesiredSpecs[key].Name)
+			log.Println("updating service...", m.DesiredSpecs[key].Name)
+		}
 
-		log.Println("updating service...", m.DesiredSpecs[key].Name)
 		serviceUpdateResponse, err := m.Client.ServiceUpdate(m.Ctx, serviceID, dockerswarm.Version{onlineService.Version.Index}, newSpec, types.ServiceUpdateOptions{})
-		log.Println("update done", m.DesiredSpecs[key].Name)
+		if doLog {
+			log.Println("update done", m.DesiredSpecs[key].Name)
+		}
 		if err != nil {
 			log.Panic(err)
 		}

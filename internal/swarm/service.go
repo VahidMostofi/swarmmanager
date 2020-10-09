@@ -84,6 +84,7 @@ type Manager struct {
 	StackStateCh      chan int
 	CurrentStackState int
 	ServicesToManage  []string
+	NoCompare         bool
 }
 
 // ToHumanReadable ...
@@ -149,6 +150,7 @@ func GetNewSwarmManager(values map[string]string, shouldMonitorSpecs bool) (*Man
 		DesiredSpecs:     make(map[string]ServiceSpecs),
 		StackStateCh:     make(chan int),
 		ServicesToManage: servicesToMonitor,
+		NoCompare:        false,
 	}
 
 	go m.monitorState()
@@ -167,6 +169,10 @@ func (s *Manager) monitorSpecs() {
 			err := s.UpdateCurrentSpecs()
 			if err != nil {
 				log.Panic(err)
+			}
+			if s.NoCompare {
+				time.Sleep(time.Duration(waitTime) * time.Second)
+				continue
 			}
 			comparision := s.CompareSpecs()
 			if !comparision {

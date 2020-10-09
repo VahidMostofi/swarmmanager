@@ -10,11 +10,13 @@ import (
 
 func (m *Manager) liveUpdate() {
 	m.StackStateCh <- StackStateUpdatingSpecs
-
+	doLog := false
 	for key := range m.DesiredSpecs {
 		serviceName := m.DesiredSpecs[key].Name
 		serviceID := m.DesiredSpecs[key].ID
-		log.Println("live updating", serviceName, serviceID)
+		if doLog {
+			log.Println("live updating", serviceName, serviceID)
+		}
 		areEqual, _ := m.comapeServiceSpecs(serviceName)
 		if areEqual {
 			log.Println(m.DesiredSpecs[key].Name, "is not changed, no update is required (ForceAllUpdate is false)")
@@ -22,11 +24,14 @@ func (m *Manager) liveUpdate() {
 		}
 
 		serviceReplicaCount := uint64(m.DesiredSpecs[key].ReplicaCount)
-
-		log.Println("updating service...", m.DesiredSpecs[key].Name)
+		if doLog {
+			log.Println("updating service...", m.DesiredSpecs[key].Name)
+		}
 		err := m.liveUpdateRunCommand(m.DesiredSpecs[key].CPULimits, serviceReplicaCount, m.DesiredSpecs[key].Name)
 
-		log.Println("update done", m.DesiredSpecs[key].Name)
+		if doLog {
+			log.Println("update done", m.DesiredSpecs[key].Name)
+		}
 		if err != nil {
 			log.Panic(err)
 		}

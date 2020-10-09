@@ -1,12 +1,16 @@
 package strategies
 
 import (
+	"math"
+
 	"github.com/VahidMostofi/swarmmanager/internal/history"
+	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
 )
 
 // SingleRun ...
 type SingleRun struct {
+	Config map[string]swarm.SimpleSpecs
 }
 
 // OnFeedbackCallback ...
@@ -15,27 +19,29 @@ func (c *SingleRun) OnFeedbackCallback(map[string]history.ServiceInfo) error {
 }
 
 // Configure ...
-func (c *SingleRun) Configure(values map[string]history.ServiceInfo, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
+func (c *SingleRun) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	return nil, false, nil
 }
 
 // GetInitialConfig ...
-func (c *SingleRun) GetInitialConfig() (map[string]swarm.SimpleSpecs, error) {
-	config := make(map[string]swarm.SimpleSpecs)
-	config["auth"] = swarm.SimpleSpecs{
-		CPU:     1,
-		Replica: 1,
-		Worker:  1,
+func (c *SingleRun) GetInitialConfig(loadgenerator.Workload) (map[string]swarm.SimpleSpecs, error) {
+	return c.getReconfiguredConfiguration(c.Config), nil
+}
+
+func (c *SingleRun) getReconfiguredConfiguration(inputConfig map[string]swarm.SimpleSpecs) map[string]swarm.SimpleSpecs {
+	service2totalResource := make(map[string]float64)
+	for serviceName, c := range inputConfig {
+		service2totalResource[serviceName] = c.CPU * float64(c.Replica)
 	}
-	config["books"] = swarm.SimpleSpecs{
-		CPU:     1,
-		Replica: 1,
-		Worker:  1,
+	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
+
+	for service, totalCPU := range service2totalResource {
+		reconfiguredSpecs[service] = swarm.SimpleSpecs{
+			CPU:     totalCPU,
+			Replica: 1,
+			Worker:  int(math.Ceil(totalCPU)),
+		}
 	}
-	config["gateway"] = swarm.SimpleSpecs{
-		CPU:     1,
-		Replica: 1,
-		Worker:  1,
-	}
-	return config, nil
+
+	return reconfiguredSpecs
 }

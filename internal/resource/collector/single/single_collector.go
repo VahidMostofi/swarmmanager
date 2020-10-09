@@ -97,13 +97,16 @@ func (sc *Collector) Start() error {
 	sc.Services = make(map[string]string)
 	sc.ResourceStats = make(map[string]*resource.Utilization)
 	sc.ContainerToService = make(map[string]string)
+	doLog := false
 	log.Printf("SingleCollector (%s): Found %d containers on host\n", sc.HostName, len(containers))
 	for _, container := range containers {
 		if container.Labels["com.docker.stack.namespace"] == sc.Stackname {
 			sc.Containers = append(sc.Containers, container)
 			// fmt.Println("monitoing stats for these containers:", sc.Containers)
 			serviceName := container.Labels["com.docker.swarm.service.name"]
-			fmt.Println("Single Collector: Found this service: ", serviceName)
+			if doLog {
+				log.Println("Single Collector: Found this service: ", serviceName)
+			}
 			sc.ServiceToContainers[serviceName] = append(sc.ServiceToContainers[serviceName], container.ID)
 			sc.Services[serviceName] = serviceName
 

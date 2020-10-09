@@ -118,27 +118,35 @@ func (a *AutoConfigurer) Start(name string, command string) {
 	var start int64
 	var end int64
 	var iteration int
+	newSpecs := make(map[string]swarm.ServiceSpecs)
+
 	for {
 		iteration++
 		log.Printf("ITERATION %d\n", iteration)
-		for {
-			if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
-				log.Println("CurrentStackState is", swarm.GetStateString(a.SwarmManager.CurrentStackState), "so lets break out of the loop")
-				a.SwarmManager.UpdateCurrentSpecs()
-				break
+		if a.SwarmManager.NoCompare == false {
+			for {
+				if a.SwarmManager.CurrentStackState == swarm.StackStateServicesAreReady {
+					log.Println("CurrentStackState is", swarm.GetStateString(a.SwarmManager.CurrentStackState), "so lets break out of the loop")
+					a.SwarmManager.UpdateCurrentSpecs()
+					break
+				}
+				time.Sleep(150 * time.Millisecond)
 			}
-			time.Sleep(150 * time.Millisecond)
-		}
-		log.Println("Services are ready")
-		if configs.GetConfig().ContinuesRuns {
-			if !a.LoadGeneratorStarted {
-				go a.LoadGenerator.Start()
-				a.LoadGeneratorStarted = true
-				time.Sleep(30 * time.Second)
+			log.Println("Services are ready")
+			if configs.GetConfig().ContinuesRuns {
+				if !a.LoadGeneratorStarted {
+					go a.LoadGenerator.Start()
+					a.LoadGeneratorStarted = true
+					time.Sleep(30 * time.Second)
+				}
 			}
 		}
+		searchWith := a.SwarmManager.DesiredSpecs
+		if a.SwarmManager.NoCompare == true {
+			searchWith = newSpecs
+		}
+		info, err := a.Database.Retrieve(string(a.Workload), searchWith)
 
-		info, err := a.Database.Retrieve(string(a.Workload), a.SwarmManager.DesiredSpecs)
 		if err == nil {
 			log.Println("Autoconfigurer: information is found for this configuration/workload")
 		} else {
@@ -200,7 +208,12 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			info.HashCode = hash
 		}
 		stackHistory.History = append(stackHistory.History, info)
-		newSpecs, isChanged, err := a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
+		isChanged := false
+		if a.SwarmManager.NoCompare {
+			newSpecs, isChanged, err = a.ConfigurerAgent.Configure(info, newSpecs, a.SwarmManager.ServicesToManage)
+		} else {
+			newSpecs, isChanged, err = a.ConfigurerAgent.Configure(info, a.SwarmManager.CurrentSpecs, a.SwarmManager.ServicesToManage)
+		}
 		if err != nil {
 			log.Panic(err)
 		}
@@ -212,14 +225,22 @@ func (a *AutoConfigurer) Start(name string, command string) {
 			}
 			break
 		}
-		fmt.Println("validated the new specs")
-		a.SwarmManager.DesiredSpecs = newSpecs
-		a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
 		if !isChanged {
 			log.Println("is changed is false, breaking out of loop")
 			break
 		}
-		time.Sleep(5 * time.Second)
+
+		fmt.Println("validated the new specs")
+		_, err = a.Database.Retrieve(string(a.Workload), newSpecs)
+		if err == nil {
+			log.Println("next config is available in cache, skipping swarm updating")
+			a.SwarmManager.NoCompare = true
+		} else {
+			a.SwarmManager.DesiredSpecs = newSpecs
+			a.SwarmManager.NoCompare = false
+			a.SwarmManager.StackStateCh <- swarm.StackStateMustCompare
+			time.Sleep(5 * time.Second)
+		}
 		saveHistory(stackHistory)
 		fmt.Println("partial results at:", configs.GetConfig().Results.Path+stackHistory.Name+".yml")
 	}

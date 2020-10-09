@@ -1,5 +1,5 @@
 # nodejs_bookstore
-version: "v10"
+version: "v1"
 
 continuesRuns: false
 
@@ -28,7 +28,7 @@ jaeger:
 cache:
     type: 'dropbox'
     details:
-        - path: "/home/vahid/Dropbox/data/swarm-manager-data/cache"
+        - path: "/home/vahid/Dropbox/data/swarm-manager-data/cache-v2"
 
 log:
     directory: "/home/vahid/Desktop/projects/swarm-manager-data/logs" 

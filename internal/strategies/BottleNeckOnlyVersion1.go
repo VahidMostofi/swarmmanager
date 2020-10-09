@@ -23,6 +23,8 @@ type BottleNeckOnlyVersion1 struct {
 	initialized          bool
 	DemandsFilePath      string
 	demands              map[string]map[string]float64
+	ConstantInit         bool
+	ConstantInitValue    float64
 }
 
 // Init ...
@@ -43,11 +45,16 @@ func (c *BottleNeckOnlyVersion1) Init() error {
 
 func (c *BottleNeckOnlyVersion1) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
+	temp := make(map[string]float64)
+	for service, cpu := range service2totalResource {
+		temp[service] = round1(cpu)
+	}
+	service2totalResource = temp
 	if c.MultiContainer {
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     round(float64(totalCPU / float64(replicaCount))),
+				CPU:     round2(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}
@@ -105,12 +112,20 @@ func (c *BottleNeckOnlyVersion1) GetInitialConfig(workload loadgenerator.Workloa
 
 	totalAllocatedResources := make(map[string]float64) // total allocated CPU to each service initially
 
-	for _, service2EUtilization := range c.RequestToServiceToEU {
-		for serviceName, eu := range service2EUtilization { //eu is estimated utilization
-			if current, ok := totalAllocatedResources[serviceName]; ok {
-				totalAllocatedResources[serviceName] = current + eu
-			} else {
-				totalAllocatedResources[serviceName] = eu
+	if c.ConstantInit {
+		for _, service2EUtilization := range c.RequestToServiceToEU {
+			for serviceName := range service2EUtilization { //eu is estimated utilization
+				totalAllocatedResources[serviceName] = c.ConstantInitValue
+			}
+		}
+	} else {
+		for _, service2EUtilization := range c.RequestToServiceToEU {
+			for serviceName, eu := range service2EUtilization { //eu is estimated utilization
+				if current, ok := totalAllocatedResources[serviceName]; ok {
+					totalAllocatedResources[serviceName] = current + eu
+				} else {
+					totalAllocatedResources[serviceName] = eu
+				}
 			}
 		}
 	}

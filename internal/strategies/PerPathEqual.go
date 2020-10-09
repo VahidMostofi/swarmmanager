@@ -49,7 +49,7 @@ func (c *PerPathEqual) getReconfiguredConfiguration(service2totalResource map[st
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     round(float64(totalCPU / float64(replicaCount))),
+				CPU:     round2(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}

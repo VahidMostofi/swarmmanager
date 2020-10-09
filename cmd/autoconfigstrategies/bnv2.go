@@ -12,6 +12,7 @@ var bnv2StepSize float64
 var bnv2Indicator string
 var bnv2IsMultiContainer bool
 var bnv2DemandsFile string
+var bnv2MinimumStepSize float64
 
 // BNV2Cmd represents the BNV2 command (Bottle Neck Version 2)
 var BNV2Cmd = &cobra.Command{
@@ -27,9 +28,12 @@ var BNV2Cmd = &cobra.Command{
 					Value:              bnv2SlaAgreementPropertyValue,
 				},
 			},
-			StepSize:        bnv2StepSize,
-			MultiContainer:  bnv2IsMultiContainer,
-			DemandsFilePath: bnv2DemandsFile,
+			StepSize:          bnv2StepSize,
+			MultiContainer:    bnv2IsMultiContainer,
+			DemandsFilePath:   bnv2DemandsFile,
+			ConstantInit:      true,
+			ConstantInitValue: 0.5,
+			MinimumStepSize:   bnv2MinimumStepSize,
 		}
 
 		strategy.Init()
@@ -44,6 +48,7 @@ func init() {
 	BNV2Cmd.Flags().Float64Var(&bnv2StepSize, "stepsize", -1, "how much core to add at each step")
 	BNV2Cmd.Flags().BoolVar(&bnv2IsMultiContainer, "mc", true, "run it with multiple containers or one fat container")
 	BNV2Cmd.Flags().StringVar(&bnv2DemandsFile, "demands", "", "demand of each request on each service")
+	BNV2Cmd.Flags().Float64Var(&bnv2MinimumStepSize, "minstepsize", 0.1, "minimum step size")
 
 	cobra.MarkFlagRequired(BNV2Cmd.Flags(), "property")
 	cobra.MarkFlagRequired(BNV2Cmd.Flags(), "value")

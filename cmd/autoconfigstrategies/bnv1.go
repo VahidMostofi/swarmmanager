@@ -12,6 +12,7 @@ var bnv1StepSize float64
 var bnv1Indicator string
 var bnv1IsMultiContainer bool
 var bnv1DemandsFile string
+var bnv1ConstantInitValue float64
 
 // BNV1Cmd represents the BNV1 command (Bottle Neck Version 1)
 var BNV1Cmd = &cobra.Command{
@@ -27,9 +28,11 @@ var BNV1Cmd = &cobra.Command{
 					Value:              bnv1SlaAgreementPropertyValue,
 				},
 			},
-			StepSize:        bnv1StepSize,
-			MultiContainer:  bnv1IsMultiContainer,
-			DemandsFilePath: bnv1DemandsFile,
+			StepSize:          bnv1StepSize,
+			MultiContainer:    bnv1IsMultiContainer,
+			DemandsFilePath:   bnv1DemandsFile,
+			ConstantInit:      bnv1ConstantInitValue > 0.0,
+			ConstantInitValue: bnv1ConstantInitValue,
 		}
 
 		strategy.Init()
@@ -44,6 +47,7 @@ func init() {
 	BNV1Cmd.Flags().Float64Var(&bnv1StepSize, "stepsize", -1, "how much core to add at each step")
 	BNV1Cmd.Flags().BoolVar(&bnv1IsMultiContainer, "mc", true, "run it with multiple containers or one fat container")
 	BNV1Cmd.Flags().StringVar(&bnv1DemandsFile, "demands", "", "demand of each request on each service")
+	BNV1Cmd.Flags().Float64Var(&bnv1ConstantInitValue, "constantinit", -1, "if it's constant value for init, how much?")
 
 	cobra.MarkFlagRequired(BNV1Cmd.Flags(), "property")
 	cobra.MarkFlagRequired(BNV1Cmd.Flags(), "value")

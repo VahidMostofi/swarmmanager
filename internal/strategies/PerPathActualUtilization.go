@@ -15,16 +15,18 @@ import (
 
 // PerPathActualUtilization ...
 type PerPathActualUtilization struct {
-	RequestToServiceToEU map[string]map[string]float64
-	StepSize             float64
-	Agreements           []Agreement
-	MultiContainer       bool
-	path2StepSize        map[string]float64 //TODO feature for future
-	initialized          bool
-	DemandsFilePath      string
-	demands              map[string]map[string]float64
-	ConstantInit         bool
-	ConstantInitValue    float64
+	RequestToServiceToEU  map[string]map[string]float64
+	StepSize              float64
+	Agreements            []Agreement
+	MultiContainer        bool
+	path2StepSize         map[string]float64 //TODO feature for future
+	initialized           bool
+	DemandsFilePath       string
+	demands               map[string]map[string]float64
+	ConstantInit          bool
+	ConstantInitValue     float64
+	DynamicStepSizeFactor float64
+	MinimumStepSize       float64
 }
 
 // Init ...
@@ -42,16 +44,14 @@ func (c *PerPathActualUtilization) Init() error {
 
 	return nil
 }
-func round(value float64) float64 {
-	return math.Floor(value*1000) / 1000
-}
+
 func (c *PerPathActualUtilization) getReconfiguredConfiguration(service2totalResource map[string]float64) map[string]swarm.SimpleSpecs {
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
 	if c.MultiContainer {
 		for service, totalCPU := range service2totalResource {
 			replicaCount := int(math.Ceil(totalCPU))
 			reconfiguredSpecs[service] = swarm.SimpleSpecs{
-				CPU:     round(float64(totalCPU / float64(replicaCount))),
+				CPU:     round2(float64(totalCPU / float64(replicaCount))),
 				Replica: replicaCount,
 				Worker:  1,
 			}
@@ -182,6 +182,8 @@ func (c *PerPathActualUtilization) Configure(info history.Information, currentSt
 					}
 				}
 			}
+			c.path2StepSize[requestName] *= c.DynamicStepSizeFactor
+			c.path2StepSize[requestName] = math.Max(c.path2StepSize[requestName], c.MinimumStepSize)
 		}
 	}
 

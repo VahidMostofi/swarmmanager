@@ -236,7 +236,7 @@ func (j *Aggregator) GetTraces(start, end int64, service string, store bool) {
 
 // GetRequestCount is to we comply with ResponseTimeCollector
 func (j *Aggregator) GetRequestCount(name string) (int, error) {
-	log.Println("GetRequestCount:", "called with", name)
+	// log.Println("GetRequestCount:", "called with", name)
 	return len(j.requestsResponseTimes[name]), nil
 }
 
@@ -250,7 +250,7 @@ func (j *Aggregator) GetRequestResponseTimes(name string) ([]float64, error) {
 
 // GetServiceDetails ...
 func (j *Aggregator) GetServiceDetails(name string) (map[string]map[string][]float64, error) {
-	log.Println("GetServiceDetails:", "called with", name)
+	// log.Println("GetServiceDetails:", "called with", name)
 	return j.servicesTimeDetails[name], nil
 }
 

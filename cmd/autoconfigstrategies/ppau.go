@@ -14,6 +14,8 @@ var ppauIsMultiContainer bool
 var ppauDemandsFile string
 var ppauIsConstantInit bool
 var ppauConstantInitValue float64
+var ppauDynamicFactor float64
+var ppauMinStepSize float64
 
 // PPAUCmd represents the PPAU command (Per Path Estimated Utilization)
 var PPAUCmd = &cobra.Command{
@@ -29,10 +31,10 @@ var PPAUCmd = &cobra.Command{
 					Value:              ppauSlaAgreementPropertyValue,
 				},
 			},
-			StepSize:        ppauStepSize,
-			MultiContainer:  ppauIsMultiContainer,
-			DemandsFilePath: ppauDemandsFile,
-			ConstantInit: ppauConstantInitValue > 0.0,
+			StepSize:          ppauStepSize,
+			MultiContainer:    ppauIsMultiContainer,
+			DemandsFilePath:   ppauDemandsFile,
+			ConstantInit:      ppauConstantInitValue > 0.0,
 			ConstantInitValue: ppauConstantInitValue,
 		}
 
@@ -49,6 +51,8 @@ func init() {
 	PPAUCmd.Flags().BoolVar(&ppauIsMultiContainer, "mc", true, "run it with multiple containers or one fat container")
 	PPAUCmd.Flags().StringVar(&ppauDemandsFile, "demands", "", "demand of each request on each service")
 	PPAUCmd.Flags().Float64Var(&ppauConstantInitValue, "constantinit", -1, "if it's constant value for init, how much?")
+	PPAUCmd.Flags().Float64Var(&ppauDynamicFactor, "dynamicfactor", 1, "How to change step size at each step")
+	PPAUCmd.Flags().Float64Var(&ppauMinStepSize, "minstepsize", 0.1, "What should be the minimum step size")
 
 	cobra.MarkFlagRequired(PPAUCmd.Flags(), "property")
 	cobra.MarkFlagRequired(PPAUCmd.Flags(), "value")

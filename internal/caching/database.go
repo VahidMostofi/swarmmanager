@@ -1,7 +1,6 @@
 package caching
 
 import (
-	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -50,7 +49,7 @@ func (md *DropboxDatabase) GetNotFoundError() error {
 func (md *DropboxDatabase) Store(workload string, specs map[string]swarm.ServiceSpecs, info history.Information) (string, error) {
 	hash := md.hash(workload, specs)
 	info.HashCode = hash
-	log.Println("DropboxCache: hash for this configuration and workload:", hash)
+	log.Println("DropboxCache: Storing: hash for this configuration and workload:", hash)
 	b, err := yaml.Marshal(info)
 	if err != nil {
 		return "", fmt.Errorf("DropboxCache: error while converting information to yaml: %w", err)
@@ -66,7 +65,7 @@ func (md *DropboxDatabase) Store(workload string, specs map[string]swarm.Service
 // Retrieve ...
 func (md *DropboxDatabase) Retrieve(workload string, specs map[string]swarm.ServiceSpecs) (history.Information, error) {
 	hash := md.hash(workload, specs)
-	log.Println("DropboxCache: hash for this configuration and workload:", hash)
+	log.Println("DropboxCache: Retrieving: hash for this configuration and workload:", hash)
 	h := history.Information{}
 	if _, err := os.Stat(md.Path + "/" + hash + "/info.yml"); os.IsNotExist(err) {
 		log.Println("DropboxCache: result for this configuration/workload not found in cache")
@@ -81,29 +80,46 @@ func (md *DropboxDatabase) Retrieve(workload string, specs map[string]swarm.Serv
 }
 
 func (md *DropboxDatabase) hash(workload string, specs map[string]swarm.ServiceSpecs) string {
-	bytes := make([]byte, 0)
-	bytes = append(bytes, []byte(configs.GetConfig().Version)...)
-	bytes = append(bytes, []byte(configs.GetConfig().AppName)...)
-	bytes = append(bytes, []byte(workload)...)
-	bytes = append(bytes, []byte(strconv.Itoa(configs.GetConfig().Test.Duration))...)
-	str := ""
-	for key, value := range configs.GetConfig().LoadGenerator.Args {
-		str += value + key
-	}
-	bytes = append(bytes, []byte(str)...)
-
+	code := configs.GetConfig().Version + "_" + configs.GetConfig().AppName + "_" + workload + "_" + strconv.Itoa(configs.GetConfig().Test.Duration) + "_"
+	cpus := ""
 	var keys []string
-	var tempConfigs = make(map[string]swarm.ServiceSpecs)
-	for _, value := range specs {
-		tempConfigs[value.Name] = value
-		keys = append(keys, value.Name)
+	for _, srv := range configs.GetConfig().TestBed.ServicesToConfigure {
+		keys = append(keys, srv)
 	}
-
 	sort.Strings(keys)
-	for _, key := range keys {
-		// fmt.Println("hash with", tempConfigs[key])
-		bytes = append(bytes, tempConfigs[key].GetBytes()...)
+	for _, srv := range keys {
+		count := specs[srv].CPULimits * float64(specs[srv].ReplicaCount)
+		countStr := strconv.FormatFloat(count, 'f', 1, 64)
+		cpus += countStr + "_"
 	}
-	// fmt.Println("hash with", configs.GetConfig().Version, configs.GetConfig().AppName, workload)
-	return fmt.Sprintf("%x", md5.Sum(bytes))
+	code += cpus
+	return code
 }
+
+// func (md *DropboxDatabase) hash(workload string, specs map[string]swarm.ServiceSpecs) string {
+// 	bytes := make([]byte, 0)
+// 	bytes = append(bytes, []byte(configs.GetConfig().Version)...)
+// 	bytes = append(bytes, []byte(configs.GetConfig().AppName)...)
+// 	bytes = append(bytes, []byte(workload)...)
+// 	bytes = append(bytes, []byte(strconv.Itoa(configs.GetConfig().Test.Duration))...)
+// 	str := ""
+// 	for key, value := range configs.GetConfig().LoadGenerator.Args {
+// 		str += value + key
+// 	}
+// 	bytes = append(bytes, []byte(str)...)
+
+// 	var keys []string
+// 	var tempConfigs = make(map[string]swarm.ServiceSpecs)
+// 	for _, value := range specs {
+// 		tempConfigs[value.Name] = value
+// 		keys = append(keys, value.Name)
+// 	}
+
+// 	sort.Strings(keys)
+// 	for _, key := range keys {
+// 		// fmt.Println("hash with", tempConfigs[key])
+// 		bytes = append(bytes, tempConfigs[key].GetBytes()...)
+// 	}
+// 	// fmt.Println("hash with", configs.GetConfig().Version, configs.GetConfig().AppName, workload)
+// 	return fmt.Sprintf("%x", md5.Sum(bytes))
+// }
