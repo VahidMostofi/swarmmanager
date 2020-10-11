@@ -28,6 +28,8 @@ type BottleNeckOnlyVersion2 struct {
 	ConstantInit          bool
 	ConstantInitValue     float64
 	MinimumStepSize       float64
+	MinimumCPUValue       float64
+	AfterFound            int
 }
 
 // Init ...
@@ -36,6 +38,7 @@ func (c *BottleNeckOnlyVersion2) Init() error {
 	c.path2StepSize = make(map[string]float64)
 	c.path2LastTimeDecrease = make(map[string]bool)
 	c.path2TriedBackward = make(map[string]float64)
+	c.MinimumCPUValue = 0.5
 
 	// read file file
 	b, err := ioutil.ReadFile(c.DemandsFilePath)
@@ -44,7 +47,7 @@ func (c *BottleNeckOnlyVersion2) Init() error {
 	}
 	c.demands = make(map[string]map[string]float64)
 	yaml.Unmarshal(b, &c.demands)
-	fmt.Println("Min step size is", c.MinimumStepSize)
+	log.Println("Min step size is", c.MinimumStepSize)
 	return nil
 }
 
@@ -191,6 +194,8 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 				}
 			}
 			log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "has the max mean CPU Utilization")
+			c.path2StepSize[requestName] *= 1.0
+			c.path2StepSize[requestName] = math.Min(c.path2StepSize[requestName], 8)
 			increaseValue := c.path2StepSize[requestName]
 
 			if increaseValue > 0 {
@@ -223,7 +228,7 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 				log.Println("Configurer Agent:", serviceWithMinCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName])
 				prev := newCPUCount[serviceWithMinCPUUtil]
 				newCPUCount[serviceWithMinCPUUtil] -= decreaseValue
-				newCPUCount[serviceWithMinCPUUtil] = math.Max(0.5, newCPUCount[serviceWithMinCPUUtil])
+				newCPUCount[serviceWithMinCPUUtil] = math.Max(c.MinimumCPUValue, newCPUCount[serviceWithMinCPUUtil])
 				log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceWithMinCPUUtil])
 				isChanged = true
 			} else {
@@ -240,16 +245,21 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 		totalNew += newCPUCount[service]
 		totalPrev += initialCPUCount[service]
 	}
-
-	if allMeet && math.Abs(totalNew-totalPrev) <= c.MinimumStepSize*float64(len(servicesToMonitor))*1.01 { //minvalue and half of the min value
-		return nil, false, nil
-	} else {
-		if !allMeet {
-			log.Println("not stopping because not meeting SLA")
-		} else {
-			log.Println("not stopping because total diff is", math.Abs(totalNew-totalPrev))
-		}
+	if allMeet || c.AfterFound > 0 {
+		c.AfterFound++
+		// fmt.Println("AfterFound", c.AfterFound)
 	}
+	// if allMeet && math.Abs(totalNew-totalPrev) <= c.MinimumStepSize*float64(len(servicesToMonitor))*1.01 { //minvalue and half of the min value
+	if c.AfterFound > 10 { //minvalue and half of the min value
+		return nil, false, nil
+	}
+	// else {
+	// 	if !allMeet {
+	// 		log.Println("not stopping because not meeting SLA")
+	// 	} else {
+	// 		fmt.Println("not stopping because total diff is", math.Abs(totalNew-totalPrev))
+	// 	}
+	// }
 
 	service2simpleConfig := c.getReconfiguredConfiguration(newCPUCount)
 	newSpecs = c.updateSpecsFromSimpleSpecs(newSpecs, service2simpleConfig)
