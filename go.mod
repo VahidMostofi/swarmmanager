@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/PaesslerAG/gval v1.0.1
+	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/davecheney/junk v0.0.0-20170418064243-155060ce6d56 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1

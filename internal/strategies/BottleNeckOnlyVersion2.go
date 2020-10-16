@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"sort"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
@@ -19,7 +20,7 @@ type BottleNeckOnlyVersion2 struct {
 	StepSize              float64
 	Agreements            []Agreement
 	MultiContainer        bool
-	path2StepSize         map[string]float64 //TODO feature for future
+	resource2StepSize     map[string]float64 //TODO feature for future
 	path2LastTimeDecrease map[string]bool
 	path2TriedBackward    map[string]float64
 	initialized           bool
@@ -30,15 +31,17 @@ type BottleNeckOnlyVersion2 struct {
 	MinimumStepSize       float64
 	MinimumCPUValue       float64
 	AfterFound            int
+	ChangedPreviously     []string
 }
 
 // Init ...
 func (c *BottleNeckOnlyVersion2) Init() error {
 	c.initialized = true
-	c.path2StepSize = make(map[string]float64)
+	c.resource2StepSize = make(map[string]float64)
 	c.path2LastTimeDecrease = make(map[string]bool)
 	c.path2TriedBackward = make(map[string]float64)
 	c.MinimumCPUValue = 0.5
+	c.ChangedPreviously = make([]string, 0)
 
 	// read file file
 	b, err := ioutil.ReadFile(c.DemandsFilePath)
@@ -122,10 +125,10 @@ func (c *BottleNeckOnlyVersion2) GetInitialConfig(workload loadgenerator.Workloa
 	// fmt.Println(workload.GetThroughput())
 
 	for requestName := range c.RequestToServiceToEU {
-		c.path2StepSize[requestName] = c.StepSize
+		// c.path2StepSize[requestName] = c.StepSize
 		c.path2LastTimeDecrease[requestName] = false
 		c.path2TriedBackward[requestName] = c.StepSize
-		log.Println(requestName, "step size is", c.path2StepSize[requestName])
+		// log.Println(requestName, "step size is", c.path2StepSize[requestName])
 	}
 
 	totalAllocatedResources := make(map[string]float64) // total allocated CPU to each service initially
@@ -133,6 +136,7 @@ func (c *BottleNeckOnlyVersion2) GetInitialConfig(workload loadgenerator.Workloa
 		for _, service2EUtilization := range c.RequestToServiceToEU {
 			for serviceName := range service2EUtilization { //eu is estimated utilization
 				totalAllocatedResources[serviceName] = c.ConstantInitValue
+				c.resource2StepSize[serviceName] = c.StepSize
 			}
 		}
 	} else {
@@ -194,12 +198,12 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 				}
 			}
 			log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "has the max mean CPU Utilization")
-			c.path2StepSize[requestName] *= 1.0
-			c.path2StepSize[requestName] = math.Min(c.path2StepSize[requestName], 8)
-			increaseValue := c.path2StepSize[requestName]
+			// c.resource2StepSize[serviceWithMaxCPUUtil] *= 1.0
+			// c.resource2StepSize[serviceWithMaxCPUUtil] = math.Min(c.resource2StepSize[serviceWithMaxCPUUtil], 8)
+			increaseValue := c.resource2StepSize[serviceWithMaxCPUUtil]
 
 			if increaseValue > 0 {
-				log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName])
+				log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.resource2StepSize[serviceWithMaxCPUUtil])
 				prev := newCPUCount[serviceWithMaxCPUUtil]
 				newCPUCount[serviceWithMaxCPUUtil] += increaseValue
 				log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceWithMaxCPUUtil])
@@ -207,35 +211,93 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 			} else {
 				return nil, false, fmt.Errorf("Configurer Agent: the increaseValue must be positive")
 			}
-		} else {
-			var serviceWithMinCPUUtil string
-			var minCPUUtil float64 = 200
+		}
+	}
+
+	if allMeet || c.AfterFound > 0 {
+		// fmt.Println("all meet is ", allMeet)
+		marginalRequests := make(map[string]float64)
+		resourcesWhichAreMax := make(map[string]float64)
+		resource2requests := make(map[string][]string)
+		service2MaxResponseTime := make(map[string]float64)
+		for requestName, requestResponseTimes := range info.RequestResponseTimes {
+			if *requestResponseTimes.ResponseTimesMean > c.Agreements[0].Value*0.9 { //TODO not always mean
+				marginalRequests[requestName] = *requestResponseTimes.ResponseTimesMean
+			}
+			_, max := c.getMinMaxUtilizationsInRequestPath(requestName, info)
+			resourcesWhichAreMax[max] = 0
+
 			for serviceName, eu := range c.RequestToServiceToEU[requestName] {
+				if _, ok := resource2requests[serviceName]; !ok {
+					resource2requests[serviceName] = make([]string, 0)
+				}
+
 				if eu > 0 {
-					// log.Println("Configurer Agent:", serviceName, "is involved in", requestName, "the mean CPU Util is", info.ServicesInfo[serviceName].CPUUsageMean)
-					if info.ServicesInfo[serviceName].CPUUsageMean < minCPUUtil {
-						minCPUUtil = info.ServicesInfo[serviceName].CPUUsageMean
-						serviceWithMinCPUUtil = serviceName
+					if _, ok := service2MaxResponseTime[serviceName]; !ok {
+						service2MaxResponseTime[serviceName] = 0
 					}
+					resource2requests[serviceName] = append(resource2requests[serviceName], requestName)
+					service2MaxResponseTime[serviceName] = math.Max(service2MaxResponseTime[serviceName], *requestResponseTimes.ResponseTimesMean)
 				}
 			}
-			log.Println("Configurer Agent:", serviceWithMinCPUUtil, "has the min mean CPU Utilization")
-			c.path2StepSize[requestName] /= 2
-			c.path2StepSize[requestName] = math.Max(c.path2StepSize[requestName], c.MinimumStepSize)
-			decreaseValue := c.path2StepSize[requestName]
-			c.path2TriedBackward[requestName] = c.path2StepSize[requestName]
+
+		}
+		backwardCandidates := make([]string, 0)
+
+		for _, serviceName := range servicesToMonitor {
+			flag := true
+			for criticalRequest := range marginalRequests {
+				if utils.ContainsString(resource2requests[serviceName], criticalRequest) {
+					flag = false
+				}
+			}
+
+			if _, exists := resourcesWhichAreMax[serviceName]; exists {
+				flag = false
+			}
+
+			if math.Abs(newCPUCount[serviceName]-c.MinimumCPUValue) < 1e-5 {
+				flag = false
+			}
+
+			if flag {
+				backwardCandidates = append(backwardCandidates, serviceName)
+			}
+		}
+
+		if len(backwardCandidates) == 0 {
+			// fmt.Println("no candidate for moving backward")
+		} else {
+			sort.Slice(backwardCandidates, func(i int, j int) bool {
+				return service2MaxResponseTime[backwardCandidates[i]] < service2MaxResponseTime[backwardCandidates[j]]
+			})
+
+			// fmt.Println("------------------")
+			// for _, candidate := range backwardCandidates {
+			// 	fmt.Println(candidate, service2MaxResponseTime[candidate], newCPUCount[candidate], info.ServicesInfo[candidate].CPUUsageMean)
+			// }
+			// fmt.Println("------------------")
+
+			serviceToDecrease := backwardCandidates[0] //TODO should be for loop or something
+			// fmt.Println(minCPUUtil)
+			log.Println("Configurer Agent:", serviceToDecrease, "has the min mean CPU Utilization")
+			c.resource2StepSize[serviceToDecrease] /= 2
+			c.resource2StepSize[serviceToDecrease] = math.Max(c.resource2StepSize[serviceToDecrease], c.MinimumStepSize)
+			decreaseValue := c.resource2StepSize[serviceToDecrease]
+			c.path2TriedBackward[serviceToDecrease] = c.resource2StepSize[serviceToDecrease]
 			if decreaseValue > 0 {
-				log.Println("Configurer Agent:", serviceWithMinCPUUtil, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.path2StepSize[requestName])
-				prev := newCPUCount[serviceWithMinCPUUtil]
-				newCPUCount[serviceWithMinCPUUtil] -= decreaseValue
-				newCPUCount[serviceWithMinCPUUtil] = math.Max(c.MinimumCPUValue, newCPUCount[serviceWithMinCPUUtil])
-				log.Println("Configurer Agent:", "updating total CPU count from", prev, "to", newCPUCount[serviceWithMinCPUUtil])
+				// log.Println("Configurer Agent:", serviceToDecrease, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.resource2StepSize[serviceToDecrease])
+				prev := newCPUCount[serviceToDecrease]
+				newCPUCount[serviceToDecrease] -= decreaseValue
+				newCPUCount[serviceToDecrease] = math.Max(c.MinimumCPUValue, newCPUCount[serviceToDecrease])
+				log.Println("Configurer Agent:", serviceToDecrease, "updating total CPU count from", prev, "to", newCPUCount[serviceToDecrease])
 				isChanged = true
 			} else {
 				return nil, false, fmt.Errorf("Configurer Agent: the increaseValue must be positive")
 			}
 		}
 	}
+	// isChanged = true
 
 	var totalPrev float64 = 0
 	var totalNew float64 = 0
@@ -245,25 +307,43 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 		totalNew += newCPUCount[service]
 		totalPrev += initialCPUCount[service]
 	}
+
 	if allMeet || c.AfterFound > 0 {
 		c.AfterFound++
-		// fmt.Println("AfterFound", c.AfterFound)
+		// if allMeet {
+		// 	fmt.Println("meet all with", totalPrev)
+		// }
 	}
 	// if allMeet && math.Abs(totalNew-totalPrev) <= c.MinimumStepSize*float64(len(servicesToMonitor))*1.01 { //minvalue and half of the min value
-	if c.AfterFound > 10 { //minvalue and half of the min value
-		return nil, false, nil
-	}
-	// else {
-	// 	if !allMeet {
-	// 		log.Println("not stopping because not meeting SLA")
-	// 	} else {
-	// 		fmt.Println("not stopping because total diff is", math.Abs(totalNew-totalPrev))
-	// 	}
+	// if c.AfterFound > 100000 { //minvalue and half of the min value
+	// 	return nil, false, nil
 	// }
 
 	service2simpleConfig := c.getReconfiguredConfiguration(newCPUCount)
 	newSpecs = c.updateSpecsFromSimpleSpecs(newSpecs, service2simpleConfig)
 	return newSpecs, isChanged, nil
+}
+
+func (c *BottleNeckOnlyVersion2) getMinMaxUtilizationsInRequestPath(requestName string, info history.Information) (string, string) {
+
+	var minU float64 = 1000000
+	var maxU float64 = 1000000
+	var minResource = ""
+	var maxResource = ""
+	for serviceName, eu := range c.RequestToServiceToEU[requestName] {
+		if eu > 0 {
+			// log.Println("Configurer Agent:", serviceName, "is involved in", requestName, "the mean CPU Util is", info.ServicesInfo[serviceName].CPUUsageMean)
+			if info.ServicesInfo[serviceName].CPUUsageMean < minU {
+				minU = info.ServicesInfo[serviceName].CPUUsageMean
+				minResource = serviceName
+			}
+			if info.ServicesInfo[serviceName].CPUUsageMean > maxU {
+				maxU = info.ServicesInfo[serviceName].CPUUsageMean
+				maxResource = serviceName
+			}
+		}
+	}
+	return minResource, maxResource
 }
 
 // OnFeedbackCallback ...

@@ -49,11 +49,15 @@ func ReadSystem(name string) *System {
 
 // GetMeanResponseTimes ...
 func (s *System) GetMeanResponseTimes(alphas map[string]float64) []float64 {
+	utils := make(map[string]float64)
+	for _, k := range s.Resources {
+		utils[k] = s.GetUtilizations(alphas, k)
+	}
 	responseTimes := make([]float64, len(s.Classes))
 	for cIdx, cName := range s.Classes {
 		var r float64
 		for _, kName := range s.Resources {
-			r += (s.Demands[cName+"_"+kName] / alphas[kName]) / (1 - s.GetUtilizations(alphas, kName))
+			r += (s.Demands[cName+"_"+kName] / alphas[kName]) / (1 - utils[kName])
 		}
 		responseTimes[cIdx] = r * 1000
 	}

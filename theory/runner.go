@@ -5,20 +5,32 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/strategies"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/montanaflynn/stats"
 )
 
+// GoTheory ...
 func GoTheory() {
+	testCount := 300
+	bar := pb.StartNew(testCount)
 	log.SetOutput(ioutil.Discard)
-	line := "approach, system, steps, total core\n"
-	for i := 1; i <= 5; i++ {
-		fmt.Println(i)
+	line := "approach,system,steps,min_total_core,max_total_core,resources,classes,sla\n"
+	gBoth := 0
+	gCheaper := 0
+	failed := 0
+	gBnv2IsBetter := 0
+	for i := 1; i <= testCount; i++ {
+		outputs := make(map[string]output)
+		// fmt.Println(i)
 		fileName := strconv.Itoa(i)
 		// fmt.Println(i)
+		// fileName := "1"
+		// fmt.Println(fileName)
 		system := ReadSystem(fileName)
 
 		strategy := &strategies.BottleNeckOnlyVersion1{
@@ -30,7 +42,10 @@ func GoTheory() {
 			ConstantInitValue: 1.0,
 		}
 		strategy.Init()
-		line += RunSystemWithStrategy("BNV1-1.0", system, strategy, false)
+		approachName := "BNV1-1.0"
+		s, o := RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
 
 		strategy = &strategies.BottleNeckOnlyVersion1{
 			StepSize:          0.5,
@@ -41,7 +56,10 @@ func GoTheory() {
 			ConstantInitValue: 1.0,
 		}
 		strategy.Init()
-		line += RunSystemWithStrategy("BNV1-0.5", system, strategy, false)
+		approachName = "BNV1-0.5"
+		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
 
 		strategy = &strategies.BottleNeckOnlyVersion1{
 			StepSize:          0.25,
@@ -52,7 +70,10 @@ func GoTheory() {
 			ConstantInitValue: 1.0,
 		}
 		strategy.Init()
-		line += RunSystemWithStrategy("BNV1-0.25", system, strategy, false)
+		approachName = "BNV1-0.25"
+		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
 
 		strategy = &strategies.BottleNeckOnlyVersion1{
 			StepSize:          0.1,
@@ -63,11 +84,14 @@ func GoTheory() {
 			ConstantInitValue: 1.0,
 		}
 		strategy.Init()
-		line += RunSystemWithStrategy("BNV1-0.1", system, strategy, false)
+		approachName = "BNV1-0.1"
+		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
 
 		strategy2 := &strategies.BottleNeckOnlyVersion2{
 			StepSize:          2.0,
-			MinimumStepSize:   0.1,
+			MinimumStepSize:   0.25,
 			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
 			MultiContainer:    true,
 			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
@@ -76,15 +100,66 @@ func GoTheory() {
 		}
 		strategy2.Init()
 		strategy2.MinimumCPUValue = 1.0
-		line += RunSystemWithStrategy("BNV2-1.0-0.1", system, strategy2, false)
+		bnv2ApproachName := "BNV2-2.0-0.25"
+		s, o = RunSystemWithStrategy(bnv2ApproachName, system, strategy2, false)
+		line += s
+		outputs[bnv2ApproachName] = o
 
-		line += "BF-0.1, " + system.Name + ", 24300000, " + strconv.FormatFloat(system.BestObjective, 'f', 2, 64) + "\n"
+		line += "AMPL," + system.Name + ",0," + strconv.FormatFloat(system.BestObjective, 'f', 2, 64) + ",0,"
+		line += strconv.Itoa(len(system.Resources)) + ","
+		line += strconv.Itoa(len(system.Classes)) + ","
+		line += strconv.FormatFloat(system.SLA, 'f', 1, 64)
+		line += "\n"
+		both := 0
+		cheaper := 0
+		bnv2IsBetter := true
+		if o.CPUs < 10000 {
+			for approachName, o1 := range outputs {
+				if strings.Contains(approachName, "BNV1") && o1.CPUs > 0 {
+					if o1.CPUs < outputs[bnv2ApproachName].CPUs {
+						if o1.Steps < outputs[bnv2ApproachName].Steps {
+							both++
+						} else {
+							cheaper++
+						}
+						bnv2IsBetter = false
+					}
+				}
+			}
+		}
+		// line += strconv.Itoa(both) + "\n"
+		if outputs[bnv2ApproachName].CPUs > 10000 {
+			failed++
+		} else {
+			if bnv2IsBetter {
+				gBnv2IsBetter++
+			}
+			if both != 0 {
+				gBoth++
+			} else if cheaper != 0 {
+				gCheaper++
+			}
+		}
+
+		// line += "\n"
+		bar.Increment()
 	}
-	fmt.Println(line)
+	bar.Finish()
+	// fmt.Println(line)
+	fmt.Println("in", gBoth, "out of", testCount, "tests, there are other approaches which achieve something cheaper faster")
+	fmt.Println("in", gCheaper, "out of", testCount, "tests, there are other approaches which achieve something cheaper")
+	fmt.Println("in", gBnv2IsBetter, "out of", testCount, "BNV2 found something better than other approaches")
+	fmt.Println(gCheaper, "+", gBoth, "+", gBnv2IsBetter, "+", failed, "=", testCount)
+	fmt.Println("in", failed, "out of", testCount, "tests, BNV2 fails")
+	// fmt.Println(line)
+	err := ioutil.WriteFile("/home/vahid/Desktop/model-results-no-early-stop.csv", []byte(line), 0777)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // RunSystemWithStrategy ...
-func RunSystemWithStrategy(name string, system *System, strategy strategies.Configurer, debug bool) string {
+func RunSystemWithStrategy(name string, system *System, strategy strategies.Configurer, debug bool) (string, output) {
 
 	t := theoryWorkload{Throughput: system.Throughput, ClassProbs: system.ClassProbs}
 	currentConfig, err := strategy.GetInitialConfig(t)
@@ -113,11 +188,15 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 			itr.Alphas[serviceName] = alphas[serviceName]
 		}
 
+		// ss := time.Now().Nanosecond()
 		info := history.Information{}
 		info.RequestResponseTimes = make(map[string]history.ResponseTimeStats)
 		meanResponseTimes := system.GetMeanResponseTimes(alphas)
 		for requestIdx, requestName := range system.Classes {
 			mrt := meanResponseTimes[requestIdx]
+			// if stepCount == 1 {
+			// 	fmt.Println(mrt)
+			// }
 			if mrt <= 0 {
 				fmt.Println(mrt, requestIdx, requestName)
 				panic("mrt is less than 0!!!!!!!!!!")
@@ -126,7 +205,8 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 			info.RequestResponseTimes[requestName] = history.ResponseTimeStats{ResponseTimesMean: &mrt}
 			itr.ResponseTimes[requestName] = mrt
 		}
-
+		// ee := time.Now().Nanosecond()
+		// start := time.Now().Nanosecond()
 		info.ServicesInfo = make(map[string]history.ServiceInfo)
 		for _, serviceName := range system.Resources {
 			info.ServicesInfo[serviceName] = history.ServiceInfo{
@@ -134,6 +214,8 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 			}
 			itr.Utilizations[serviceName] = system.GetUtilizations(alphas, serviceName)
 		}
+		// enda := time.Now().Nanosecond()
+		// fmt.Println(enda-start, ee-ss)
 		newState, isChanged, err := strategy.Configure(info, currentState, system.Resources)
 		if err != nil {
 			panic(err)
@@ -152,19 +234,42 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 			break
 		}
 		stepCount++
-		// if stepCount == 100 {
-		// 	break
+		// if stepCount%100 == 0 {
+		// 	fmt.Println(stepCount)
 		// }
+		if stepCount == 5000 {
+			break
+		}
 	}
 
 	bestIteration := GetBestIteration(iterations, system.SLA)
+	worstIterationWhichMeets := GetWorstIterationWhichMeetsSLA(iterations, system.SLA)
 
-	row := name + ", "
-	row += system.Name + ", "
-	row += strconv.Itoa(stepCount) + ", "
-	row += strconv.FormatFloat(bestIteration.GetSum(), 'f', 1, 64)
+	row := name + ","
+	row += system.Name + ","
+	row += strconv.Itoa(stepCount) + ","
+	row += strconv.FormatFloat(bestIteration.GetSum(), 'f', 1, 64) + ","
+	row += strconv.FormatFloat(worstIterationWhichMeets.GetSum(), 'f', 1, 64) + ","
+	row += strconv.Itoa(len(system.Resources)) + ","
+	row += strconv.Itoa(len(system.Classes)) + ","
+	row += strconv.FormatFloat(system.SLA, 'f', 1, 64)
 	row += "\n"
-	return row
+	// fmt.Println(row)
+
+	o := output{
+		Name:       name,
+		SystemName: system.Name,
+		Steps:      stepCount,
+		CPUs:       bestIteration.GetSum(),
+	}
+	return row, o
+}
+
+type output struct {
+	Name       string
+	SystemName string
+	Steps      int
+	CPUs       float64
 }
 
 type iterationInfo struct {
@@ -177,6 +282,9 @@ func (i iterationInfo) GetSum() float64 {
 	var s float64
 	for _, a := range i.Alphas {
 		s += a
+	}
+	if s == 0 {
+		return 100000
 	}
 	return s
 }
@@ -212,6 +320,26 @@ func GetBestIteration(its []iterationInfo, SLA float64) iterationInfo {
 		}
 	}
 	return best
+}
+
+// GetWorstIterationWhichMeetsSLA ...
+func GetWorstIterationWhichMeetsSLA(its []iterationInfo, SLA float64) iterationInfo {
+	var maxCPUCount float64 = 0
+	var worst iterationInfo
+	for _, i := range its {
+		meets := true
+		for _, r := range i.ResponseTimes {
+			if r > SLA {
+				meets = false
+				break
+			}
+		}
+		if meets && i.GetSum() > maxCPUCount {
+			maxCPUCount = i.GetSum()
+			worst = i
+		}
+	}
+	return worst
 }
 
 func printIteration(i iterationInfo, system *System) {
