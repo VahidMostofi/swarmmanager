@@ -6,7 +6,9 @@ import (
 	"log"
 	"math"
 	"sort"
+	"strconv"
 
+	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
@@ -32,6 +34,8 @@ type BottleNeckOnlyVersion2 struct {
 	MinimumCPUValue       float64
 	AfterFound            int
 	ChangedPreviously     []string
+	cache                 map[string]float64
+	bestWhichMeets        float64
 }
 
 // Init ...
@@ -42,6 +46,8 @@ func (c *BottleNeckOnlyVersion2) Init() error {
 	c.path2TriedBackward = make(map[string]float64)
 	c.MinimumCPUValue = 0.5
 	c.ChangedPreviously = make([]string, 0)
+	c.cache = make(map[string]float64)
+	c.bestWhichMeets = 10000000000
 
 	// read file file
 	b, err := ioutil.ReadFile(c.DemandsFilePath)
@@ -308,6 +314,12 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 		totalPrev += initialCPUCount[service]
 	}
 
+	if allMeet {
+		if totalPrev < c.bestWhichMeets {
+			c.bestWhichMeets = totalPrev
+		}
+	}
+
 	if allMeet || c.AfterFound > 0 {
 		c.AfterFound++
 		// if allMeet {
@@ -321,6 +333,15 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 
 	service2simpleConfig := c.getReconfiguredConfiguration(newCPUCount)
 	newSpecs = c.updateSpecsFromSimpleSpecs(newSpecs, service2simpleConfig)
+	h := c.hash(newSpecs)
+	if _, exists := c.cache[h]; exists {
+		return nil, false, nil
+	} else {
+		c.cache[h] = totalNew
+	}
+	if totalNew > c.bestWhichMeets {
+		return nil, false, nil
+	}
 	return newSpecs, isChanged, nil
 }
 
@@ -349,4 +370,21 @@ func (c *BottleNeckOnlyVersion2) getMinMaxUtilizationsInRequestPath(requestName 
 // OnFeedbackCallback ...
 func (c *BottleNeckOnlyVersion2) OnFeedbackCallback(map[string]history.ServiceInfo) error {
 	return nil
+}
+
+func (c *BottleNeckOnlyVersion2) hash(specs map[string]swarm.ServiceSpecs) string {
+	code := ""
+	cpus := ""
+	var keys []string
+	for _, srv := range configs.GetConfig().TestBed.ServicesToConfigure {
+		keys = append(keys, srv)
+	}
+	sort.Strings(keys)
+	for _, srv := range keys {
+		count := specs[srv].CPULimits * float64(specs[srv].ReplicaCount)
+		countStr := strconv.FormatFloat(count, 'f', 1, 64)
+		cpus += countStr + "_"
+	}
+	code += cpus
+	return code
 }

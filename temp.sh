@@ -172,61 +172,61 @@
 
 # done
 
-VUSs=(10 20 30 )
-for VUS in "${VUSs[@]}"
-do
-    # BNV2 Bottleneck Version 2, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
-    go run main.go autoconfig \
-        --appname muck_star \
-        --config configurations/muck_star.yaml \
-        --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
-        --testName bnv2-250-1.0-mc-c-0.5 \
-        bnv2 \
-        --property RTToleranceIntervalUBoundc90p95  \
-        --value 250 \
-        --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
-        --mc \
-        --stepsize 1.0
+# VUSs=(10 20 30 )
+# for VUS in "${VUSs[@]}"
+# do
+#     # BNV2 Bottleneck Version 2, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
+#     go run main.go autoconfig \
+#         --appname muck_star \
+#         --config configurations/muck_star.yaml \
+#         --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+#         --testName bnv2-250-1.0-mc-c-0.5 \
+#         bnv2 \
+#         --property RTToleranceIntervalUBoundc90p95  \
+#         --value 250 \
+#         --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+#         --mc \
+#         --stepsize 1.0
 
-    # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
-    # go run main.go autoconfig \
-    #     --appname muck_star \
-    #     --config configurations/muck_star.yaml \
-    #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
-    #     --testName bnv1-300-0.2-mc-c-0.5 \
-    #     bnv1 \
-    #     --property RTToleranceIntervalUBoundc90p95  \
-    #     --value 300 \
-    #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
-    #     --mc \
-    #     --stepsize 0.2 \
-    #     --constantinit 0.5
+#     # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
+#     # go run main.go autoconfig \
+#     #     --appname muck_star \
+#     #     --config configurations/muck_star.yaml \
+#     #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+#     #     --testName bnv1-300-0.2-mc-c-0.5 \
+#     #     bnv1 \
+#     #     --property RTToleranceIntervalUBoundc90p95  \
+#     #     --value 300 \
+#     #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+#     #     --mc \
+#     #     --stepsize 0.2 \
+#     #     --constantinit 0.5
 
-    # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
-    # go run main.go autoconfig \
-    #     --appname muck_star \
-    #     --config configurations/muck_star.yaml \
-    #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
-    #     --testName bnv1-300-0.5-mc-c-0.5 \
-    #     bnv1 \
-    #     --property RTToleranceIntervalUBoundc90p95  \
-    #     --value 300 \
-    #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
-    #     --mc \
-    #     --stepsize 0.5 \
-    #     --constantinit 0.5
+#     # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
+#     # go run main.go autoconfig \
+#     #     --appname muck_star \
+#     #     --config configurations/muck_star.yaml \
+#     #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+#     #     --testName bnv1-300-0.5-mc-c-0.5 \
+#     #     bnv1 \
+#     #     --property RTToleranceIntervalUBoundc90p95  \
+#     #     --value 300 \
+#     #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+#     #     --mc \
+#     #     --stepsize 0.5 \
+#     #     --constantinit 0.5
 
-    # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
-    # go run main.go autoconfig \
-    #     --appname muck_star \
-    #     --config configurations/muck_star.yaml \
-    #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
-    #     --testName bnv1-300-1.0-mc-c-0.5 \
-    #     bnv1 \
-    #     --property RTToleranceIntervalUBoundc90p95  \
-    #     --value 300 \
-    #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
-    #     --mc \
-    #     --stepsize 1.0 \
-    #     --constantinit 0.5
-done
+#     # # BottleNeck Versoin 1, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
+#     # go run main.go autoconfig \
+#     #     --appname muck_star \
+#     #     --config configurations/muck_star.yaml \
+#     #     --workload  "${VUS}_110_0.3_0.2_0.1_0.1_0.3" \
+#     #     --testName bnv1-300-1.0-mc-c-0.5 \
+#     #     bnv1 \
+#     #     --property RTToleranceIntervalUBoundc90p95  \
+#     #     --value 300 \
+#     #     --demands /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star_demands.yaml \
+#     #     --mc \
+#     #     --stepsize 1.0 \
+#     #     --constantinit 0.5
+# done

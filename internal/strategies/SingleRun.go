@@ -1,6 +1,7 @@
 package strategies
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
@@ -36,12 +37,13 @@ func (c *SingleRun) getReconfiguredConfiguration(inputConfig map[string]swarm.Si
 	reconfiguredSpecs := make(map[string]swarm.SimpleSpecs)
 
 	for service, totalCPU := range service2totalResource {
+		replicaCount := int(math.Ceil(totalCPU))
 		reconfiguredSpecs[service] = swarm.SimpleSpecs{
-			CPU:     totalCPU,
-			Replica: 1,
-			Worker:  int(math.Ceil(totalCPU)),
+			CPU:     round2(float64(totalCPU / float64(replicaCount))),
+			Replica: replicaCount,
+			Worker:  1,
 		}
 	}
-
+	fmt.Println(reconfiguredSpecs)
 	return reconfiguredSpecs
 }
