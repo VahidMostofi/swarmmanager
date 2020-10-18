@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/VahidMostofi/swarmmanager/configs"
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/loadgenerator"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
@@ -333,7 +332,7 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 
 	service2simpleConfig := c.getReconfiguredConfiguration(newCPUCount)
 	newSpecs = c.updateSpecsFromSimpleSpecs(newSpecs, service2simpleConfig)
-	h := c.hash(newSpecs)
+	h := c.hash(newSpecs, servicesToMonitor)
 	if _, exists := c.cache[h]; exists {
 		return nil, false, nil
 	} else {
@@ -372,11 +371,11 @@ func (c *BottleNeckOnlyVersion2) OnFeedbackCallback(map[string]history.ServiceIn
 	return nil
 }
 
-func (c *BottleNeckOnlyVersion2) hash(specs map[string]swarm.ServiceSpecs) string {
+func (c *BottleNeckOnlyVersion2) hash(specs map[string]swarm.ServiceSpecs, servicesToMonitor []string) string {
 	code := ""
 	cpus := ""
 	var keys []string
-	for _, srv := range configs.GetConfig().TestBed.ServicesToConfigure {
+	for _, srv := range servicesToMonitor {
 		keys = append(keys, srv)
 	}
 	sort.Strings(keys)

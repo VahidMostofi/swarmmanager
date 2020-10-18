@@ -152,7 +152,7 @@ func GoTheory() {
 	fmt.Println(gCheaper, "+", gBoth, "+", gBnv2IsBetter, "+", failed, "=", testCount)
 	fmt.Println("in", failed, "out of", testCount, "tests, BNV2 fails")
 	// fmt.Println(line)
-	err := ioutil.WriteFile("/home/vahid/Desktop/model-results-no-early-stop.csv", []byte(line), 0777)
+	err := ioutil.WriteFile("/home/Dropbox/data/swarm-manager-data/results/theory/model-results.csv", []byte(line), 0777)
 	if err != nil {
 		panic(err)
 	}
