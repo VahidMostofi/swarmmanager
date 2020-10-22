@@ -47,7 +47,7 @@ loadGenerator:
         - REQUEST_NAMES: "req1,req2,req3,req4"
 
 test:
-    duration: 60
+    duration: 1200
     waitAfterLoadGeneratorDone: 30
 
 usageCollector:
