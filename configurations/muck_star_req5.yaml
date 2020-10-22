@@ -1,5 +1,5 @@
 # micromuck-two-layers
-version: "v3"
+version: "v1"
 
 continuesRuns: false
 
@@ -7,8 +7,8 @@ results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
-    dockerComposeFile: "/home/vahid/Desktop/projects/micromuck-nodejs/star-docker-compose-5.yml"
-    serviceCount: 7
+    dockerComposeFile: "/home/vahid/Desktop/projects/micromuck-nodejs/star-docker-compose-10.yml"
+    serviceCount: 11
     stackName: "micromuck-star"
     servicesToConfigure: 
         - serviceb
@@ -16,6 +16,10 @@ testBed:
         - serviced
         - servicee
         - servicef
+        - serviceg
+        - serviceh
+        - servicei
+        - servicej
 
 host:
     availableCpuCount: 24
@@ -42,9 +46,9 @@ loadGenerator:
         - host: "http://136.159.209.214:7112"
     args:
         - ARG_BASE_URL: "http://136.159.209.204:10080"
-        - ARG_ARCHITECTURE: "smallStarArchitecture"
+        - ARG_ARCHITECTURE: "starArchitecture"
         - ARG_SLEEP_DURATION: "1"
-        - REQUEST_NAMES: "req1,req2,req3,req4"
+        - REQUEST_NAMES: "req1,req2,req3,req4,req5"
 
 test:
     duration: 60

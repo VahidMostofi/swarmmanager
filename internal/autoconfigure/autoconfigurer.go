@@ -176,6 +176,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 				log.Panic(err)
 			}
 			servicesInfo := a.GatherInfo(int64(start), int64(end))
+			fmt.Println("gathered")
 			var lgFeedback map[string]interface{} = nil
 			if !configs.GetConfig().ContinuesRuns {
 				lgFeedback, err = a.LoadGenerator.GetFeedback()

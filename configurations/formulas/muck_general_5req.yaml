@@ -39,6 +39,16 @@ requests:
             -
                 key: http.request.method
                 value: GET
+    req5:
+        name: req5
+        responseTime: servicea.call.Duration
+        tags:
+            - 
+                key: http.request.path
+                value: /main/req5_
+            -
+                key: http.request.method
+                value: GET
 services:
     servicea:
         name: servicea
