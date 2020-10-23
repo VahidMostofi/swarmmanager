@@ -126,6 +126,52 @@ func (j *Aggregator) getTraces(start, end int64, service string, store bool) ([]
 	return data.Data, nil
 }
 
+func (j *Aggregator) ParseTraceFile(jaegerDataFilePath string, start, finish float64) {
+	r, err := zip.OpenReader(jaegerDataFilePath)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Close()
+	data := &struct {
+		Data []*trace `json:"data"`
+	}{}
+	if len(r.File) > 1 {
+		panic(fmt.Errorf("more than 1 file in zip file."))
+	}
+	for _, f := range r.File {
+		r, err := f.Open()
+		if err != nil {
+			panic(err)
+		}
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal(b, data)
+		break
+	}
+
+	Data := make([]*trace, 0)
+
+	for _, t := range data.Data {
+		flag := true
+		for _, span := range t.Spans {
+			if span.StartTime < start || span.StartTime > finish {
+				flag = false
+				continue
+			}
+		}
+		if flag {
+			Data = append(Data, t)
+		}
+	}
+
+	err = j.ParseTraces(Data)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (j *Aggregator) identifyRequest(t *trace) string {
 
 	for _, s := range t.Spans {
@@ -147,7 +193,8 @@ func (j *Aggregator) identifyRequest(t *trace) string {
 	return ""
 }
 
-func (j *Aggregator) parseTraces(Data []*trace) error {
+// ParseTraces ...
+func (j *Aggregator) ParseTraces(Data []*trace) error {
 
 	for i := range Data {
 		Data[i].RequestType = j.identifyRequest(Data[i])
@@ -227,7 +274,7 @@ func (j *Aggregator) GetTraces(start, end int64, service string, store bool) {
 		panic(err)
 	}
 
-	err = j.parseTraces(Data)
+	err = j.ParseTraces(Data)
 	if err != nil {
 		panic(err)
 	}

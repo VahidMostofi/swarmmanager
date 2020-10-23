@@ -20,11 +20,15 @@ import (
 
 	"github.com/VahidMostofi/swarmmanager/cmd"
 	"github.com/VahidMostofi/swarmmanager/theory"
+	"github.com/VahidMostofi/swarmmanager/violations"
 )
 
 func main() {
 	if os.Args[1] == "theory" {
 		theory.GoTheory()
+		return
+	} else if os.Args[1] == "violations" {
+		violations.Run()
 		return
 	}
 	cmd.Execute()

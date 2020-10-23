@@ -197,7 +197,7 @@ func (a *AutoConfigurer) Start(name string, command string) {
 				if err != nil {
 					log.Panic(err)
 				}
-				info.RequestResponseTimes[reqName], err = createStats(responseTimes, []string{"count", "mean", "p90", "p95", "p99", "std", "c90p95"})
+				info.RequestResponseTimes[reqName], err = createStats(responseTimes, []string{"count", "mean", "p90", "p95", "p99", "std"})
 				if err != nil {
 					log.Panic(err)
 				}

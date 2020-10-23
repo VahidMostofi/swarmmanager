@@ -94,6 +94,11 @@ func GetConfig() *Configurations {
 	return c
 }
 
+// FakeInitialize is not good
+func FakeInitialize() {
+	c = &Configurations{}
+}
+
 // Initialize ...
 func Initialize() {
 	c = &Configurations{}

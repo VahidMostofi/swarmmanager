@@ -51,7 +51,7 @@ func TestJaegerParser(t *testing.T) {
 	b, err = yaml.Marshal(j)
 	ioutil.WriteFile("/home/vahid/Desktop/v.yaml", b, 0777)
 	fmt.Println(len(data.Data))
-	err = j.parseTraces(data.Data)
+	err = j.ParseTraces(data.Data)
 	if err != nil {
 		t.Errorf("error evaluateing formula: %w", err)
 	}

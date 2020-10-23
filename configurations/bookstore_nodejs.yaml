@@ -44,7 +44,7 @@ loadGenerator:
         - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 60
+    duration: 1200
     waitAfterLoadGeneratorDone: 15 
 
 usageCollector:

@@ -1,4 +1,4 @@
-VUSs=(75 100 125 100 175)
+VUSs=(75 100 125 150 175)
 for VUS in "${VUSs[@]}"
 do
     # BNV2 Bottleneck Version 2, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
@@ -112,7 +112,7 @@ do
 done
 
 
-VUSs=(75 100 125 100 175)
+VUSs=(75 100 125 150 175)
 for VUS in "${VUSs[@]}"
 do
     # BNV2 Bottleneck Version 2, ToleranceIntervalc90p95 must be less thatn 250ms with stepsize = 0.5
