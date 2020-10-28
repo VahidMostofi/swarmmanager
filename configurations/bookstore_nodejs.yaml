@@ -8,7 +8,7 @@ results:
 
 testBed:
     dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
-    serviceCount: 6
+    serviceCount: 5
     stackName: "bookstore"
     servicesToConfigure: 
         - auth
@@ -21,7 +21,7 @@ host:
 
 jaeger:
     host: "http://136.159.209.204:16686"
-    rootService: "gateway"
+    rootService: "wrapper"
     detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/bookstore_nodejs.yaml"
     storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
 
@@ -39,12 +39,12 @@ loadGenerator:
         - script: "/home/vahid/workspace/configuration_suggestion/comparing_approahces/bookstore/workloads/scripts/bookstore/type8-remote.js"
         - host: "http://136.159.209.214:7112"
     args:
-        - ARG_BASE_URL: "http://136.159.209.204:9080"
+        - ARG_BASE_URL: "http://localhost:3000"
         - ARG_SLEEP_DURATION: "1"
         - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 1200
+    duration: 60
     waitAfterLoadGeneratorDone: 15 
 
 usageCollector:

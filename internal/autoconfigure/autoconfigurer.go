@@ -197,7 +197,11 @@ func (a *AutoConfigurer) Start(name string, command string) {
 				if err != nil {
 					log.Panic(err)
 				}
-				info.RequestResponseTimes[reqName], err = createStats(responseTimes, []string{"count", "mean", "p90", "p95", "p99", "std"})
+				whatToCompute := []string{"count", "mean", "p90", "p95", "p99", "std"}
+				if configs.GetConfig().Test.Duration < 500 {
+					whatToCompute = append(whatToCompute, "c90p95")
+				}
+				info.RequestResponseTimes[reqName], err = createStats(responseTimes, whatToCompute)
 				if err != nil {
 					log.Panic(err)
 				}

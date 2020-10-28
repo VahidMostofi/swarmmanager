@@ -46,16 +46,23 @@ func Run() {
 	startTime := info.History[0].ServicesInfo["entry"].Start
 	endTime := info.History[0].ServicesInfo["entry"].End
 
-	var duration int64 = 30 * 1e6
+	var duration int64 = 60 * 1e6
 	meetsStats := make([]bool, 0)
 	falseCount := 0
 	var i int64
 	log.SetOutput(ioutil.Discard)
 
+	responseTimes := make(map[string][]float64)
+	counts := make(map[string][]int)
+	for key := range info.History[0].RequestResponseTimes {
+		responseTimes[key] = make([]float64, 0)
+		counts[key] = make([]int, 0)
+	}
+
 	bar := pb.StartNew(int((endTime - startTime) / duration))
 	doLog := true
 	for i = 0; i < (endTime-startTime)/duration; i++ {
-
+		fmt.Println(i)
 		s := float64(startTime + i*duration)
 		e := float64(startTime + (i+1)*duration)
 
@@ -75,6 +82,12 @@ func Run() {
 			if !(p95 <= sla) {
 				fmt.Print(reqName + ", ")
 			}
+			c, err := j.GetRequestCount(reqName)
+			if err != nil {
+				panic(err)
+			}
+			responseTimes[reqName] = append(responseTimes[reqName], p95)
+			counts[reqName] = append(counts[reqName], c)
 		}
 		if doLog {
 			fmt.Println(meets)
@@ -86,4 +99,19 @@ func Run() {
 		bar.Increment()
 	}
 	fmt.Println("didn't meet:", falseCount, "out of", len(meetsStats))
+	for req, rts := range responseTimes {
+		fmt.Print(req, " ")
+		for _, v := range rts {
+			fmt.Print(v, ",")
+		}
+		fmt.Println()
+	}
+
+	for req, cs := range counts {
+		fmt.Print(req, " ")
+		for _, v := range cs {
+			fmt.Print(v, ",")
+		}
+		fmt.Println()
+	}
 }
