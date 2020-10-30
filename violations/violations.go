@@ -11,8 +11,6 @@ import (
 	"github.com/VahidMostofi/swarmmanager/internal/jaeger"
 	"github.com/montanaflynn/stats"
 	"gopkg.in/yaml.v3"
-
-	"github.com/cheggaaa/pb/v3"
 )
 
 // Run ...
@@ -49,6 +47,7 @@ func Run() {
 	var duration int64 = 60 * 1e6
 	meetsStats := make([]bool, 0)
 	falseCount := 0
+	total := 0
 	var i int64
 	log.SetOutput(ioutil.Discard)
 
@@ -59,8 +58,8 @@ func Run() {
 		counts[key] = make([]int, 0)
 	}
 
-	bar := pb.StartNew(int((endTime - startTime) / duration))
-	doLog := true
+	// bar := pb.StartNew(int((endTime - startTime) / duration))
+	doLog := false
 	for i = 0; i < (endTime-startTime)/duration; i++ {
 		fmt.Println(i)
 		s := float64(startTime + i*duration)
@@ -81,7 +80,9 @@ func Run() {
 			meets = meets && p95 <= sla
 			if !(p95 <= sla) {
 				fmt.Print(reqName + ", ")
+				falseCount++
 			}
+			total++
 			c, err := j.GetRequestCount(reqName)
 			if err != nil {
 				panic(err)
@@ -93,12 +94,12 @@ func Run() {
 			fmt.Println(meets)
 		}
 		meetsStats = append(meetsStats, meets)
-		if !meets {
-			falseCount++
-		}
-		bar.Increment()
+		// if !meets {
+		// 	falseCount++
+		// }
+		// bar.Increment()
 	}
-	fmt.Println("didn't meet:", falseCount, "out of", len(meetsStats))
+	fmt.Println("didn't meet:", falseCount, "out of", total)
 	for req, rts := range responseTimes {
 		fmt.Print(req, " ")
 		for _, v := range rts {
