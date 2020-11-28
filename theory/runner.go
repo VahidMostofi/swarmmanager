@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/strategies"
@@ -20,20 +19,43 @@ func GoTheory() {
 	bar := pb.StartNew(testCount)
 	log.SetOutput(ioutil.Discard)
 	line := "approach,system,steps,min_total_core,max_total_core,resources,classes,sla\n"
-	gBoth := 0
-	gCheaper := 0
-	failed := 0
-	gBnv2IsBetter := 0
-	for i := 1; i <= testCount; i++ {
+
+	for i := 1; i <= 1; i++ {
+		i = 298
 		outputs := make(map[string]output)
-		// fmt.Println(i)
 		fileName := strconv.Itoa(i)
-		// fmt.Println(i)
-		// fileName := "1"
-		// fmt.Println(fileName)
 		system := ReadSystem(fileName)
 
+		// ----------------------------------------------------------------------------
 		strategy := &strategies.BottleNeckOnlyVersion1{
+			StepSize:          4.0,
+			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+			MultiContainer:    true,
+			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+			ConstantInit:      true,
+			ConstantInitValue: 1.0,
+		}
+		strategy.Init()
+		approachName := "BNV1-4.0"
+		s, o := RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
+		// ----------------------------------------------------------------------------
+		strategy = &strategies.BottleNeckOnlyVersion1{
+			StepSize:          2.0,
+			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+			MultiContainer:    true,
+			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+			ConstantInit:      true,
+			ConstantInitValue: 1.0,
+		}
+		strategy.Init()
+		approachName = "BNV1-2.0"
+		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		line += s
+		outputs[approachName] = o
+		// ----------------------------------------------------------------------------
+		strategy = &strategies.BottleNeckOnlyVersion1{
 			StepSize:          1.0,
 			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
 			MultiContainer:    true,
@@ -42,11 +64,11 @@ func GoTheory() {
 			ConstantInitValue: 1.0,
 		}
 		strategy.Init()
-		approachName := "BNV1-1.0"
-		s, o := RunSystemWithStrategy(approachName, system, strategy, false)
+		approachName = "BNV1-1.0"
+		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
 		line += s
 		outputs[approachName] = o
-
+		// ----------------------------------------------------------------------------
 		strategy = &strategies.BottleNeckOnlyVersion1{
 			StepSize:          0.5,
 			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
@@ -60,35 +82,7 @@ func GoTheory() {
 		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
 		line += s
 		outputs[approachName] = o
-
-		strategy = &strategies.BottleNeckOnlyVersion1{
-			StepSize:          0.25,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy.Init()
-		approachName = "BNV1-0.25"
-		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
-		line += s
-		outputs[approachName] = o
-
-		strategy = &strategies.BottleNeckOnlyVersion1{
-			StepSize:          0.1,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy.Init()
-		approachName = "BNV1-0.1"
-		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
-		line += s
-		outputs[approachName] = o
-
+		// ----------------------------------------------------------------------------
 		strategy2 := &strategies.BottleNeckOnlyVersion2{
 			StepSize:          2.0,
 			MinimumStepSize:   0.25,
@@ -100,67 +94,63 @@ func GoTheory() {
 		}
 		strategy2.Init()
 		strategy2.MinimumCPUValue = 1.0
-		bnv2ApproachName := "BNV2-2.0-0.25"
-		s, o = RunSystemWithStrategy(bnv2ApproachName, system, strategy2, false)
+		approachName = "BNV2-2.0"
+		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
 		line += s
-		outputs[bnv2ApproachName] = o
-
+		outputs[approachName] = o
+		// ----------------------------------------------------------------------------
+		strategy2 = &strategies.BottleNeckOnlyVersion2{
+			StepSize:          4.0,
+			MinimumStepSize:   0.25,
+			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+			MultiContainer:    true,
+			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+			ConstantInit:      true,
+			ConstantInitValue: 1.0,
+		}
+		strategy2.Init()
+		strategy2.MinimumCPUValue = 1.0
+		approachName = "BNV2-4.0"
+		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
+		line += s
+		outputs[approachName] = o
+		// ----------------------------------------------------------------------------
+		strategy2 = &strategies.BottleNeckOnlyVersion2{
+			StepSize:          1.0,
+			MinimumStepSize:   0.25,
+			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+			MultiContainer:    true,
+			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+			ConstantInit:      true,
+			ConstantInitValue: 1.0,
+		}
+		strategy2.Init()
+		strategy2.MinimumCPUValue = 1.0
+		approachName = "BNV2-1.0"
+		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
+		line += s
+		outputs[approachName] = o
+		// ----------------------------------------------------------------------------
 		line += "AMPL," + system.Name + ",0," + strconv.FormatFloat(system.BestObjective, 'f', 2, 64) + ",0,"
 		line += strconv.Itoa(len(system.Resources)) + ","
 		line += strconv.Itoa(len(system.Classes)) + ","
 		line += strconv.FormatFloat(system.SLA, 'f', 1, 64)
 		line += "\n"
-		both := 0
-		cheaper := 0
-		bnv2IsBetter := true
-		if o.CPUs < 10000 {
-			for approachName, o1 := range outputs {
-				if strings.Contains(approachName, "BNV1") && o1.CPUs > 0 {
-					if o1.CPUs < outputs[bnv2ApproachName].CPUs {
-						if o1.Steps < outputs[bnv2ApproachName].Steps {
-							both++
-						} else {
-							cheaper++
-						}
-						bnv2IsBetter = false
-					}
-				}
-			}
-		}
-		// line += strconv.Itoa(both) + "\n"
-		if outputs[bnv2ApproachName].CPUs > 10000 {
-			failed++
-		} else {
-			if bnv2IsBetter {
-				gBnv2IsBetter++
-			}
-			if both != 0 {
-				gBoth++
-			} else if cheaper != 0 {
-				gCheaper++
-			}
-		}
 
-		// line += "\n"
 		bar.Increment()
 	}
 	bar.Finish()
-	// fmt.Println(line)
-	fmt.Println("in", gBoth, "out of", testCount, "tests, there are other approaches which achieve something cheaper faster")
-	fmt.Println("in", gCheaper, "out of", testCount, "tests, there are other approaches which achieve something cheaper")
-	fmt.Println("in", gBnv2IsBetter, "out of", testCount, "BNV2 found something better than other approaches")
-	fmt.Println(gCheaper, "+", gBoth, "+", gBnv2IsBetter, "+", failed, "=", testCount)
-	fmt.Println("in", failed, "out of", testCount, "tests, BNV2 fails")
-	// fmt.Println(line)
-	err := ioutil.WriteFile("/home/Dropbox/data/swarm-manager-data/results/theory/model-results.csv", []byte(line), 0777)
-	if err != nil {
-		panic(err)
-	}
+	// path := "/home/vahid/Dropbox/data/swarm-manager-data/results/theory/model-results-2x-not-that-late-1x-33p.csv"
+	// err := ioutil.WriteFile(path, []byte(line), 0777)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("saved to:", path)
 }
 
 // RunSystemWithStrategy ...
 func RunSystemWithStrategy(name string, system *System, strategy strategies.Configurer, debug bool) (string, output) {
-
+	// fmt.Println(name)
 	t := theoryWorkload{Throughput: system.Throughput, ClassProbs: system.ClassProbs}
 	currentConfig, err := strategy.GetInitialConfig(t)
 
@@ -237,9 +227,13 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 		// if stepCount%100 == 0 {
 		// 	fmt.Println(stepCount)
 		// }
-		if stepCount == 5000 {
+		if stepCount == 25000 {
 			break
 		}
+	}
+
+	for _, iter := range iterations {
+		fmt.Println(iter.GetSum())
 	}
 
 	bestIteration := GetBestIteration(iterations, system.SLA)

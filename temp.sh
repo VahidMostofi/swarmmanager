@@ -412,3 +412,14 @@
     #     --mc \
     #     --stepsize 1.0
 # done
+
+
+# # #FINDING DEMANDS FOR STAR
+# go run main.go autoconfig \
+#     --appname muck_star-small \
+#     --config configurations/muck_star.yaml \
+#     --workload  1_1300_0.45_0.25_0.15_0.15 \
+#     --testName demands \
+#     demands \
+#     --duration 1200 \
+#     --resultpath /home/vahid/Dropbox/data/swarm-manager-data/demands/muck_star-small_demands.yaml

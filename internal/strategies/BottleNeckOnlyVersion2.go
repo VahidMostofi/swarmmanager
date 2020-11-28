@@ -30,11 +30,14 @@ type BottleNeckOnlyVersion2 struct {
 	ConstantInit          bool
 	ConstantInitValue     float64
 	MinimumStepSize       float64
-	MinimumCPUValue       float64
+	MinimumCPUValue       float64 // A control value for running the theory experiments. We cant have alpha less than 1 in theory experiments, or the formulas become unsable
 	AfterFound            int
-	ChangedPreviously     []string
+	ChangedPreviously     []string // To make sure we don't repeat ourselves
 	cache                 map[string]float64
 	bestWhichMeets        float64
+	iterationCount        int
+	stage1Iterations      int
+	stage2Iterations      int
 }
 
 // Init ...
@@ -122,18 +125,9 @@ func (c *BottleNeckOnlyVersion2) GetInitialConfig(workload loadgenerator.Workloa
 		}
 	}
 
-	// for requestName := range c.RequestToServiceToEU {
-	// 	for serviceName, eu := range c.RequestToServiceToEU[requestName] {
-	// 		fmt.Println(requestName, serviceName, eu, c.demands[serviceName][requestName], workload.GetRequestProportion()[requestName])
-	// 	}
-	// }
-	// fmt.Println(workload.GetThroughput())
-
 	for requestName := range c.RequestToServiceToEU {
-		// c.path2StepSize[requestName] = c.StepSize
 		c.path2LastTimeDecrease[requestName] = false
 		c.path2TriedBackward[requestName] = c.StepSize
-		// log.Println(requestName, "step size is", c.path2StepSize[requestName])
 	}
 
 	totalAllocatedResources := make(map[string]float64) // total allocated CPU to each service initially
@@ -163,7 +157,7 @@ func (c *BottleNeckOnlyVersion2) GetInitialConfig(workload loadgenerator.Workloa
 // Configure ....
 func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentState map[string]swarm.ServiceSpecs, servicesToMonitor []string) (map[string]swarm.ServiceSpecs, bool, error) {
 	isChanged := false
-
+	c.iterationCount++
 	newSpecs := make(map[string]swarm.ServiceSpecs)
 	for key, value := range currentState {
 		newSpecs[key] = value
@@ -203,8 +197,6 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 				}
 			}
 			log.Println("Configurer Agent:", serviceWithMaxCPUUtil, "has the max mean CPU Utilization")
-			// c.resource2StepSize[serviceWithMaxCPUUtil] *= 1.0
-			// c.resource2StepSize[serviceWithMaxCPUUtil] = math.Min(c.resource2StepSize[serviceWithMaxCPUUtil], 8)
 			increaseValue := c.resource2StepSize[serviceWithMaxCPUUtil]
 
 			if increaseValue > 0 {
@@ -226,7 +218,8 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 		resource2requests := make(map[string][]string)
 		service2MaxResponseTime := make(map[string]float64)
 		for requestName, requestResponseTimes := range info.RequestResponseTimes {
-			if *requestResponseTimes.ResponseTimesMean > c.Agreements[0].Value*0.9 { //TODO not always mean
+			if *requestResponseTimes.ResponseTimes95Percentile > c.Agreements[0].Value*0.9 { //TODO not always mean
+				// if *requestResponseTimes.ResponseTimesMean > c.Agreements[0].Value*0.9 { //TODO not always mean
 				marginalRequests[requestName] = *requestResponseTimes.ResponseTimesMean
 			}
 			_, max := c.getMinMaxUtilizationsInRequestPath(requestName, info)
@@ -276,29 +269,32 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 			sort.Slice(backwardCandidates, func(i int, j int) bool {
 				return service2MaxResponseTime[backwardCandidates[i]] < service2MaxResponseTime[backwardCandidates[j]]
 			})
-
-			// fmt.Println("------------------")
-			// for _, candidate := range backwardCandidates {
-			// 	fmt.Println(candidate, service2MaxResponseTime[candidate], newCPUCount[candidate], info.ServicesInfo[candidate].CPUUsageMean)
-			// }
-			// fmt.Println("------------------")
-
-			serviceToDecrease := backwardCandidates[0] //TODO should be for loop or something
-			// fmt.Println(minCPUUtil)
-			log.Println("Configurer Agent:", serviceToDecrease, "has the min mean CPU Utilization")
-			c.resource2StepSize[serviceToDecrease] /= 2
-			c.resource2StepSize[serviceToDecrease] = math.Max(c.resource2StepSize[serviceToDecrease], c.MinimumStepSize)
-			decreaseValue := c.resource2StepSize[serviceToDecrease]
-			c.path2TriedBackward[serviceToDecrease] = c.resource2StepSize[serviceToDecrease]
-			if decreaseValue > 0 {
-				// log.Println("Configurer Agent:", serviceToDecrease, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.resource2StepSize[serviceToDecrease])
-				prev := newCPUCount[serviceToDecrease]
-				newCPUCount[serviceToDecrease] -= decreaseValue
-				newCPUCount[serviceToDecrease] = math.Max(c.MinimumCPUValue, newCPUCount[serviceToDecrease])
-				log.Println("Configurer Agent:", serviceToDecrease, "updating total CPU count from", prev, "to", newCPUCount[serviceToDecrease])
-				isChanged = true
-			} else {
-				return nil, false, fmt.Errorf("Configurer Agent: the increaseValue must be positive")
+			pruneCount := int(len(newCPUCount) / 3)
+			if pruneCount <= 0 {
+				pruneCount = 1
+			}
+			// fmt.Println(pruneCount)
+			for cIdx := 0; cIdx < pruneCount; cIdx++ {
+				if cIdx == len(backwardCandidates) {
+					break
+				}
+				serviceToDecrease := backwardCandidates[cIdx]
+				// fmt.Println(minCPUUtil)
+				log.Println("Configurer Agent:", serviceToDecrease, "has the min mean CPU Utilization")
+				c.resource2StepSize[serviceToDecrease] /= 2
+				c.resource2StepSize[serviceToDecrease] = math.Max(c.resource2StepSize[serviceToDecrease], c.MinimumStepSize)
+				decreaseValue := c.resource2StepSize[serviceToDecrease]
+				c.path2TriedBackward[serviceToDecrease] = c.resource2StepSize[serviceToDecrease]
+				if decreaseValue > 0 {
+					// log.Println("Configurer Agent:", serviceToDecrease, "is part of", requestName, "stepSize for path(request)", requestName, "is", c.resource2StepSize[serviceToDecrease])
+					prev := newCPUCount[serviceToDecrease]
+					newCPUCount[serviceToDecrease] -= decreaseValue
+					newCPUCount[serviceToDecrease] = math.Max(c.MinimumCPUValue, newCPUCount[serviceToDecrease])
+					log.Println("Configurer Agent:", serviceToDecrease, "updating total CPU count from", prev, "to", newCPUCount[serviceToDecrease])
+					isChanged = true
+				} else {
+					return nil, false, fmt.Errorf("Configurer Agent: the increaseValue must be positive")
+				}
 			}
 		}
 	}
@@ -314,6 +310,16 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 	}
 
 	if allMeet {
+		// return nil, false, nil
+		if c.stage1Iterations == 0 { //need to know how many steps in stage one
+			c.stage1Iterations = c.iterationCount
+		} else {
+			c.stage2Iterations++ // tracking iterations in stage 2
+		}
+		if c.stage2Iterations >= c.stage1Iterations {
+			// fmt.Println("stage1", c.stage1Iterations, "stage2", c.stage2Iterations)
+			return nil, false, nil
+		}
 		if totalPrev < c.bestWhichMeets {
 			c.bestWhichMeets = totalPrev
 		}

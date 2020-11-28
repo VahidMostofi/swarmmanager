@@ -23,7 +23,7 @@ jaeger:
     host: "http://136.159.209.204:16686"
     rootService: "wrapper"
     detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/bookstore_nodejs.yaml"
-    storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+    storePath: "/home/vahid/Desktop/jaegers"
 
 cache:
     type: 'dropbox'

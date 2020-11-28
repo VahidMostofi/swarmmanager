@@ -25,7 +25,7 @@ jaeger:
     host: "http://136.159.209.204:16686"
     rootService: "servicea"
     detailsFilePath: "/home/vahid/Desktop/projects/swarmmanager/configurations/formulas/muck_general.yaml"
-    storePath: "/home/vahid/Dropbox/data/swarm-manager-data/jaegers"
+    storePath: "/home/vahid/Desktop/jaegers"
 
 cache:
     type: 'dropbox'
@@ -47,8 +47,8 @@ loadGenerator:
         - REQUEST_NAMES: "req1,req2,req3,req4"
 
 test:
-    duration: 1200
-    waitAfterLoadGeneratorDone: 30
+    duration: 60
+    waitAfterLoadGeneratorDone: 15
 
 usageCollector:
     type: "MultiHostCollector"
