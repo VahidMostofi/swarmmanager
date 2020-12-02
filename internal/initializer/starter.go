@@ -58,6 +58,11 @@ func GetNewDatabase() caching.Database {
 
 // StartAutoconfig starts the auto configuration based on provided strategy
 func StartAutoconfig(strategy strategies.Configurer, strategyName string) {
+	isK8s := true
+	if isK8s == true{
+		StartK8sAutoConfigurer(strategy, strategyName)
+		return
+	}
 
 	if strings.Contains(configs.GetConfig().Results.Path, "$STRATEGY") {
 		configs.GetConfig().Results.Path = strings.Replace(configs.GetConfig().Results.Path, "$STRATEGY", strategyName, 1)

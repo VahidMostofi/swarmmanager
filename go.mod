@@ -27,6 +27,7 @@ require (
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2 // indirect
 	go.mongodb.org/mongo-driver v1.3.5
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect

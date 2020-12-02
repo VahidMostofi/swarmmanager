@@ -30,6 +30,7 @@ import (
 type TimingConfigs struct {
 	IterationDuration                 time.Duration
 	WaitAfterServicesAreReadyDuration time.Duration
+	WaitAfterLoadGeneratorStarted     time.Duration
 	WaitAfterLoadGeneratorStopped     time.Duration
 }
 
