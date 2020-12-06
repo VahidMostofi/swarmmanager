@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +20,7 @@ type Connector interface {
 	GetCurrentConfiguration() (map[string]swarm.SimpleSpecs, error)
 	GetCurrentPods() []string
 	AreAllPodsRunning() bool
+	ApplyConfig(map[string]swarm.ServiceSpecs) error
 }
 
 // GetNewConnector ...
@@ -36,6 +39,23 @@ type sshConnector struct {
 
 // AreAllPodsRunning ...
 func (s *sshConnector) AreAllPodsRunning() bool {
+	counter := 0
+	t := 15
+	for {
+		time.Sleep(1 * time.Second)
+		if s.areAllPodsRunning() {
+			counter++
+			if counter == t {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	return counter >= t
+}
+
+func (s *sshConnector) areAllPodsRunning() bool {
 	sRes := s.executor.executeCommand("kubectl get pods -o yaml")
 	b := []byte(sRes)
 	data := make(map[string]interface{})
@@ -75,8 +95,8 @@ func (s *sshConnector) GetCurrentPods() []string {
 }
 
 func (s *sshConnector) GetCurrentConfiguration() (map[string]swarm.SimpleSpecs, error) {
-	for !s.AreAllPodsRunning() {
-		time.Sleep(1 * time.Second)
+	for !s.areAllPodsRunning() {
+		panic("all services are not running")
 	}
 
 	sRes := s.executor.executeCommand("kubectl get deployment -o yaml")
@@ -98,8 +118,13 @@ func (s *sshConnector) GetCurrentConfiguration() (map[string]swarm.SimpleSpecs, 
 		container := containers[0]
 
 		cpuStr := container.(map[interface{}]interface{})["resources"].(map[interface{}]interface{})["limits"].(map[interface{}]interface{})["cpu"].(string)
-		cpu, err := strconv.ParseFloat(cpuStr[:len(cpuStr)-1], 64)
+		cpuStr = strings.Trim(cpuStr, " ")
+		if strings.ContainsAny(cpuStr, "m") {
+			cpuStr = strings.ReplaceAll(cpuStr, "m", "")
+		}
+		cpu, err := strconv.ParseFloat(cpuStr, 64)
 		if err != nil {
+			log.Println("finding deployment info", name, cpuStr)
 			panic(err)
 		}
 		cpu /= 1000
@@ -145,11 +170,35 @@ func (s *sshConnector) GetCPUUsage() (map[string]float64, error) {
 		values[name] = append(values[name], utilization)
 	}
 	res := make(map[string]float64)
-	for serviceName, utils := range values {	
+	for serviceName, utils := range values {
+		if len(utils) < 1 {
+			continue
+		}
 		res[serviceName], err = stats.Mean(utils)
 		if err != nil {
 			panic(err)
 		}
 	}
 	return res, nil
+}
+
+func (s *sshConnector) ApplyConfig(c map[string]swarm.ServiceSpecs) error {
+	s.executor.executeCommand("echo test > /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current/test")
+	s.executor.executeCommand("rm /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current/*")
+
+	for serviceName, configs := range c {
+		template := s.executor.executeCommand("cat /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/template/" + serviceName + ".yaml")
+		template = strings.ReplaceAll(template, "$REPLICA_WILL_OVERWRITE$", strconv.Itoa(configs.ReplicaCount))
+		cpuStr := strconv.FormatFloat(configs.CPULimits, 'f', 2, 64)
+		template = strings.ReplaceAll(template, "$CPU_WILL_OVERWRITE$", cpuStr)
+		s.executor.executeCommand("cat >/home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current/" + serviceName + ".yaml <<EOL\n" + template + "\nEOL")
+	}
+	list := s.executor.executeCommand("ls /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current")
+	if len(strings.Split(list, "\n")) != len(c)+1 {
+		panic(fmt.Sprintln("there are", len(list)-1, "files at /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current/"))
+	}
+	time.Sleep(1 * time.Second)
+	s.executor.executeCommand("kubectl apply -f /home/vahid/workspace/dynamicworkload/configs/bookstore-nodejs/current")
+
+	return nil
 }

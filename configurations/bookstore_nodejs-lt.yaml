@@ -1,13 +1,13 @@
 # nodejs_bookstore
-version: "v0"
+version: "v2"
 
 continuesRuns: false
 
 results:
-    path: "/Users/vahid/Dropbox/data/swarm-manager-data/results/k8s/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
+    path: "/home/vahid/Dropbox/data/swarm-manager-data/results/k8s/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
-    dockerComposeFile: "/Users/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
+    dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
     serviceCount: 5
     stackName: "bookstore"
     servicesToConfigure:
@@ -22,21 +22,21 @@ host:
 cache:
     type: "dropbox"
     details:
-        - path: "/Users/vahid/Dropbox/data/swarm-manager-data/cache-k8s"
+        - path: "/home/vahid/Dropbox/data/swarm-manager-data/cache-k8s"
 
 log:
-    directory: "/Users/vahid/Desktop/projects/swarm-manager-data/logs"
+    directory: "/home/vahid/Desktop/projects/swarm-manager-data/logs"
 
 loadGenerator:
     type: "k6"
     details:
-        - script: "/Users/vahid/Desktop/type8-remote.js"
+        - script: "/home/vahid/Desktop/type8-remote.js"
         - host: "http://136.159.209.214:7112"
     args:
-        - ARG_BASE_URL: "http://136.159.209.204:31267"
+        - ARG_BASE_URL: "http://136.159.209.204:32643"
         - ARG_SLEEP_DURATION: "1"
         - REQUEST_NAMES: "login,get_book,edit_book"
 
 test:
-    duration: 15
+    duration: 120
     waitAfterLoadGeneratorDone: 15

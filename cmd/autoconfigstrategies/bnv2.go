@@ -48,7 +48,7 @@ func init() {
 	BNV2Cmd.Flags().Float64Var(&bnv2StepSize, "stepsize", -1, "how much core to add at each step")
 	BNV2Cmd.Flags().BoolVar(&bnv2IsMultiContainer, "mc", true, "run it with multiple containers or one fat container")
 	BNV2Cmd.Flags().StringVar(&bnv2DemandsFile, "demands", "", "demand of each request on each service")
-	BNV2Cmd.Flags().Float64Var(&bnv2MinimumStepSize, "minstepsize", 0.1, "minimum step size")
+	BNV2Cmd.Flags().Float64Var(&bnv2MinimumStepSize, "minstepsize", 0.2, "minimum step size")
 
 	cobra.MarkFlagRequired(BNV2Cmd.Flags(), "property")
 	cobra.MarkFlagRequired(BNV2Cmd.Flags(), "value")

@@ -59,7 +59,7 @@ func NewAutoConfigurer(lg loadgenerator.LoadGenerator, rtc workload.ResponseTime
 		SwarmManager:           m,
 		TimingConfigs: TimingConfigs{
 			IterationDuration:                 time.Duration(configs.GetConfig().Test.Duration),
-			WaitAfterServicesAreReadyDuration: 7,
+			WaitAfterServicesAreReadyDuration: 20,
 			WaitAfterLoadGeneratorStopped:     time.Duration(configs.GetConfig().Test.WaitAfterLoadGeneratorDone),
 		},
 		Workload:             workload,

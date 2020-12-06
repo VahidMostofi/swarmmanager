@@ -111,7 +111,7 @@ func (s sshExecuter) executeCommand(command string) string {
 	var b bytes.Buffer
 	session.Stdout = &b
 	if err := session.Run(command); err != nil {
-		log.Fatal("Failed to run: " + err.Error())
+		log.Fatal("Failed to run: " + command + " : " + err.Error())
 	}
 	return b.String()
 }

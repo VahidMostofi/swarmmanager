@@ -245,7 +245,9 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 		for _, serviceName := range servicesToMonitor {
 			flag := true
 			for criticalRequest := range marginalRequests {
-				if utils.ContainsString(resource2requests[serviceName], criticalRequest) {
+				fmt.Println(criticalRequest)
+				_, ok := resourcesWhichAreMax[serviceName]
+				if utils.ContainsString(resource2requests[serviceName], criticalRequest) && ok {
 					flag = false
 				}
 			}
@@ -263,11 +265,13 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 			}
 		}
 
+		fmt.Println("backward candidates: ", backwardCandidates)
 		if len(backwardCandidates) == 0 {
 			// fmt.Println("no candidate for moving backward")
 		} else {
 			sort.Slice(backwardCandidates, func(i int, j int) bool {
-				return service2MaxResponseTime[backwardCandidates[i]] < service2MaxResponseTime[backwardCandidates[j]]
+				return c.resource2StepSize[backwardCandidates[i]] > c.resource2StepSize[backwardCandidates[j]]
+				// return service2MaxResponseTime[backwardCandidates[i]] < service2MaxResponseTime[backwardCandidates[j]]
 			})
 			pruneCount := int(len(newCPUCount) / 3)
 			if pruneCount <= 0 {
@@ -310,19 +314,23 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 	}
 
 	if allMeet {
-		// return nil, false, nil
 		if c.stage1Iterations == 0 { //need to know how many steps in stage one
 			c.stage1Iterations = c.iterationCount
-		} else {
-			c.stage2Iterations++ // tracking iterations in stage 2
 		}
+	}
+
+	if c.stage1Iterations > 0 { // we are in stage 2
+		c.stage2Iterations++ // tracking iterations in stage 2
+
+		fmt.Println("iterations", c.stage2Iterations, c.stage1Iterations)
 		if c.stage2Iterations >= c.stage1Iterations {
 			// fmt.Println("stage1", c.stage1Iterations, "stage2", c.stage2Iterations)
 			return nil, false, nil
 		}
-		if totalPrev < c.bestWhichMeets {
-			c.bestWhichMeets = totalPrev
-		}
+	}
+
+	if totalPrev < c.bestWhichMeets {
+		c.bestWhichMeets = totalPrev
 	}
 
 	if allMeet || c.AfterFound > 0 {
@@ -340,13 +348,13 @@ func (c *BottleNeckOnlyVersion2) Configure(info history.Information, currentStat
 	newSpecs = c.updateSpecsFromSimpleSpecs(newSpecs, service2simpleConfig)
 	h := c.hash(newSpecs, servicesToMonitor)
 	if _, exists := c.cache[h]; exists {
-		return nil, false, nil
+		// return nil, false, nil
 	} else {
 		c.cache[h] = totalNew
 	}
-	if totalNew > c.bestWhichMeets {
-		return nil, false, nil
-	}
+	// if totalNew > c.bestWhichMeets {
+	// 	return nil, false, nil
+	// }
 	return newSpecs, isChanged, nil
 }
 
