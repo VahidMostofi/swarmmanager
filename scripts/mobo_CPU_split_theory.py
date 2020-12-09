@@ -16,35 +16,31 @@ import json
 import mobopt as mo
 import numpy as np
 import sys
-core_count = 21
+
 cache = {}
+services_count, request_count,sla = 0,0,0
+with open('/home/vahid/Desktop/values.txt') as f:
+    services_count, request_count,sla = [int(a) for a in f.read().split(',')]
+core_count = 100 * services_count
 
 import time
 def objective(x):
-
-    s = sum(x)
-    g = core_count * (x[0] / s)
-    a = core_count * (x[1] / s)
-    b = core_count * (x[2] / s)
-    # this configuration would use a + b + g cores. x[3] is the amount which is not being used
     
-    config = {
-        'entry': {
-            "cpu_count": np.round(g / np.ceil(g), 2),
-            "container_count": int(np.ceil(g)),
+    s = sum(x)
+    allocations = [0] * services_count
+    for i in range(services_count):
+        allocations[i] = core_count * (x[i] / s)
+        if allocations[i] < 1:
+            allocations[i] = 1
+    not_used = core_count - sum(allocations)
+    
+    config = {}
+    for i in range(services_count):
+        config[str(i)] = {
+            "cpu_count": np.round(allocations[i] / np.ceil(allocations[i]), 2),
+            "container_count": int(np.ceil(allocations[i])),
             "worker_count": 1 #this is 1, because it's multi container 
-        },
-        'auth': {
-            "cpu_count": np.round(a / np.ceil(a), 2),
-            "container_count": int(np.ceil(a)),
-            "worker_count": 1
-        },
-        'books': {
-            "cpu_count": np.round(b / np.ceil(b), 2),
-            "container_count": int(np.ceil(b)),
-            "worker_count": 1
-        },
-    }
+        }
 
     key = json.dumps(config, sort_keys=True)
     if key in cache:
@@ -59,34 +55,33 @@ def objective(x):
         f.write(str(x))
     f.close()
 
-    SLA_target = 250
-    respones_times = [0] * 3
-    for i in range(3):
+    SLA_target = sla
+    respones_times = [0] * request_count
+    res = []
+    
+    for i in range(request_count):
         if data['feedbacks'][i] > SLA_target:
             respones_times[i] = data['feedbacks'][i] - SLA_target
-    
-    res = [respones_times[0],respones_times[1],respones_times[2],a+b+g]
+        res.append(respones_times[i])
+    res.append(not_used)
     cache[key] = np.array(res)
 
     return np.array(np.array(res))
 
-PB = np.asarray([
-    [0.06, 0.94],
-    [0.06, 0.94],
-    [0.06, 0.94],
-    [0.06, 0.94]
-])
+st = 1 / core_count
+temp = [[st + 0.01, 0.94]] * (services_count+1)
+PB = np.asarray(temp)
 NParam = PB.shape[0]
 
 Optimizer = mo.MOBayesianOpt(target=objective,
-                             NObj=4,
+                             NObj=request_count+1,
                              pbounds=PB,
                              verbose=False,
                              max_or_min='min', # whether the optimization problem is a maximization problem ('max'), or a minimization one ('min')
                              RandomSeed=10)
 Optimizer.initialize(init_points=5) 
 # there is no minimize function. maximize() starts optimization. Performs minimizing or maximizing based on max_or_min
-front, pop = Optimizer.maximize(n_iter=20,
+front, pop = Optimizer.maximize(n_iter=200,
                                 prob=0.1,
                                 ReduceProb=False,
                                 q=0.5)

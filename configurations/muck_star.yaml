@@ -7,7 +7,7 @@ results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
-    dockerComposeFile: "/home/vahid/Desktop/projects/micromuck-nodejs/star-docker-compose-5.yml"
+    dockerComposeFile: "/home/vahid/Desktop/projects/swarmmanager/compose_files/star-docker-compose-5.yml"
     serviceCount: 7
     stackName: "micromuck-star"
     servicesToConfigure: 
@@ -38,7 +38,7 @@ log:
 loadGenerator:
     type: "k6"
     details:
-        - script: "/home/vahid/Desktop/projects/micromuck-nodejs/load-generator-scripts/general-script.js"
+        - script: "/home/vahid/Desktop/projects/swarmmanager/workload-scripts/micromuck/general-script.js"
         - host: "http://136.159.209.214:7112"
     args:
         - ARG_BASE_URL: "http://136.159.209.204:10080"

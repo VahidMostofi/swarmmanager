@@ -1,5 +1,5 @@
 # nodejs_bookstore
-version: "v1"
+version: "v2"
 
 continuesRuns: false
 
@@ -7,7 +7,7 @@ results:
     path: "/home/vahid/Dropbox/data/swarm-manager-data/results/$SYSTEM_NAME/$WORKLOAD/$STRATEGY/"
 
 testBed:
-    dockerComposeFile: "/home/vahid/Desktop/bookstore-compose-file/docker-compose-db.yml"
+    dockerComposeFile: "/home/vahid/Desktop/projects/swarmmanager/bookstore-compose-file/docker-compose-db.yml"
     serviceCount: 5
     stackName: "bookstore"
     servicesToConfigure: 
@@ -36,7 +36,7 @@ log:
 loadGenerator:
     type: "k6"
     details:
-        - script: "/home/vahid/workspace/configuration_suggestion/comparing_approahces/bookstore/workloads/scripts/bookstore/type8-remote.js"
+        - script: "/home/vahid/Desktop/projects/swarmmanager/workload-scripts/bookstore/type8-remote.js"
         - host: "http://136.159.209.214:7112"
     args:
         - ARG_BASE_URL: "http://localhost:3000"

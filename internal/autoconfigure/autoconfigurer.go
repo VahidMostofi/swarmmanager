@@ -74,6 +74,7 @@ func Validate(config map[string]swarm.ServiceSpecs) (float64, bool) {
 	var sum float64
 	for key := range config {
 		sum += (float64(config[key].ReplicaCount) * config[key].CPULimits)
+		fmt.Println(key, float64(config[key].ReplicaCount)*config[key].CPULimits)
 	}
 	log.Println("there are", sum, "cores required!")
 	return sum, sum <= configs.GetConfig().Host.AvailableCPUCount
@@ -199,9 +200,9 @@ func (a *AutoConfigurer) Start(name string, command string) {
 					log.Panic(err)
 				}
 				whatToCompute := []string{"count", "mean", "p90", "p95", "p99", "std"}
-				if configs.GetConfig().Test.Duration < 500 {
-					whatToCompute = append(whatToCompute, "c90p95")
-				}
+				// if configs.GetConfig().Test.Duration < 500 {
+				// 	whatToCompute = append(whatToCompute, "c90p95")
+				// }
 				info.RequestResponseTimes[reqName], err = createStats(responseTimes, whatToCompute)
 				if err != nil {
 					log.Panic(err)
@@ -276,8 +277,10 @@ func (a *AutoConfigurer) printRUMap(r map[string]*r2.Utilization) string {
 
 // GatherInfo ...
 func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.ServiceInfo {
+	fmt.Println("GatherInfo")
 	ruMap := a.ResourceUsageCollector.GetResourceUtilization()
 	a.RequestCountCollector.(*jaeger.Aggregator).GetTraces(start, end, configs.GetConfig().Jaeger.RootService, true)
+	fmt.Println("Jaeger done!")
 	info := make(map[string]history.ServiceInfo)
 	for key := range a.SwarmManager.CurrentSpecs {
 		serviceName := a.SwarmManager.CurrentSpecs[key].Name
@@ -359,12 +362,11 @@ func (a *AutoConfigurer) GatherInfo(start, end int64) map[string]history.Service
 		if e != nil {
 			log.Panic(e)
 		}
-
 		serviceInfo.TimesDetails = make(map[string]map[string]history.ResponseTimeStats)
 		for req := range requestToValueNameToValues {
 			serviceInfo.TimesDetails[req] = make(map[string]history.ResponseTimeStats)
 			for valueName := range requestToValueNameToValues[req] {
-				rts, err := createStats(requestToValueNameToValues[req][valueName], []string{"mean", "count"})
+				rts, err := createStats(requestToValueNameToValues[req][valueName], []string{"mean", "count", "p95"})
 				if err != nil {
 					log.Panic(err)
 				}

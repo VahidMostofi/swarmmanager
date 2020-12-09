@@ -1,0 +1,124 @@
+
+version: "3"
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 8G
+        reservations:
+          cpus: "1"
+          memory: 6G
+  ################################################
+  db:
+    container_name: bs_db
+    image: mongo:3.4.24-xenial
+    ports:
+      - 27717:27017
+    volumes:
+      - /data/mongo:/data/db
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 10G
+        reservations:
+          cpus: "1"
+          memory: 2G
+  ################################################
+  entry:
+    hostname: entry
+    container_name: bs_en
+    build: "./api-gateway"
+    image: vahidmostofi/bookstore_entry
+    restart: on-failure
+    ports:
+      - "9080:8080"
+    depends_on:
+      - auth
+    environment:
+      - WorkerCount=1
+      - JWT_KEY=someKeyIsGoodAndSomeOfThemBNoGEo1ioD!
+      - JAEGER_SERVICE_NAME=gateway
+      - JAEGER_COLLECTOR_HOST=jaeger
+      - JAEGER_COLLECTOR_PORT=14268
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - SAMPELLING_PROB=1
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 10G
+        reservations:
+          cpus: "1"
+          memory: 2G
+  ################################################
+  auth:
+    container_name: bs_auth
+    build: "./auth-service"
+    image: vahidmostofi/bookstore_auth
+    restart: on-failure
+    ports:
+      - "3007:3007"
+    environment:
+      - WorkerCount=1
+      - MONGODB_URL=mongodb://db:27017/bookstoreDB
+      - JWT_KEY=someKeyIsGoodAndSomeOfThemBNoGEo1ioD!
+      - PORT=3007
+      - JAEGER_SERVICE_NAME=auth
+      - JAEGER_COLLECTOR_HOST=jaeger
+      - JAEGER_COLLECTOR_PORT=14268
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - SAMPELLING_PROB=1
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 10G
+        reservations:
+          cpus: "1"
+          memory: 2G
+  ################################################
+  books:
+    container_name: bs_books
+    image: vahidmostofi/bookstore_books
+    build: "./book-service"
+    restart: on-failure
+    ports:
+      - "3009:3009"
+    environment:
+      - WorkerCount=1
+      - MONGODB_URL=mongodb://db:27017/bookstoreDB
+      - PORT=3009
+      - JAEGER_SERVICE_NAME=books
+      - JAEGER_COLLECTOR_HOST=jaeger
+      - JAEGER_COLLECTOR_PORT=14268
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
+      - SAMPELLING_PROB=1
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 10G
+        reservations:
+          cpus: "1"
+          memory: 2G

@@ -56,7 +56,7 @@ func init() {
 	autoconfigCmd.AddCommand(strategiesCmd.BNV2Cmd)
 	autoconfigCmd.AddCommand(strategiesCmd.BruteCMD)
 	autoconfigCmd.AddCommand(strategiesCmd.SingleCmd)
-
+	autoconfigCmd.AddCommand(strategiesCmd.MOBOCMD)
 }
 
 // initConfig reads in config file and ENV variables if set.

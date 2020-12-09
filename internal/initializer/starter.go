@@ -58,8 +58,8 @@ func GetNewDatabase() caching.Database {
 
 // StartAutoconfig starts the auto configuration based on provided strategy
 func StartAutoconfig(strategy strategies.Configurer, strategyName string) {
-	isK8s := true
-	if isK8s == true{
+	isK8s := false
+	if isK8s == true {
 		StartK8sAutoConfigurer(strategy, strategyName)
 		return
 	}
@@ -81,31 +81,6 @@ func StartAutoconfig(strategy strategies.Configurer, strategyName string) {
 	var rcc workload.RequestCountCollector = rtc.(workload.RequestCountCollector)
 	var lg = GetTheLoadGenerator(workloadStr)
 
-	// var c strategies.Configurer
-	// switch os.Args[beforeConfigArgCount-1] {
-	// case "CPUUsageIncrease":
-	// 	c = GetCPUIncreaseConfigurer()
-	// case "ResponseTimeSimpleIncrease":
-	// 	c = GetResponseTimeSimpleIncreaseConfigurer()
-	// case "CPUUtil_RT_Hybrid":
-	// 	c = GetCPUUtilRTHybridConfigurer()
-	// case "PredefinedSearch":
-	// 	c = strategies.GetNewPredefinedSearcher()
-	// case "MOBO":
-	// 	c = GetMOBOConfigurer()
-	// case "AddFractionalCPUcores":
-	// 	c = GetAddFractionalCPUcoresConfigurer()
-	// case "Single":
-	// 	c = &strategies.SingleRun{}
-	// case "AddDifferentFractionalCPUcores":
-	// 	c = GetAddDifferentFractionalCPUcores(workloadStr)
-	// case "PerPathEUBasedScaling":
-	// 	c = GetPerPathEUBasedScaling(workloadStr)
-	// default:
-	// 	log.Println("expected 'Single' or 'CPUUsageIncrease' or 'ResponseTimeSimpleIncrease' or 'PredefinedSearch' subcommands but got", os.Args[beforeConfigArgCount-1])
-	// 	os.Exit(1)
-	// }
-	// var c = GetAnotherConfigurer()
 	var m = GetSwarmManager(true)
 	db := GetNewDatabase()
 	a := autoconfigure.NewAutoConfigurer(lg, rtc, rcc, ruc, strategy, m, workloadStr, db)

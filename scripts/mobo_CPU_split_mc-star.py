@@ -23,27 +23,39 @@ import time
 def objective(x):
 
     s = sum(x)
-    g = core_count * (x[0] / s)
-    a = core_count * (x[1] / s)
-    b = core_count * (x[2] / s)
-    # this configuration would use a + b + g cores. x[3] is the amount which is not being used
+    b = core_count * (x[0] / s)
+    c = core_count * (x[1] / s)
+    d = core_count * (x[2] / s)
+    e = core_count * (x[3] / s)
+    f = core_count * (x[4] / s)
+    
     
     config = {
-        'entry': {
-            "cpu_count": np.round(g / np.ceil(g), 2),
-            "container_count": int(np.ceil(g)),
-            "worker_count": 1 #this is 1, because it's multi container 
-        },
-        'auth': {
-            "cpu_count": np.round(a / np.ceil(a), 2),
-            "container_count": int(np.ceil(a)),
-            "worker_count": 1
-        },
-        'books': {
+        'serviceb': {
             "cpu_count": np.round(b / np.ceil(b), 2),
             "container_count": int(np.ceil(b)),
+            "worker_count": 1 #this is 1, because it's multi container 
+        },
+        'servicec': {
+            "cpu_count": np.round(c / np.ceil(c), 2),
+            "container_count": int(np.ceil(c)),
             "worker_count": 1
         },
+        'serviced': {
+            "cpu_count": np.round(d / np.ceil(d), 2),
+            "container_count": int(np.ceil(d)),
+            "worker_count": 1
+        },
+        'servicee': {
+            "cpu_count": np.round(e / np.ceil(e), 2),
+            "container_count": int(np.ceil(e)),
+            "worker_count": 1
+        },
+        'servicef': {
+            "cpu_count": np.round(f / np.ceil(f), 2),
+            "container_count": int(np.ceil(f)),
+            "worker_count": 1
+        }
     }
 
     key = json.dumps(config, sort_keys=True)
@@ -55,17 +67,17 @@ def objective(x):
     for line in sys.stdin:
         data = json.loads(line.strip())
         break
-    with open("/home/vahid/Desktop/log.python.mobo", "w+") as f:
-        f.write(str(x))
-    f.close()
+    with open("/home/vahid/Desktop/log.python.mobo", "w+") as ff:
+        ff.write(str(x))
+    ff.close()
 
-    SLA_target = 250
-    respones_times = [0] * 3
-    for i in range(3):
+    SLA_target = 300
+    respones_times = [0] * 4
+    for i in range(len(respones_times)):
         if data['feedbacks'][i] > SLA_target:
             respones_times[i] = data['feedbacks'][i] - SLA_target
     
-    res = [respones_times[0],respones_times[1],respones_times[2],a+b+g]
+    res = [respones_times[0],respones_times[1],respones_times[2],respones_times[3],b+c+d+e+f]
     cache[key] = np.array(res)
 
     return np.array(np.array(res))
@@ -74,12 +86,14 @@ PB = np.asarray([
     [0.06, 0.94],
     [0.06, 0.94],
     [0.06, 0.94],
+    [0.06, 0.94],
+    [0.06, 0.94],
     [0.06, 0.94]
 ])
 NParam = PB.shape[0]
 
 Optimizer = mo.MOBayesianOpt(target=objective,
-                             NObj=4,
+                             NObj=5,
                              pbounds=PB,
                              verbose=False,
                              max_or_min='min', # whether the optimization problem is a maximization problem ('max'), or a minimization one ('min')

@@ -6,10 +6,12 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/VahidMostofi/swarmmanager/configs"
+	"github.com/cheggaaa/pb/v3"
+
 	"github.com/VahidMostofi/swarmmanager/internal/history"
 	"github.com/VahidMostofi/swarmmanager/internal/strategies"
 	"github.com/VahidMostofi/swarmmanager/internal/swarm"
-	"github.com/cheggaaa/pb/v3"
 	"github.com/montanaflynn/stats"
 )
 
@@ -19,133 +21,144 @@ func GoTheory() {
 	bar := pb.StartNew(testCount)
 	log.SetOutput(ioutil.Discard)
 	line := "approach,system,steps,min_total_core,max_total_core,resources,classes,sla\n"
-
-	for i := 1; i <= 1; i++ {
-		i = 298
+	configs.FakeInitialize()
+	for i := 1; i <= 5; i++ {
+		// i = 298
 		outputs := make(map[string]output)
 		fileName := strconv.Itoa(i)
 		system := ReadSystem(fileName)
-
-		// ----------------------------------------------------------------------------
-		strategy := &strategies.BottleNeckOnlyVersion1{
-			StepSize:          4.0,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
+		configs.GetConfig().TestBed.ServicesToConfigure = system.Resources
+		ioutil.WriteFile("/home/vahid/Desktop/values.txt", []byte(fmt.Sprint(len(system.Resources), ",", len(system.Classes), ",", system.SLA)), 0644)
+		strategy := &strategies.MultiObjectiveBayesianOptimization{
+			PythonPath:       "/home/vahid/.virtualenvs/with-data/bin/python",
+			PythonScriptPath: "/home/vahid/Desktop/projects/swarmmanager/scripts/mobo_CPU_split_theory.py",
 		}
-		strategy.Init()
-		approachName := "BNV1-4.0"
+		// strategy.Init()
+		approachName := "mobo"
 		s, o := RunSystemWithStrategy(approachName, system, strategy, false)
 		line += s
 		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy = &strategies.BottleNeckOnlyVersion1{
-			StepSize:          2.0,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy.Init()
-		approachName = "BNV1-2.0"
-		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy = &strategies.BottleNeckOnlyVersion1{
-			StepSize:          1.0,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy.Init()
-		approachName = "BNV1-1.0"
-		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy = &strategies.BottleNeckOnlyVersion1{
-			StepSize:          0.5,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy.Init()
-		approachName = "BNV1-0.5"
-		s, o = RunSystemWithStrategy(approachName, system, strategy, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy2 := &strategies.BottleNeckOnlyVersion2{
-			StepSize:          2.0,
-			MinimumStepSize:   0.25,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy2.Init()
-		strategy2.MinimumCPUValue = 1.0
-		approachName = "BNV2-2.0"
-		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy2 = &strategies.BottleNeckOnlyVersion2{
-			StepSize:          4.0,
-			MinimumStepSize:   0.25,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy2.Init()
-		strategy2.MinimumCPUValue = 1.0
-		approachName = "BNV2-4.0"
-		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		strategy2 = &strategies.BottleNeckOnlyVersion2{
-			StepSize:          1.0,
-			MinimumStepSize:   0.25,
-			Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
-			MultiContainer:    true,
-			DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
-			ConstantInit:      true,
-			ConstantInitValue: 1.0,
-		}
-		strategy2.Init()
-		strategy2.MinimumCPUValue = 1.0
-		approachName = "BNV2-1.0"
-		s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
-		line += s
-		outputs[approachName] = o
-		// ----------------------------------------------------------------------------
-		line += "AMPL," + system.Name + ",0," + strconv.FormatFloat(system.BestObjective, 'f', 2, 64) + ",0,"
-		line += strconv.Itoa(len(system.Resources)) + ","
-		line += strconv.Itoa(len(system.Classes)) + ","
-		line += strconv.FormatFloat(system.SLA, 'f', 1, 64)
-		line += "\n"
+
+		// // ----------------------------------------------------------------------------
+		// strategy := &strategies.BottleNeckOnlyVersion1{
+		// 	StepSize:          4.0,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy.Init()
+		// approachName := "BNV1-4.0"
+		// s, o := RunSystemWithStrategy(approachName, system, strategy, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy = &strategies.BottleNeckOnlyVersion1{
+		// 	StepSize:          2.0,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy.Init()
+		// approachName = "BNV1-2.0"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy = &strategies.BottleNeckOnlyVersion1{
+		// 	StepSize:          1.0,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy.Init()
+		// approachName = "BNV1-1.0"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy = &strategies.BottleNeckOnlyVersion1{
+		// 	StepSize:          0.5,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy.Init()
+		// approachName = "BNV1-0.5"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy2 := &strategies.BottleNeckOnlyVersion2{
+		// 	StepSize:          2.0,
+		// 	MinimumStepSize:   0.25,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy2.Init()
+		// strategy2.MinimumCPUValue = 1.0
+		// approachName = "BNV2-2.0"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy2 = &strategies.BottleNeckOnlyVersion2{
+		// 	StepSize:          4.0,
+		// 	MinimumStepSize:   0.25,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy2.Init()
+		// strategy2.MinimumCPUValue = 1.0
+		// approachName = "BNV2-4.0"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// strategy2 = &strategies.BottleNeckOnlyVersion2{
+		// 	StepSize:          1.0,
+		// 	MinimumStepSize:   0.25,
+		// 	Agreements:        []strategies.Agreement{{"ResponseTimesMean", system.SLA}},
+		// 	MultiContainer:    true,
+		// 	DemandsFilePath:   "./theory/demands/" + fileName + ".yml",
+		// 	ConstantInit:      true,
+		// 	ConstantInitValue: 1.0,
+		// }
+		// strategy2.Init()
+		// strategy2.MinimumCPUValue = 1.0
+		// approachName = "BNV2-1.0"
+		// s, o = RunSystemWithStrategy(approachName, system, strategy2, false)
+		// line += s
+		// outputs[approachName] = o
+		// // ----------------------------------------------------------------------------
+		// line += "AMPL," + system.Name + ",0," + strconv.FormatFloat(system.BestObjective, 'f', 2, 64) + ",0,"
+		// line += strconv.Itoa(len(system.Resources)) + ","
+		// line += strconv.Itoa(len(system.Classes)) + ","
+		// line += strconv.FormatFloat(system.SLA, 'f', 1, 64)
+		// line += "\n"
 
 		bar.Increment()
 	}
 	bar.Finish()
-	// path := "/home/vahid/Dropbox/data/swarm-manager-data/results/theory/model-results-2x-not-that-late-1x-33p.csv"
-	// err := ioutil.WriteFile(path, []byte(line), 0777)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println("saved to:", path)
+	path := "/home/vahid/Dropbox/data/swarm-manager-data/results/theory/mobo.csv"
+	err := ioutil.WriteFile(path, []byte(line), 0777)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("saved to:", path)
 }
 
 // RunSystemWithStrategy ...
@@ -153,7 +166,7 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 	// fmt.Println(name)
 	t := theoryWorkload{Throughput: system.Throughput, ClassProbs: system.ClassProbs}
 	currentConfig, err := strategy.GetInitialConfig(t)
-
+	// fmt.Println(currentConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -167,6 +180,7 @@ func RunSystemWithStrategy(name string, system *System, strategy strategies.Conf
 	currentState := make(map[string]swarm.ServiceSpecs)
 	stepCount := 1
 	for {
+		fmt.Println("step COunt", stepCount)
 		itr := iterationInfo{make(map[string]float64), make(map[string]float64), make(map[string]float64)}
 		alphas := make(map[string]float64)
 		for serviceName, simpleConfig := range currentConfig {
