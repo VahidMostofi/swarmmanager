@@ -21,11 +21,15 @@ cache = {}
 services_count, request_count,sla = 0,0,0
 with open('/home/vahid/Desktop/values.txt') as f:
     services_count, request_count,sla = [int(a) for a in f.read().split(',')]
-core_count = 100 * services_count
+core_count = 10 * services_count
 
 import time
 def objective(x):
-    
+
+    with open("/home/vahid/Desktop/log.time.mobo", "a") as f:
+        f.write(str(time.time()) + "\n")
+    f.close()
+
     s = sum(x)
     allocations = [0] * services_count
     for i in range(services_count):
@@ -65,6 +69,9 @@ def objective(x):
         res.append(respones_times[i])
     res.append(not_used)
     cache[key] = np.array(res)
+    with open("/home/vahid/Desktop/log.time.mobo", "a") as f:
+        f.write(str(time.time()) + " r\n")
+    f.close()
 
     return np.array(np.array(res))
 
@@ -81,7 +88,7 @@ Optimizer = mo.MOBayesianOpt(target=objective,
                              RandomSeed=10)
 Optimizer.initialize(init_points=5) 
 # there is no minimize function. maximize() starts optimization. Performs minimizing or maximizing based on max_or_min
-front, pop = Optimizer.maximize(n_iter=200,
+front, pop = Optimizer.maximize(n_iter=20,
                                 prob=0.1,
                                 ReduceProb=False,
                                 q=0.5)
