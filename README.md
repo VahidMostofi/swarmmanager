@@ -1,6 +1,8 @@
 
 
 
+The outputs of ccgird paper is based on this branch. The proactive repo is a subset of this repo which works 100%. But only has modules which talk about it CCGRID paper.
+
 #### Example scripts are available in ```muck_star.sh```, ```bookstore-nodejs.sh```, ```temmp.sh```
 ```
 go run cmd/swarm-autoconfigure/main.go <NAME> CPUUsageIncrease -property CPUUsage90Percentile -threshold 90
