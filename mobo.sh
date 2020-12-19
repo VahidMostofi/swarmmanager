@@ -22,13 +22,13 @@ ScriptPath="$(pwd)/scripts/mobo_CPU_split_mc.py"
 
 # ScriptPath is the path to python script
 ScriptPath="$(pwd)/scripts/mobo_CPU_split_mc-star.py"
-VUSs=(20 30 40 50 )
+VUSs=(10 20 40 )
 for VUS in "${VUSs[@]}"
 do
     go run main.go autoconfig \
         --appname muck_star-small \
         --config configurations/muck_star.yaml \
-        --workload  "${VUS}_110_0.45_0.25_0.15_0.15" \
+        --workload  "${VUS}_250_0.45_0.25_0.15_0.15" \
         --testName mobo \
         mobo \
         --python $PythonPath \

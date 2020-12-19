@@ -55,7 +55,7 @@ services:
       - WORKER_COUNT=1
       - SEED=9
       - PORT=10081
-      - MEAN_RESPONSE_TIMES={"req1":5, "req2":5, "req3":21, "req4":4, "req5":80}
+      - MEAN_RESPONSE_TIMES={"req1":25, "req2":26, "req3":21, "req4":28, "req5":80}
     deploy:
       replicas: 1
       resources:
@@ -80,7 +80,7 @@ services:
       - WORKER_COUNT=1
       - SEED=9
       - PORT=10082
-      - MEAN_RESPONSE_TIMES={"req1":8, "req2":6, "req3":8, "req4":9, "req5":83}
+      - MEAN_RESPONSE_TIMES={"req1":20, "req2":16, "req3":21, "req4":23, "req5":83}
     deploy:
       replicas: 1
       resources:
@@ -105,7 +105,7 @@ services:
       - WORKER_COUNT=1
       - SEED=9
       - PORT=10083
-      - MEAN_RESPONSE_TIMES={"req1":3,"req2":4,"req3":5,"req4":6,"req5":86}
+      - MEAN_RESPONSE_TIMES={"req1":13,"req2":9,"req3":9,"req4":24,"req5":86}
     deploy:
       replicas: 1
       resources:
@@ -130,7 +130,7 @@ services:
       - WORKER_COUNT=1
       - SEED=9
       - PORT=10084
-      - MEAN_RESPONSE_TIMES={"req1":7,"req2":20,"req3":3,"req4":26,"req5":10}
+      - MEAN_RESPONSE_TIMES={"req1":17,"req2":20,"req3":8,"req4":26,"req5":10}
     deploy:
       replicas: 1
       resources:
@@ -155,7 +155,7 @@ services:
       - WORKER_COUNT=1
       - SEED=9
       - PORT=10085
-      - MEAN_RESPONSE_TIMES={"req1":5,"req2":5,"req3":7,"req4":4,"req5":7}
+      - MEAN_RESPONSE_TIMES={"req1":16,"req2":21,"req3":15,"req4":19,"req5":21}
     deploy:
       replicas: 1
       resources:

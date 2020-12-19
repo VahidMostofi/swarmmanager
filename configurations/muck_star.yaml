@@ -1,5 +1,5 @@
 # micromuck-two-layers
-version: "v3"
+version: "v5"
 
 continuesRuns: false
 
@@ -47,7 +47,7 @@ loadGenerator:
         - REQUEST_NAMES: "req1,req2,req3,req4"
 
 test:
-    duration: 60
+    duration: 150
     waitAfterLoadGeneratorDone: 15
 
 usageCollector:
